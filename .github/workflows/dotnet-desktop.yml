@@ -1,85 +1,59 @@
-name: Deploy ASP.NET Core API
+name: Docker Image CI/CD
 
 on:
-  push:
-    branches:
-      - main
+  release:
+    types: [published, prereleased]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  test:
+  test-build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '8.0.x'
-      env:
-        PATH_TESTS: UNIIAadminAPITests\UNIIAadminAPITests.csproj
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
 
-    - name: Install dependencies
-      run: dotnet restore ${{ env.PATH_TESTS }}
+      - name: Restore dependencies
+        run: dotnet restore
 
-    - name: Build
-      run: dotnet build ${{ env.PATH_TESTS }} --no-restore
+      - name: Build
+        run: dotnet build --no-restore
 
-    - name: Run tests
-      run: dotnet test ${{ env.PATH_TESTS }} --no-build --verbosity normal
+      - name: Test
+        run: dotnet test --no-build --verbosity normal
 
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    needs: test
-    env:
-      APP_NAME: uniia_admin_api
-      HOST_DIRECTORY: /opt/admin_api
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=tag
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
 
-    - name: Build Docker image
-      run: |
-        docker build -t ${{ env.APP_NAME }}:latest .
-
-    - name: Save Docker image
-      run: |
-        docker save ${{ env.APP_NAME }}:latest | gzip > ${{ env.APP_NAME }}.tar.gz
-        chmod 644 ${{ env.APP_NAME }}.tar.gz
-
-    - name: Ensure target directory exists
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: ${{ secrets.PORT }}
-        script: |
-          mkdir -p ${{ env.HOST_DIRECTORY }}
-    
-    - name: Copy Docker Image to Server
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: ${{ secrets.PORT }}
-        source: "${{ env.APP_NAME }}.tar.gz"
-        target: "${{ env.HOST_DIRECTORY }}"
-        overwrite: true
-
-    - name: Deploy and run Docker container
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: ${{ secrets.PORT }}
-        script: |
-          cd ${{ env.HOST_DIRECTORY }}
-          docker load < ${{ env.APP_NAME }}.tar.gz
-          docker stop ${{ env.APP_NAME }} || true
-          docker rm ${{ env.APP_NAME }} || true
-          docker run -d --name uniia_admin_api --network host -e ASPNETCORE_URLS=http://+:5000 uniia_admin_api:latest
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
