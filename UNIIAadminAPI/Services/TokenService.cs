@@ -1,21 +1,35 @@
-﻿using AspNetCore.Identity.MongoDbCore.Models;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Newtonsoft.Json;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
-using UNIIAadminAPI.Models;
+using UniiaAdmin.Data.Models;
 
 namespace UNIIAadminAPI.Services
 {
-    public class TokenService(string clientId, string clientSecret, string tokenKey)
+    public class TokenService
     {
+        private readonly string _clientId;
+
+        private readonly string _clientSecret;
+
+        private readonly string _tokenKey;
+
+        private readonly Uri _refreshTokenUri = new("https://oauth2.googleapis.com/token");
+        public TokenService(string clientId, string clientSecret, string tokenKey) 
+        {
+            _clientId = clientId;
+            _clientSecret = clientSecret;
+            _tokenKey = tokenKey;
+        }
+
         public async Task<string?> RefreshTokenAsync(string refreshToken, HttpClient httpClient)
         {
             var requestContent = new StringContent(
-                $"client_id={clientId}&client_secret={clientSecret}&refresh_token={refreshToken}&grant_type=refresh_token",
+                $"client_id={_clientId}&client_secret={_clientSecret}&refresh_token={refreshToken}&grant_type=refresh_token",
                 Encoding.UTF8, "application/x-www-form-urlencoded");
 
-            var response = await httpClient.PostAsync("https://oauth2.googleapis.com/token", requestContent);
+            var response = await httpClient.PostAsync(_refreshTokenUri, requestContent);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -28,13 +42,13 @@ namespace UNIIAadminAPI.Services
 
             return tokenResponse?.access_token;
         }
-        public async Task<bool> ValidateGoogleTokenAsync(MongoIdentityUser user, UserManager<MongoIdentityUser> userManager)
+        public async Task<bool> ValidateGoogleTokenAsync(AdminUser user, UserManager<AdminUser> userManager)
         {
             var httpClient = new HttpClient();
 
-            (var accessToken, var refreshToken) = GetTokensByUser(user);
+            var accessToken = await GetTokenByUserAsync(user, userManager, "accessToken");
 
-            if (accessToken == null || refreshToken == null)
+            if (accessToken == null)
             {
                 return false;
             }
@@ -48,11 +62,18 @@ namespace UNIIAadminAPI.Services
                 return true;
             }
 
+            var refreshToken = await GetTokenByUserAsync(user, userManager, "refreshToken");
+
+            if (refreshToken == null)
+            {
+                return false;
+            }
+
             var refreshedAccessToken = await RefreshTokenAsync(refreshToken, httpClient);
 
             if (!string.IsNullOrEmpty(refreshedAccessToken))
             {
-                user.Tokens = MakeEncryptedTokenList(refreshedAccessToken, refreshToken);
+                await userManager.SetAuthenticationTokenAsync(user, "Uniia", "accessToken", EncryptToken(refreshedAccessToken));
 
                 await userManager.UpdateAsync(user);
 
@@ -61,42 +82,20 @@ namespace UNIIAadminAPI.Services
 
             return false;
         }
-        public List<Token> MakeEncryptedTokenList(string accessToken, string refreshToken)
+
+        public async Task<string?> GetTokenByUserAsync(AdminUser user, UserManager<AdminUser> userManager, string tokenName)
         {
-            List<Token> tokens = [];
+            var token = await userManager.GetAuthenticationTokenAsync(user, "Uniia", tokenName);
 
-            string encryptedAccessToken = EncryptToken(accessToken);
+            var decryptedToken = DecryptToken(token);
 
-            string encryptedRefreshToken = EncryptToken(refreshToken);
-
-            Token access = new()
-            {
-                Value = encryptedAccessToken,
-                LoginProvider = "UNIIA_admin",
-                Name = "accessToken"
-            };
-
-            Token refresh = new()
-            {
-                Value = encryptedRefreshToken,
-                LoginProvider = "UNIIA_admin",
-                Name = "refreshToken"
-            };
-
-            tokens.Add(access);
-            tokens.Add(refresh);
-
-            return tokens;
+            return decryptedToken;
         }
-        public (string?, string?) GetTokensByUser(MongoIdentityUser user)
-        {
-            return (DecryptToken(user.Tokens.FirstOrDefault(n => n.Name == "accessToken")?.Value), DecryptToken(user.Tokens.FirstOrDefault(n => n.Name == "refreshToken")?.Value));
-        }
-        private string EncryptToken(string input)
+        public string EncryptToken(string input)
         {
             using (Aes aesAlg = Aes.Create())
             {
-                aesAlg.Key = Encoding.UTF8.GetBytes(tokenKey);
+                aesAlg.Key = Encoding.UTF8.GetBytes(_tokenKey);
 
                 aesAlg.GenerateIV();
 
@@ -118,9 +117,10 @@ namespace UNIIAadminAPI.Services
                 return Convert.ToBase64String(aesAlg.IV) + ":" + Convert.ToBase64String(encryptedBytes);
             }
         }
+
         private string? DecryptToken(string? encryptedInput)
         {
-            if(encryptedInput == null)
+            if (encryptedInput == null)
                 return null;
 
             string[] parts = encryptedInput.Split(':');
@@ -129,8 +129,8 @@ namespace UNIIAadminAPI.Services
 
             using (Aes aesAlg = Aes.Create())
             {
-                aesAlg.Key = Encoding.UTF8.GetBytes(tokenKey); 
-                aesAlg.IV = iv; 
+                aesAlg.Key = Encoding.UTF8.GetBytes(_tokenKey);
+                aesAlg.IV = iv;
 
                 ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
                 string decryptedText;

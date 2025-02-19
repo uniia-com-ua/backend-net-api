@@ -1,18 +1,14 @@
-﻿using Amazon.Runtime.Internal;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
-using MongoDbGenericRepository;
-using System.Net;
-using System.Net.Http;
-using System.Security.Claims;
-using UNIIAadminAPI.Models;
+﻿using MongoDB.Bson;
+using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Models;
 
 namespace UNIIAadminAPI.Services
 {
-    public class AuthService(HttpContext httpContext)
+    public class AuthService(HttpContext httpContext) : IDisposable
     {
-        private readonly IMongoDbContext _db = httpContext.RequestServices.GetRequiredService<IMongoDbContext>();
+        private readonly MongoDbContext _db = httpContext.RequestServices.GetRequiredService<MongoDbContext>();
         private readonly HttpContext _httpContext = httpContext;
+        private bool disposedValue;
 
         public async Task AddLoginInfoToHistory(AdminUser adminUser)
         {
@@ -20,8 +16,9 @@ namespace UNIIAadminAPI.Services
 
             ipAdress.ToString();
 
-            LogInHistory logInHistoryItem = new()
+            AdminLogInHistory logInHistoryItem = new()
             {
+                Id = ObjectId.GenerateNewId(),
                 UserId = adminUser.Id,
                 LogInType = "Credential login",
                 LogInTime = DateTime.UtcNow,
@@ -29,7 +26,27 @@ namespace UNIIAadminAPI.Services
                 UserAgent = _httpContext.Request.Headers.UserAgent
             };
 
-            await _db.GetCollection<LogInHistory>().InsertOneAsync(logInHistoryItem);
+            await _db.AdminLogInHistories.AddAsync(logInHistoryItem);
+
+            await _db.SaveChangesAsync();
+        }
+
+        public void Dispose()
+        {
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!this.disposedValue)
+            {
+                if (disposing)
+                {
+                    this._db.Dispose();
+                }
+
+                this.disposedValue = true;
+            }
         }
     }
 }

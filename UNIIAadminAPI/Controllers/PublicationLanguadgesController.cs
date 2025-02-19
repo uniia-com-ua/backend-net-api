@@ -1,114 +1,108 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
-using MongoDB.Driver;
-using MongoDbGenericRepository;
-using UNIIAadminAPI.Enums;
-using UNIIAadminAPI.Models;
-using UNIIAadminAPI.Serializers;
+using Microsoft.EntityFrameworkCore;
+using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Enums;
+using UniiaAdmin.Data.Models;
+using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Services;
 using UNIIAadminAPI.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
     [ApiController]
-    [Route("admin/api/publicationLanguadges")]
-    public class PublicationLanguadgesController(IMongoDbContext db) : ControllerBase
+    [Route("publication-languages")]
+    public class PublicationLanguageController : ControllerBase
     {
-        private readonly IMongoCollection<PublicationLanguage> _publicationLanguadgesCollection = db.GetCollection<PublicationLanguage>();
+        private readonly ApplicationContext _applicationContext;
+        private readonly LogActionService _logActionService;
 
-        [HttpGet]
-        [Route("get")]
-        [ValidateToken]
-        [RequireClaim(ClaimsEnum.ViewPublicationLanguadges)]
-        public async Task<IActionResult> Get(string id)
+        public PublicationLanguageController(
+            ApplicationContext applicationContext,
+            LogActionService logActionService)
         {
-            ObjectId objectId = ObjectId.Parse(id);
-
-            var publicationLanguage = await _publicationLanguadgesCollection.Find(a => a.Id == objectId).FirstOrDefaultAsync();
-
-            if (publicationLanguage == null)
-                return NotFound();
-
-            return Ok(new PublicationLanguageDto(publicationLanguage));
+            _applicationContext = applicationContext;
+            _logActionService = logActionService;
         }
 
         [HttpGet]
-        [Route("get-all")]
-        [ValidateToken]
-        [RequireClaim(ClaimsEnum.ViewPublicationLanguadges)]
-        public IActionResult GetAll()
+        [Route("{id}")]
+        public async Task<IActionResult> Get(int id)
         {
-            List<PublicationLanguageDto> result = [];
+            var language = await _applicationContext.PublicationLanguages.FirstOrDefaultAsync(l => l.Id == id);
 
-            var publicationLanguages = _publicationLanguadgesCollection.AsQueryable();
+            if (language == null)
+                return NotFound(ErrorMessages.ModelNotFound(nameof(PublicationLanguage), id.ToString()));
 
-            foreach (var publicationLanguage in publicationLanguages)
-            {
-                result.Add(new PublicationLanguageDto(publicationLanguage));
-            }
+            return Ok(language);
+        }
 
-            return Ok(result);
+        [HttpGet]
+        [Route("page")]
+        public async Task<IActionResult> GetPaginated(int skip, int take)
+        {
+            var languages = await PaginationHelper.GetPagedListAsync(_applicationContext.PublicationLanguages, skip, take);
+
+            return Ok(languages);
         }
 
         [HttpPost]
         [Route("create")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.CreatePublicationLanguadges)]
-        public async Task<IActionResult> Create([FromBody] PublicationLanguageDto publicationLanguageDto)
+        public async Task<IActionResult> Create([FromBody] string name)
         {
             if (!ModelState.IsValid)
+                return BadRequest(ErrorMessages.ModelNotValid);
+
+            PublicationLanguage language = new()
             {
-                return BadRequest(ModelState);
-            }
+                Name = name
+            };
 
-            PublicationLanguage publicationLanguage = new(publicationLanguageDto);
+            await _applicationContext.PublicationLanguages.AddAsync(language);
 
-            await _publicationLanguadgesCollection.InsertOneAsync(publicationLanguage);
+            await _applicationContext.SaveChangesAsync();
+
+            await _logActionService.LogActionAsync<PublicationLanguage>(HttpContext.Items["User"] as AdminUser, language.Id, CrudOperation.Create.ToString());
 
             return Ok();
         }
 
-        [HttpPatch]
-        [Route("update")]
+        [HttpPut]
+        [Route("{id}/update")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.UpdatePublicationLanguadges)]
-        public async Task<IActionResult> Update([FromForm] PublicationLanguageDto publicationLanguageDto, string id)
+        public async Task<IActionResult> Update([FromBody] string name, int id)
         {
             if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+                return BadRequest(ErrorMessages.ModelNotValid);
 
-            ObjectId objectId = ObjectId.Parse(id);
+            var language = await _applicationContext.PublicationLanguages.FirstOrDefaultAsync(l => l.Id == id);
 
-            var publicationLanguage = await _publicationLanguadgesCollection.Find(a => a.Id == objectId).FirstOrDefaultAsync();
+            if (language == null)
+                return NotFound(ErrorMessages.ModelNotFound(nameof(PublicationLanguage), id.ToString()));
 
-            if (publicationLanguage == null)
-                return NotFound();
+            language.Name = name;
 
-            publicationLanguage.UpdateByDtoModel(publicationLanguageDto);
+            await _applicationContext.SaveChangesAsync();
 
-            var filter = Builders<PublicationLanguage>.Filter.Eq(a => a.Id, publicationLanguage.Id);
-
-            await _publicationLanguadgesCollection.FindOneAndReplaceAsync(filter, publicationLanguage);
-
+            await _logActionService.LogActionAsync<PublicationLanguage>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Update.ToString());
             return Ok();
         }
 
         [HttpDelete]
-        [Route("delete")]
+        [Route("{id}/delete")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.DeletePublicationLanguadges)]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(int id)
         {
-            ObjectId objectId = ObjectId.Parse(id);
+            var language = await _applicationContext.PublicationLanguages.FirstOrDefaultAsync(l => l.Id == id);
 
-            var result = await _publicationLanguadgesCollection.FindOneAndDeleteAsync(a => a.Id == objectId);
+            if (language == null)
+                return NotFound(ErrorMessages.ModelNotFound(nameof(PublicationLanguage), id.ToString()));
 
-            if (result == null)
-            {
-                return NotFound();
-            }
+            _applicationContext.Remove(language);
 
+            await _applicationContext.SaveChangesAsync();
+
+            await _logActionService.LogActionAsync<PublicationLanguage>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Delete.ToString());
             return Ok();
         }
     }

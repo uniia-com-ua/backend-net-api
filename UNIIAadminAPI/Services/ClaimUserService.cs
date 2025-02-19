@@ -1,14 +1,12 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Driver;
-using MongoDbGenericRepository;
 using System.Security.Claims;
-using UNIIAadminAPI.Models;
 
 namespace UNIIAadminAPI.Services
 {
     public static class ClaimUserService
     {
-        public static async Task<string?> GetAuthUserIdByUserId(ObjectId userId, IMongoDbContext db)
+/*        public static async Task<string?> GetAuthUserIdByUserId(ObjectId userId, IMongoDbContext db)
         {
             var adminUser = await db.GetCollection<AdminUser>()
                 .Find(u => u.Id == userId)
@@ -24,7 +22,7 @@ namespace UNIIAadminAPI.Services
                 .FirstOrDefaultAsync();
 
             return user?.AuthUserId.ToString();
-        }
+        }*/
 
         public static async Task<byte[]> GetUserPictureFromClaims(IEnumerable<Claim> claims, HttpClient httpClient)
         {

@@ -1,113 +1,115 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
-using MongoDB.Driver;
-using MongoDbGenericRepository;
-using UNIIAadminAPI.Enums;
-using UNIIAadminAPI.Models;
-using UNIIAadminAPI.Serializers;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
+using UniiaAdmin.Data.Enums;
+using UniiaAdmin.Data.Models;
+using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Services;
 using UNIIAadminAPI.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
     [ApiController]
-    [Route("admin/api/keywords")]
-    public class KeywordController(IMongoDbContext db) : ControllerBase
+    [Route("keywords")]
+    public class KeywordController : ControllerBase
     {
-        private readonly IMongoCollection<Keyword> _keywordsCollection = db.GetCollection<Keyword>();
+        private readonly ApplicationContext _applicationContext;
+        private readonly LogActionService _logActionService;
 
-        [HttpGet]
-        [Route("get")]
-        [ValidateToken]
-        [RequireClaim(ClaimsEnum.ViewKeyword)]
-        public async Task<IActionResult> Get(string id)
+        public KeywordController(
+            ApplicationContext applicationContext,
+            LogActionService logActionService)
         {
-            ObjectId objectId = ObjectId.Parse(id);
-
-            var keyword = await _keywordsCollection.Find(a => a.Id == objectId).FirstOrDefaultAsync();
-
-            if (keyword == null)
-                return NotFound();
-
-            return Ok(new KeywordDto(keyword));
+            _applicationContext = applicationContext;
+            _logActionService = logActionService;
         }
 
         [HttpGet]
-        [Route("get-all")]
-        [ValidateToken]
-        [RequireClaim(ClaimsEnum.ViewKeyword)]
-        public IActionResult GetAll()
+        [Route("{id}")]
+        public async Task<IActionResult> Get(int id)
         {
-            List<KeywordDto> result = [];
+            var keyword = await _applicationContext.Keywords.FirstOrDefaultAsync(k => k.Id == id);
 
-            var keywords = _keywordsCollection.AsQueryable();
+            if (keyword == null)
+                return NotFound(ErrorMessages.ModelNotFound(nameof(Keyword), id.ToString()));
 
-            foreach (var keyword in keywords)
-            {
-                result.Add(new KeywordDto(keyword));
-            }
+            return Ok(keyword);
+        }
 
-            return Ok(result);
+        [HttpGet]
+        [Route("page")]
+        public async Task<IActionResult> GetPaginatedKeywords(int skip, int take)
+        {
+            var pagedKeywords = await PaginationHelper.GetPagedListAsync(_applicationContext.Keywords, skip, take);
+
+            return Ok(pagedKeywords);
         }
 
         [HttpPost]
         [Route("create")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.CreateKeyword)]
-        public async Task<IActionResult> Create([FromBody] KeywordDto keywordDto)
+        public async Task<IActionResult> Create([FromBody] string word)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(ErrorMessages.ModelNotValid);
             }
 
-            Keyword keyword = new(keywordDto);
+            Keyword keyword = new()
+            {
+                Word = word
+            };
 
-            await _keywordsCollection.InsertOneAsync(keyword);
+            await _applicationContext.Keywords.AddAsync(keyword);
+
+            await _applicationContext.SaveChangesAsync();
+
+            await _logActionService.LogActionAsync<Keyword>(HttpContext.Items["User"] as AdminUser, keyword.Id, CrudOperation.Create.ToString());
 
             return Ok();
         }
 
-        [HttpPatch]
-        [Route("update")]
+        [HttpPut]
+        [Route("{id}/update")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.UpdateKeyword)]
-        public async Task<IActionResult> Update([FromBody] KeywordDto keywordDto, string id)
+        public async Task<IActionResult> Update([FromBody] string word, int id)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(ErrorMessages.ModelNotValid);
             }
 
-            ObjectId objectId = ObjectId.Parse(id);
-
-            var keyword = await _keywordsCollection.Find(a => a.Id == objectId).FirstOrDefaultAsync();
+            var keyword = await _applicationContext.Keywords.FirstOrDefaultAsync(k => k.Id == id);
 
             if (keyword == null)
-                return NotFound();
+                return NotFound(ErrorMessages.ModelNotFound(nameof(Keyword), id.ToString()));
 
-            keyword.UpdateByDtoModel(keywordDto);
+            keyword.Word = word;
 
-            var filter = Builders<Keyword>.Filter.Eq(a => a.Id, keyword.Id);
+            await _applicationContext.SaveChangesAsync();
 
-            await _keywordsCollection.FindOneAndReplaceAsync(filter, keyword);
+            await _logActionService.LogActionAsync<Keyword>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Update.ToString());
 
             return Ok();
         }
 
         [HttpDelete]
-        [Route("delete")]
+        [Route("{id}/delete")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.DeleteKeyword)]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(int id)
         {
-            ObjectId objectId = ObjectId.Parse(id);
+            var keyword = await _applicationContext.Keywords.FirstOrDefaultAsync(k => k.Id == id);
 
-            var result = await _keywordsCollection.FindOneAndDeleteAsync(a => a.Id == objectId);
+            if (keyword == null)
+                return NotFound(ErrorMessages.ModelNotFound(nameof(Keyword), id.ToString()));
 
-            if (result == null)
-            {
-                return NotFound();
-            }
+            _applicationContext.Remove(keyword);
+
+            await _applicationContext.SaveChangesAsync();
+
+            await _logActionService.LogActionAsync<Keyword>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Delete.ToString());
 
             return Ok();
         }

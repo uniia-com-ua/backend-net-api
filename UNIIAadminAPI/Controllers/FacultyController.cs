@@ -1,51 +1,56 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
+using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
-using MongoDbGenericRepository;
-using UNIIAadminAPI.Enums;
-using UNIIAadminAPI.Models;
-using UNIIAadminAPI.Serializers;
+using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
+using UniiaAdmin.Data.Enums;
+using UniiaAdmin.Data.Models;
+using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Services;
 using UNIIAadminAPI.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
     [ApiController]
-    [Route("admin/api/faculty")]
-    public class FacultyController(IMongoDbContext db) : ControllerBase
+    [Route("faculties")]
+    public class FacultyController : ControllerBase
     {
-        private readonly IMongoCollection<Faculty> _facultyCollection = db.GetCollection<Faculty>();
+        private readonly ApplicationContext _applicationContext;
+        private readonly IMapper _mapper;
+        private readonly LogActionService _logActionService;
 
-        [HttpGet]
-        [Route("get")]
-        [ValidateToken]
-        [RequireClaim(ClaimsEnum.ViewFaculties)]
-        public async Task<IActionResult> Get(string id)
+        public FacultyController(
+            ApplicationContext applicationContext,
+            IMapper mapper,
+            LogActionService logActionService)
         {
-            ObjectId objectId = ObjectId.Parse(id);
-
-            var faculty = await _facultyCollection.Find(a => a.Id == objectId).FirstOrDefaultAsync();
-
-            if (faculty == null)
-                return NotFound();
-
-            return Ok(new FacultyDto(faculty));
+            _applicationContext = applicationContext;
+            _mapper = mapper;
+            _logActionService = logActionService;
         }
 
         [HttpGet]
-        [Route("get-all")]
-        [ValidateToken]
-        [RequireClaim(ClaimsEnum.ViewFaculties)]
-        public IActionResult GetAll()
+        [Route("{id}")]
+        public async Task<IActionResult> Get(int id)
         {
-            List<FacultyDto> result = [];
+            var faculty = await _applicationContext.Faculties.FirstOrDefaultAsync(a => a.Id == id);
 
-            var faculties = _facultyCollection.AsQueryable();
+            if (faculty == null)
+                return NotFound(ErrorMessages.ModelNotFound(nameof(Faculty), id.ToString()));
 
-            foreach (var faculty in faculties)
-            {
-                result.Add(new FacultyDto(faculty));
-            }
+            var result = _mapper.Map<FacultyDto>(faculty);
+
+            return Ok(result);
+        }
+
+        [HttpGet]
+        [Route("page")]
+        public async Task<IActionResult> GetPaginatedFacultied(int skip, int take)
+        {
+            var pagedFaculties = await PaginationHelper.GetPagedListAsync(_applicationContext.Faculties, skip, take);
+
+            var result = pagedFaculties.Select(f => _mapper.Map<FacultyDto>(f));
 
             return Ok(result);
         }
@@ -53,62 +58,73 @@ namespace UNIIAadminAPI.Controllers
         [HttpPost]
         [Route("create")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.CreateFaculties)]
-        public async Task<IActionResult> Create([FromBody] FacultyDto facultyDto)
+        public async Task<IActionResult> Create([FromForm] FacultyDto facultyDto)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(ErrorMessages.ModelNotValid);
             }
 
-            Faculty faculty = new(facultyDto);
+            Faculty faculty = _mapper.Map<Faculty>(facultyDto);
 
-            await _facultyCollection.InsertOneAsync(faculty);
+            var isUniExist = await _applicationContext.Universities.AnyAsync(u => u.Id == faculty.UniversityId);
+
+            if (!isUniExist)
+                return NotFound(ErrorMessages.ModelNotFound(nameof(University), faculty.UniversityId.ToString()));
+
+            await _applicationContext.Faculties.AddAsync(faculty);
+
+            await _applicationContext.SaveChangesAsync();
+
+            await _logActionService.LogActionAsync<Faculty>(HttpContext.Items["User"] as AdminUser, faculty.Id, CrudOperation.Create.ToString());
 
             return Ok();
         }
 
-        [HttpPatch]
-        [Route("update")]
+        [HttpPut]
+        [Route("{id}/update")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.UpdateFaculties)]
-        public async Task<IActionResult> Update([FromForm] FacultyDto facultyDto, string id)
+        public async Task<IActionResult> Update(FacultyDto facultyDto, int id)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(ErrorMessages.ModelNotValid);
             }
 
-            ObjectId objectId = ObjectId.Parse(id);
-
-            var faculty = await _facultyCollection.Find(a => a.Id == objectId).FirstOrDefaultAsync();
+            var faculty = await _applicationContext.Faculties.FirstOrDefaultAsync(a => a.Id == id);
 
             if (faculty == null)
-                return NotFound();
+                return NotFound(ErrorMessages.ModelNotFound(nameof(Faculty), id.ToString()));
 
-            faculty.UpdateByDtoModel(facultyDto);
+            faculty.Update(facultyDto);
 
-            var filter = Builders<Faculty>.Filter.Eq(a => a.Id, faculty.Id);
+            var isUniExist = await _applicationContext.Universities.AnyAsync(u => u.Id == faculty.UniversityId);
 
-            await _facultyCollection.FindOneAndReplaceAsync(filter, faculty);
+            if (!isUniExist)
+                return NotFound(ErrorMessages.ModelNotFound(nameof(University), faculty.UniversityId.ToString()));
+
+            await _applicationContext.SaveChangesAsync();
+
+            await _logActionService.LogActionAsync<Faculty>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Update.ToString());
 
             return Ok();
         }
 
         [HttpDelete]
-        [Route("delete")]
+        [Route("{id}/delete")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.DeleteFaculties)]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(int id)
         {
-            ObjectId objectId = ObjectId.Parse(id);
+            var faculty = await _applicationContext.Faculties.FirstOrDefaultAsync(a => a.Id == id);
 
-            var result = await _facultyCollection.FindOneAndDeleteAsync(a => a.Id == objectId);
+            if (faculty == null)
+                return NotFound(ErrorMessages.ModelNotFound(nameof(Faculty), id.ToString()));
 
-            if (result == null)
-            {
-                return NotFound();
-            }
+            _applicationContext.Remove(faculty);
+
+            await _applicationContext.SaveChangesAsync();
+
+            await _logActionService.LogActionAsync<Faculty>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Delete.ToString());
 
             return Ok();
         }

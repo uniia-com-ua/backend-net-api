@@ -1,9 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
-using UNIIAadminAPI.Enums;
-using UNIIAadminAPI.Serializers;
-using UNIIAadminAPI.Services;
+﻿using Microsoft.AspNetCore.Mvc;
 
 namespace UNIIAadminAPI.Controllers
 {

@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
-using UNIIAadminAPI.Models;
-using AspNetCore.Identity.MongoDbCore.Models;
+using UniiaAdmin.Data.Models;
 
 namespace UNIIAadminAPI.Services
 {
@@ -13,7 +12,7 @@ namespace UNIIAadminAPI.Services
         {
             var tokenService = context.HttpContext.RequestServices.GetRequiredService<TokenService>();
 
-            var userManager = context.HttpContext.RequestServices.GetRequiredService<UserManager<MongoIdentityUser>>();
+            var userManager = context.HttpContext.RequestServices.GetRequiredService<UserManager<AdminUser>>();
 
             var user = await userManager.GetUserAsync(context.HttpContext.User);
 
@@ -30,6 +29,8 @@ namespace UNIIAadminAPI.Services
                 context.Result = new UnauthorizedResult();
                 return;
             }
+
+            context.HttpContext.Items["User"] = user;
 
             await next();
         }

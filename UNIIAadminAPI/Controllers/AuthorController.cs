@@ -1,160 +1,184 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
-using MongoDB.Driver.GridFS;
-using MongoDbGenericRepository;
-using UNIIAadminAPI.Enums;
-using UNIIAadminAPI.Models;
-using UNIIAadminAPI.Serializers;
+using System.Net.Mime;
+using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
+using UniiaAdmin.Data.Enums;
+using UniiaAdmin.Data.Interfaces.FileInterfaces;
+using UniiaAdmin.Data.Models;
+using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.FileServices;
+using UniiaAdmin.WebApi.Services;
 using UNIIAadminAPI.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
     [ApiController]
-    [Route("admin/api/authors")]
-    public class AuthorController(IMongoDbContext db, IMongoDatabase database) : ControllerBase
+    [Route("authors")]
+    public class AuthorController : ControllerBase
     {
-        private readonly IMongoCollection<Author> _authorsCollection = db.GetCollection<Author>();
-        private readonly GridFSBucket _gridFS = new(database);
+        private readonly ApplicationContext _applicationContext;
+        private readonly MongoDbContext _mongoDbContext;
+        private readonly IFileEntityService _fileService;
+        private readonly LogActionService _logActionService;
+        private readonly IMapper _mapper;
 
-        [HttpGet]
-        [Route("get")]
-        [ValidateToken]
-        [RequireClaim(ClaimsEnum.ViewAuthors)]
-        public async Task<IActionResult> Get(string id)
+        public AuthorController(
+            ApplicationContext applicationContext,
+            MongoDbContext mongoDbContext,
+            IMapper mapper,
+            IFileEntityService fileService,
+            LogActionService logActionService)
         {
-            if (string.IsNullOrWhiteSpace(id))
-            {
-                return BadRequest("The 'id' parameter is required and cannot be empty");
-            }
-
-            if (!ObjectId.TryParse(id, out ObjectId objectId))
-            {
-                return BadRequest("Invalid 'id' format");
-            }
-
-            var author = await _authorsCollection.Find(a => a.Id == objectId).FirstOrDefaultAsync();
-
-            if(author == null)
-                return NotFound("Author with id '{id}' not found");
-
-            return Ok(new AuthorOutDto(author));
+            _applicationContext = applicationContext;
+            _mongoDbContext = mongoDbContext;
+            _mapper = mapper;
+            _fileService=fileService;
+            _logActionService=logActionService;
         }
 
         [HttpGet]
-        [Route("get-picture")]
-        [ValidateToken]
-        [RequireClaim(ClaimsEnum.ViewAuthors)]
-        public async Task<IActionResult> GetPicture(string id)
+        [Route("{id}")]
+        public async Task<IActionResult> Get(int id)
         {
-            ObjectId objectId = ObjectId.Parse(id);
-
-            var author = await _authorsCollection.Find(a => a.Id == objectId).FirstOrDefaultAsync();
+            var author = await _applicationContext.Authors.FirstOrDefaultAsync(a => a.Id == id);
 
             if (author == null)
-                return NotFound();
+                return NotFound(ErrorMessages.ModelNotFound(nameof(Author), id.ToString()));
 
-            var fileStream = await _gridFS.OpenDownloadStreamAsync(author.PhotoId);
+            var result = _mapper.Map<AuthorDto>(author);
 
-            var fileInfo = fileStream.FileInfo;
-
-            using var memoryStream = new MemoryStream();
-            await fileStream.CopyToAsync(memoryStream);
-
-            string contentType = "image/jpeg";
-
-            return File(memoryStream.ToArray(), contentType);
+            return Ok(result);
         }
 
         [HttpGet]
-        [Route("get-all")]
-        [ValidateToken]
-        [RequireClaim(ClaimsEnum.ViewAuthors)]
-        public IActionResult GetAll()
+        [Route("{id}/photo")]
+        public async Task<IActionResult> GetPicture(int id)
         {
-            List<AuthorOutDto> result = [];
+            var photoId = await _applicationContext.Authors
+                                                   .Where(a => a.Id == id)
+                                                   .Select(a => a.PhotoId)
+                                                   .FirstOrDefaultAsync();
 
-            var authors = _authorsCollection.AsQueryable();
+            var result = await _fileService.GetFileAsync(photoId, _mongoDbContext.AuthorPhotos);
 
-            foreach(var author in authors)
+            if (!result.IsSuccess)
             {
-                result.Add(new AuthorOutDto(author));
+                if (result.Error is InvalidDataException)
+                {
+                    return BadRequest(result.Error?.Message);
+                }
+
+                if (result.Error is ArgumentException || result.Error is KeyNotFoundException)
+                {
+                    return NotFound(result.Error?.Message);
+                }
             }
 
-            return Ok(result);
+            return File(result.Value!.File!, MediaTypeNames.Image.Jpeg);
+        }
+
+        [HttpGet]
+        [Route("page")]
+        public async Task<IActionResult> GetPagedAuthors(int skip, int take)
+        {
+            var pagedAuthors = await PaginationHelper.GetPagedListAsync(_applicationContext.Authors, skip, take);
+
+            var resultList = pagedAuthors.Select(a => _mapper.Map<AuthorDto>(a));
+
+            return Ok(resultList);
         }
 
         [HttpPost]
         [Route("create")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.CreateAuthors)]
-        public async Task<IActionResult> Create([FromForm] AuthorDto authorDto)
+        public async Task<IActionResult> Create([FromForm] AuthorDto authorDto, IFormFile? photoFile)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(ErrorMessages.ModelNotValid);
             }
 
-            ObjectId fileId = ObjectId.Empty;
+            var author = _mapper.Map<Author>(authorDto);
 
-            if (authorDto.Photo_file != null && authorDto.Photo_file.Length > 0)
+            if (photoFile != null)
             {
-                using var stream = authorDto.Photo_file.OpenReadStream();
-                fileId = await _gridFS.UploadFromStreamAsync(authorDto.Photo_file.FileName, stream);
+                var result = await _fileService.SaveFileAsync(photoFile, _mongoDbContext.AuthorPhotos, MediaTypeNames.Image.Jpeg);
+
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(result.Error?.Message);
+                }
+
+                author.PhotoId = result.Value!.Id.ToString();
             }
 
-            Author author = new(authorDto, fileId);
+            await _applicationContext.Authors.AddAsync(author);
 
-            await _authorsCollection.InsertOneAsync(author);
+            await _applicationContext.SaveChangesAsync();
+
+            await _logActionService.LogActionAsync<Author>(HttpContext.Items["User"] as AdminUser, author.Id, CrudOperation.Create.ToString());
 
             return Ok();
         }
 
-        [HttpPatch]
-        [Route("update")]
+        [HttpPut]
+        [Route("{id}/update")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.UpdateAuthors)]
-        public async Task<IActionResult> Update([FromForm] AuthorDto authorDto, string id)
+        public async Task<IActionResult> Update([FromForm] AuthorDto authorDto, IFormFile? photoFile, int id)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(ErrorMessages.ModelNotValid);
             }
 
-            ObjectId objectId = ObjectId.Parse(id);
-
-            var author = await _authorsCollection.Find(a => a.Id == objectId).FirstOrDefaultAsync();
+            var author = await _applicationContext.Authors.FirstOrDefaultAsync(a => a.Id == id);
 
             if (author == null)
-                return NotFound();
+            {
+                return NotFound(ErrorMessages.ModelNotFound(nameof(Author), id.ToString()));
+            }
 
-            author.UpdateByDtoModel(authorDto);
+            author.Update(authorDto);
 
-            var filter = Builders<Author>.Filter.Eq(a => a.Id, author.Id); 
+            if (photoFile != null)
+            {
+                var result = await _fileService.UpdateFileAsync(photoFile, author.PhotoId, _mongoDbContext.AuthorPhotos, MediaTypeNames.Image.Jpeg);
 
-            await _authorsCollection.FindOneAndReplaceAsync(filter, author);
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(result.Error?.Message);
+                }
+
+                author.PhotoId = result.Value!.Id.ToString();
+            }
+
+            await _applicationContext.SaveChangesAsync();
+
+            await _logActionService.LogActionAsync<Author>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Update.ToString());
 
             return Ok();
         }
 
         [HttpDelete]
-        [Route("delete")]
+        [Route("{id}/delete")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.DeleteAuthors)]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(int id)
         {
-            ObjectId objectId = ObjectId.Parse(id);
+            var author = await _applicationContext.Authors.FirstOrDefaultAsync(a => a.Id == id);
 
-            var author = await _authorsCollection.Find(a => a.Id == objectId).FirstOrDefaultAsync();
+            if (author == null)
+                return NotFound(ErrorMessages.ModelNotFound(nameof(Author), id.ToString()));
 
-            if(author == null)
-            {
-                return NotFound();
-            }
+            await _fileService.DeleteFileAsync(author.PhotoId, _mongoDbContext.AuthorPhotos);
 
-            _gridFS.Delete(author.PhotoId);
+            _applicationContext.Authors.Remove(author);
 
-            await _authorsCollection.FindOneAndDeleteAsync(a => a.Id == objectId);
+            await _applicationContext.SaveChangesAsync();
+
+            await _logActionService.LogActionAsync<Author>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Delete.ToString());
 
             return Ok();
         }

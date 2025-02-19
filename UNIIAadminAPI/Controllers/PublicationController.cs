@@ -1,185 +1,187 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
-using MongoDB.Driver.GridFS;
-using MongoDbGenericRepository;
-using UNIIAadminAPI.Enums;
-using UNIIAadminAPI.Models;
-using UNIIAadminAPI.Serializers;
+using System.Net.Mime;
+using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
+using UniiaAdmin.Data.Enums;
+using UniiaAdmin.Data.Interfaces.FileInterfaces;
+using UniiaAdmin.Data.Models;
+using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.FileServices;
+using UniiaAdmin.WebApi.Services;
 using UNIIAadminAPI.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
     [ApiController]
-    [Route("admin/api/publications")]
-    public class PublicationController(IMongoDbContext db, IMongoDatabase database) : ControllerBase
+    [Route("publications")]
+    public class PublicationController : ControllerBase
     {
-        private readonly IMongoCollection<Publication> _publicationsCollection = db.GetCollection<Publication>();
-        private readonly GridFSBucket _gridFS = new(database);
+        private readonly ApplicationContext _applicationContext;
+        private readonly MongoDbContext _mongoDbContext;
+        private readonly IFileEntityService _fileService;
+        private readonly LogActionService _logActionService;
+        private readonly IMapper _mapper;
 
-        [HttpGet]
-        [Route("get")]
-        [ValidateToken]
-        [RequireClaim(ClaimsEnum.ViewPublications)]
-        public async Task<IActionResult> Get(string id)
+        public PublicationController(
+            ApplicationContext applicationContext,
+            MongoDbContext mongoDbContext,
+            IMapper mapper,
+            IFileEntityService fileService,
+            LogActionService logActionService)
         {
-            ObjectId objectId = ObjectId.Parse(id);
-
-            var publication = await _publicationsCollection.Find(a => a.Id == objectId).FirstOrDefaultAsync();
-
-            if (publication == null)
-                return NotFound();
-
-            return Ok(new PublicationOutDto(publication));
+            _applicationContext = applicationContext;
+            _mongoDbContext = mongoDbContext;
+            _mapper = mapper;
+            _fileService=fileService;
+            _logActionService=logActionService;
         }
 
         [HttpGet]
-        [Route("get-file")]
-        [ValidateToken]
-        [RequireClaim(ClaimsEnum.ViewPublications)]
-        public async Task<IActionResult> GetFile(string id)
+        [Route("{id}")]
+        public async Task<IActionResult> Get(int id)
         {
-            ObjectId objectId = ObjectId.Parse(id);
-
-            var publication = await _publicationsCollection.Find(a => a.Id == objectId).FirstOrDefaultAsync();
+            var publication = await _applicationContext.Publications.FirstOrDefaultAsync(a => a.Id == id);
 
             if (publication == null)
-                return NotFound();
+                return NotFound(ErrorMessages.ModelNotFound(nameof(Publication), id.ToString()));
 
-            var fileStream = await _gridFS.OpenDownloadStreamAsync(publication.FileId);
-            var fileInfo = fileStream.FileInfo;
-
-            using var memoryStream = new MemoryStream();
-            await fileStream.CopyToAsync(memoryStream);
-
-            var contentType = "application/pdf";
-
-            return File(memoryStream.ToArray(), contentType);
-        }
-
-        [HttpGet]
-        [Route("get-all")]
-        [ValidateToken]
-        [RequireClaim(ClaimsEnum.ViewPublications)]
-        public async Task<IActionResult> GetAll()
-        {
-            List<PublicationOutDto> result = [];
-
-            var publications = _publicationsCollection.AsQueryable();
-
-            foreach (var publication in publications)
-            {
-                var fileStream = await _gridFS.OpenDownloadStreamAsync(publication.FileId);
-                
-                var fileInfo = fileStream.FileInfo;
-
-                using var memoryStream = new MemoryStream();
-
-                await fileStream.CopyToAsync(memoryStream);
-
-                result.Add(new PublicationOutDto(publication));
-            }
+            var result = _mapper.Map<PublicationDto>(publication);
 
             return Ok(result);
         }
 
-/*        [HttpGet]
-        [Route("get-all-files")]
-        [ValidateToken]
-        [RequireClaim(ClaimsEnum.ViewPublications)]
-        public async Task<IActionResult> GetAll()
+        [HttpGet]
+        [Route("{id}/file")]
+        public async Task<IActionResult> GetFile(int id)
         {
-            List<PublicationOutDto> result = [];
+            var fileId = await _applicationContext.Publications
+                                                   .Where(a => a.Id == id)
+                                                   .Select(a => a.FileId)
+                                                   .FirstOrDefaultAsync();
 
-            var publications = _publicationsCollection.AsQueryable();
+            var result = await _fileService.GetFileAsync(fileId, _mongoDbContext.PublicationFiles);
 
-            foreach (var publication in publications)
+            if (!result.IsSuccess)
             {
-                var fileStream = await _gridFS.OpenDownloadStreamAsync(publication.FileId);
+                if (result.Error is InvalidDataException)
+                {
+                    return BadRequest(result.Error?.Message);
+                }
 
-                var fileInfo = fileStream.FileInfo;
+                if (result.Error is ArgumentException || result.Error is KeyNotFoundException)
+                {
+                    return NotFound(result.Error?.Message);
+                }
 
-                using var memoryStream = new MemoryStream();
-
-                await fileStream.CopyToAsync(memoryStream);
-
-                result.Add(new PublicationOutDto(publication, memoryStream.ToArray()));
             }
 
-            return Ok(result);
-        }*/
+            return File(result.Value!.File!, MediaTypeNames.Application.Pdf);
+        }
+
+        [HttpGet]
+        [Route("page")]
+        public async Task<IActionResult> GetPagedPublications(int skip, int take)
+        {
+            var publications = await PaginationHelper.GetPagedListAsync(_applicationContext.Universities, skip, take);
+
+            var resultList = publications.Select(a => _mapper.Map<PublicationDto>(a));
+
+            return Ok(resultList);
+        }
 
         [HttpPost]
         [Route("create")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.CreatePublications)]
-        public async Task<IActionResult> Create([FromForm] PublicationDto publicationDto)
+        public async Task<IActionResult> Create([FromForm] PublicationDto publicationDto, IFormFile? file)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(ErrorMessages.ModelNotValid);
             }
 
-            ObjectId fileId = ObjectId.Empty;
+            var publication = _mapper.Map<Publication>(publicationDto);
 
-            if (publicationDto.File != null && publicationDto.File.Length > 0)
+            if (file != null)
             {
-                using var stream = publicationDto.File.OpenReadStream();
-                fileId = await _gridFS.UploadFromStreamAsync(publicationDto.File.FileName, stream);
+                var result = await _fileService.SaveFileAsync(file, _mongoDbContext.PublicationFiles, MediaTypeNames.Application.Pdf);
+
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(result.Error?.Message);
+                }
+
+                publication.FileId = result.Value!.Id.ToString();
             }
 
-            Publication publication = new(publicationDto, fileId);
+            await _applicationContext.Publications.AddAsync(publication);
 
-            await _publicationsCollection.InsertOneAsync(publication);
+            await _applicationContext.SaveChangesAsync();
+
+            await _logActionService.LogActionAsync<Publication>(HttpContext.Items["User"] as AdminUser, publication.Id, CrudOperation.Create.ToString());
 
             return Ok();
         }
 
-        [HttpPatch]
-        [Route("update")]
+        [HttpPut]
+        [Route("{id}/update")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.UpdatePublications)]
-        public async Task<IActionResult> Update([FromForm] PublicationDto publicationDto, string id)
+        public async Task<IActionResult> Update([FromForm] PublicationDto publicationDto, IFormFile? file, int id)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(ErrorMessages.ModelNotValid);
             }
 
-            ObjectId objectId = ObjectId.Parse(id);
-
-            var publication = await _publicationsCollection.Find(a => a.Id == objectId).FirstOrDefaultAsync();
+            var publication = await _applicationContext.Publications.FirstOrDefaultAsync(a => a.Id == id);
 
             if (publication == null)
-                return NotFound();
+            {
+                return NotFound(ErrorMessages.ModelNotFound(nameof(Author), id.ToString()));
+            }
 
-            publication.UpdateByDtoModel(publicationDto);
+            publication.Update(publicationDto);
 
-            var filter = Builders<Publication>.Filter.Eq(a => a.Id, publication.Id);
+            if (file != null)
+            {
+                var result = await _fileService.UpdateFileAsync(file, publication.FileId, _mongoDbContext.PublicationFiles, MediaTypeNames.Image.Jpeg);
 
-            await _publicationsCollection.FindOneAndReplaceAsync(filter, publication);
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(result.Error?.Message);
+                }
+
+                publication.FileId = result.Value!.Id.ToString();
+            }
+
+            await _applicationContext.SaveChangesAsync();
+
+            await _logActionService.LogActionAsync<Publication>(HttpContext.Items["User"] as AdminUser, publication.Id, CrudOperation.Update.ToString());
 
             return Ok();
         }
 
         [HttpDelete]
-        [Route("delete")]
+        [Route("{id}/delete")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.DeletePublications)]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(int id)
         {
-            ObjectId objectId = ObjectId.Parse(id);
+            var publication = await _applicationContext.Publications.FirstOrDefaultAsync(a => a.Id == id);
 
-            var author = await _publicationsCollection.Find(a => a.Id == objectId).FirstOrDefaultAsync();
-
-            if (author == null)
+            if (publication == null)
             {
-                return NotFound();
+                return NotFound(ErrorMessages.ModelNotFound(nameof(Publication), id.ToString()));
             }
 
-            _gridFS.Delete(author.FileId);
+            await _fileService.DeleteFileAsync(publication.FileId, _mongoDbContext.PublicationFiles);
 
-            await _publicationsCollection.FindOneAndDeleteAsync(a => a.Id == objectId);
+            _applicationContext.Publications.Remove(publication);
+
+            await _applicationContext.SaveChangesAsync();
+
+            await _logActionService.LogActionAsync<Publication>(HttpContext.Items["User"] as AdminUser, publication.Id, CrudOperation.Delete.ToString());
 
             return Ok();
         }

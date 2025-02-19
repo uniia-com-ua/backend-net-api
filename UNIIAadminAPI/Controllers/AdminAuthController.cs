@@ -1,14 +1,15 @@
-using AspNetCore.Identity.MongoDbCore.Models;
+using AutoMapper;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using MongoDB.Bson;
 using MongoDB.Driver;
-using MongoDbGenericRepository;
 using System.Security.Claims;
-using UNIIAadminAPI.Models;
-using UNIIAadminAPI.Serializers;
+using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
+using UniiaAdmin.Data.Models;
 using UNIIAadminAPI.Services;
 
 
@@ -18,23 +19,26 @@ namespace UNIIAadminAPI.Controllers
     [Route("admin/api/auth")]
     public class AdminAuthController : ControllerBase
     {
-        private readonly UserManager<MongoIdentityUser> _userManager;
-        private readonly SignInManager<MongoIdentityUser> _signInManager;
-        private readonly IMongoDbContext _db;
+        private readonly UserManager<AdminUser> _userManager;
+        private readonly SignInManager<AdminUser> _signInManager;
         private readonly TokenService _tokenService;
+        private readonly MongoDbContext _mongoDbContext;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IMapper _mapper;
         public AdminAuthController
-            (UserManager<MongoIdentityUser> userManager, 
-            SignInManager<MongoIdentityUser> signInManager,  
-            IMongoDbContext db, 
+            (UserManager<AdminUser> userManager, 
+            SignInManager<AdminUser> signInManager,
+            MongoDbContext mongoDbContext,
             TokenService tokenService, 
-            IHttpClientFactory httpClientFactory)
+            IHttpClientFactory httpClientFactory,
+            IMapper mapper)
         {
             _userManager = userManager;
             _signInManager = signInManager;
-            _db = db;
+            _mongoDbContext = mongoDbContext;
             _tokenService = tokenService;
             _httpClientFactory = httpClientFactory;
+            _mapper = mapper;
         }
 
         [HttpGet]
@@ -53,73 +57,63 @@ namespace UNIIAadminAPI.Controllers
         [Route("googlecallback")]
         public async Task<IActionResult> GoogleCallback()
         {
-            var authenticateResult = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            var authenticateResult = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
 
             if (!authenticateResult.Succeeded)
                 return BadRequest();
 
             var accessToken = authenticateResult.Ticket.Properties.GetTokenValue("access_token")!;
+
             var refreshToken = authenticateResult.Ticket.Properties.GetTokenValue("refresh_token")!;
 
-            var claims = authenticateResult.Principal.Claims;
+            var claims = authenticateResult.Principal.Claims.ToList();
 
             var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)!.Value;
 
-            MongoIdentityUser? user = await _userManager.FindByEmailAsync(email);
-
-            AdminUser adminUser;
+            AdminUser? user = await _userManager.FindByEmailAsync(email);
 
             if (user == null)
             {
-                var profilePictureTask = ClaimUserService.GetUserPictureFromClaims(claims, _httpClientFactory.CreateClient());
+                using var httpClient = _httpClientFactory.CreateClient();
 
-                user = new()
+                var profilePictureTask = ClaimUserService.GetUserPictureFromClaims(claims, httpClient);
+
+                user = new AdminUser()
                 {
                     Email = email,
-                    UserName = email,
-                    Tokens = _tokenService.MakeEncryptedTokenList(accessToken, refreshToken)
-                };
-
-                adminUser = new()
-                {
-                    ProfilePicture = await profilePictureTask,
-                    AuthUserId = user.Id,
                     LastSingIn = DateTime.UtcNow,
+                    UserName = email,
                     IsOnline = true,
                     Name = claims.FirstOrDefault(c => c.Type == ClaimTypes.GivenName)!.Value,
                     Surname = claims.FirstOrDefault(c => c.Type == ClaimTypes.Surname)!.Value,
                 };
 
-                await _db.GetCollection<AdminUser>().InsertOneAsync(adminUser);
+                AdminUserPhoto photo = new()
+                {
+                    Id = ObjectId.GenerateNewId(),
+                    File = await profilePictureTask
+                };
+
+                user.ProfilePictureId = photo.Id.ToString();
+
+                await _mongoDbContext.UserPhotos.AddAsync(photo);
+
+                await _mongoDbContext.SaveChangesAsync();
 
                 await _userManager.CreateAsync(user);
-
-                await _userManager.AddToRoleAsync(user, "EMPTYADMIN");
             }
-            else
-            {
-                adminUser = await _db.GetCollection<AdminUser>()
-                                     .Find(u => u.AuthUserId == user.Id)
-                                     .FirstOrDefaultAsync();
-                
-                user.Tokens = _tokenService.MakeEncryptedTokenList(accessToken, refreshToken);
 
-                await _userManager.UpdateAsync(user);
+            await _userManager.SetAuthenticationTokenAsync(user, "Uniia", "accessToken", _tokenService.EncryptToken(accessToken));
 
-                var filter = Builders<AdminUser>.Filter.Eq(u => u.Id, adminUser.Id);
-                
-                var update = Builders<AdminUser>.Update.Set(u => u.LastSingIn, adminUser.LastSingIn);
-                
-                await _db.GetCollection<AdminUser>().UpdateOneAsync(filter, update);
-            }
+            await _userManager.SetAuthenticationTokenAsync(user, "Uniia", "refreshToken", _tokenService.EncryptToken(refreshToken));
 
             await _signInManager.SignInAsync(user, isPersistent: false);
 
-            AuthService authService = new(HttpContext);
+            using AuthService authService = new(HttpContext);
 
-            await authService.AddLoginInfoToHistory(adminUser);
+            await authService.AddLoginInfoToHistory(user);
 
-            return Redirect("/admin");
+            return Ok();
         }
 
         [HttpPost]
@@ -133,19 +127,22 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpGet]
         [Route("get-auth-user")]
+        [ProducesResponseType(typeof(AdminUser), 200)]
         [ValidateToken]
         public async Task<IActionResult> GetAuthUser()
         {
-            var user = await _userManager.GetUserAsync(HttpContext.User);
+            var user = HttpContext.Items["User"] as AdminUser;
 
             if (user == null)
-            {
                 return Unauthorized();
-            }
 
-            var adminUser = await _db.GetCollection<AdminUser>().Find(u => u.AuthUserId == user.Id).FirstOrDefaultAsync();
+            var roles = await _userManager.GetRolesAsync(user);
 
-            return Ok(new AdminUserDto(adminUser, user));
+            var mappedUser = _mapper.Map<UserDto>(user);
+
+            mappedUser.Roles = roles;
+
+            return Ok(mappedUser);
         }
 
         [HttpGet]
@@ -153,20 +150,20 @@ namespace UNIIAadminAPI.Controllers
         [ValidateToken]
         public async Task<IActionResult> GetAuthUserPicture()
         {
-            var user = await _userManager.GetUserAsync(HttpContext.User);
+            var user = HttpContext.Items["User"] as AdminUser;
 
-            var adminUser = await _db.GetCollection<AdminUser>()
-                                    .Find(u => u.AuthUserId == user!.Id)
-                                    .FirstOrDefaultAsync();
+            var photoId = ObjectId.Parse(user!.ProfilePictureId);
 
-            if(adminUser?.ProfilePicture == null)
+            var photoFile = await _mongoDbContext.UserPhotos.FirstOrDefaultAsync(ph => ph.Id == photoId);
+
+            if(photoFile == null || photoFile.File == null)
             {
                 return NotFound();
             }
 
             var contentType = "image/jpeg";
 
-            return File(adminUser.ProfilePicture, contentType);
+            return File(photoFile.File, contentType);
         }
     }
 }

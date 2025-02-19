@@ -1,113 +1,109 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
-using MongoDB.Driver;
-using MongoDbGenericRepository;
-using UNIIAadminAPI.Enums;
-using UNIIAadminAPI.Models;
-using UNIIAadminAPI.Serializers;
+using Microsoft.EntityFrameworkCore;
+using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Enums;
+using UniiaAdmin.Data.Models;
+using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Services;
 using UNIIAadminAPI.Services;
 
-namespace UNIIAadminAPI.Controllers
+namespace UniiaAdmin.WebApi.Controllers
 {
     [ApiController]
-    [Route("admin/api/publicationTypes")]
-    public class PublicationTypeController(IMongoDbContext db) : ControllerBase
+    [Route("publication-types")]
+    public class PublicationTypeController : ControllerBase
     {
-        private readonly IMongoCollection<PublicationType> _publicationTypesCollection = db.GetCollection<PublicationType>();
+        private readonly ApplicationContext _applicationContext;
+        private readonly LogActionService _logActionService;
 
-        [HttpGet]
-        [Route("get")]
-        [ValidateToken]
-        [RequireClaim(ClaimsEnum.ViewPublicationTypes)]
-        public async Task<IActionResult> Get(string id)
+        public PublicationTypeController(
+            ApplicationContext applicationContext,
+            LogActionService logActionService)
         {
-            ObjectId objectId = ObjectId.Parse(id);
-
-            var publicationType = await _publicationTypesCollection.Find(a => a.Id == objectId).FirstOrDefaultAsync();
-
-            if (publicationType == null)
-                return NotFound();
-
-            return Ok(new PublicationTypeDto(publicationType));
+            _applicationContext = applicationContext;
+            _logActionService = logActionService;
         }
 
         [HttpGet]
-        [Route("get-all")]
-        [ValidateToken]
-        [RequireClaim(ClaimsEnum.ViewPublicationTypes)]
-        public IActionResult GetAll()
+        [Route("{id}")]
+        public async Task<IActionResult> Get(int id)
         {
-            List<PublicationTypeDto> result = [];
+            var publicationType = await _applicationContext.PublicationTypes.FirstOrDefaultAsync(pt => pt.Id == id);
 
-            var publicationTypes = _publicationTypesCollection.AsQueryable();
+            if (publicationType == null)
+                return NotFound(ErrorMessages.ModelNotFound(nameof(PublicationType), id.ToString()));
 
-            foreach (var publicationType in publicationTypes)
-            {
-                result.Add(new PublicationTypeDto(publicationType));
-            }
+            return Ok(publicationType);
+        }
 
-            return Ok(result);
+        [HttpGet]
+        [Route("page")]
+        public async Task<IActionResult> GetPaginated(int skip, int take)
+        {
+            var publicationTypes = await PaginationHelper.GetPagedListAsync(_applicationContext.PublicationTypes, skip, take);
+
+            return Ok(publicationTypes);
         }
 
         [HttpPost]
         [Route("create")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.CreatePublicationTypes)]
-        public async Task<IActionResult> Create([FromBody] PublicationTypeDto publicationTypeDto)
+        public async Task<IActionResult> Create([FromBody] string name)
         {
             if (!ModelState.IsValid)
+                return BadRequest(ErrorMessages.ModelNotValid);
+
+            PublicationType publicationType = new()
             {
-                return BadRequest(ModelState);
-            }
+                Name = name
+            };
 
-            PublicationType publicationType = new(publicationTypeDto);
+            await _applicationContext.PublicationTypes.AddAsync(publicationType);
 
-            await _publicationTypesCollection.InsertOneAsync(publicationType);
+            await _applicationContext.SaveChangesAsync();
+
+            await _logActionService.LogActionAsync<PublicationType>(HttpContext.Items["User"] as AdminUser, publicationType.Id, CrudOperation.Create.ToString());
 
             return Ok();
         }
 
-        [HttpPatch]
-        [Route("update")]
+        [HttpPut]
+        [Route("{id}/update")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.UpdatePublicationTypes)]
-        public async Task<IActionResult> Update([FromBody] PublicationTypeDto publicationTypeDto, string id)
+        public async Task<IActionResult> Update([FromBody] string name, int id)
         {
             if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+                return BadRequest(ErrorMessages.ModelNotValid);
 
-            ObjectId objectId = ObjectId.Parse(id);
-
-            var publicationType = await _publicationTypesCollection.Find(a => a.Id == objectId).FirstOrDefaultAsync();
+            var publicationType = await _applicationContext.PublicationTypes.FirstOrDefaultAsync(pt => pt.Id == id);
 
             if (publicationType == null)
-                return NotFound();
+                return NotFound(ErrorMessages.ModelNotFound(nameof(PublicationType), id.ToString()));
 
-            publicationType.UpdateByDtoModel(publicationTypeDto);
+            publicationType.Name = name;
 
-            var filter = Builders<PublicationType>.Filter.Eq(a => a.Id, publicationType.Id);
+            await _applicationContext.SaveChangesAsync();
 
-            await _publicationTypesCollection.FindOneAndReplaceAsync(filter, publicationType);
+            await _logActionService.LogActionAsync<PublicationType>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Update.ToString());
 
             return Ok();
         }
 
         [HttpDelete]
-        [Route("delete")]
+        [Route("{id}/delete")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.DeletePublicationTypes)]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(int id)
         {
-            ObjectId objectId = ObjectId.Parse(id);
+            var publicationType = await _applicationContext.PublicationTypes.FirstOrDefaultAsync(pt => pt.Id == id);
 
-            var result = await _publicationTypesCollection.FindOneAndDeleteAsync(a => a.Id == objectId);
+            if (publicationType == null)
+                return NotFound(ErrorMessages.ModelNotFound(nameof(PublicationType), id.ToString()));
 
-            if (result == null)
-            {
-                return NotFound();
-            }
+            _applicationContext.Remove(publicationType);
+
+            await _applicationContext.SaveChangesAsync();
+
+            await _logActionService.LogActionAsync<PublicationType>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Delete.ToString());
 
             return Ok();
         }

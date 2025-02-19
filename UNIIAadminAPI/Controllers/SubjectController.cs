@@ -1,112 +1,109 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
-using MongoDB.Driver;
-using UNIIAadminAPI.Enums;
-using UNIIAadminAPI.Models;
-using UNIIAadminAPI.Serializers;
+using Microsoft.EntityFrameworkCore;
+using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Enums;
+using UniiaAdmin.Data.Models;
+using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Services;
 using UNIIAadminAPI.Services;
-using MongoDbGenericRepository;
 
-namespace UNIIAadminAPI.Controllers
+namespace UniiaAdmin.WebApi.Controllers
 {
     [ApiController]
-    [Route("admin/api/subjects")]
-    public class SubjectController(IMongoDbContext db) : ControllerBase
+    [Route("subjects")]
+    public class SubjectController : ControllerBase
     {
-        private readonly IMongoCollection<Subject> _subjectsCollection = db.GetCollection<Subject>();
-        [HttpGet]
-        [Route("get")]
-        [ValidateToken]
-        [RequireClaim(ClaimsEnum.ViewSubject)]
-        public async Task<IActionResult> Get(string id)
+        private readonly ApplicationContext _applicationContext;
+        private readonly LogActionService _logActionService;
+
+        public SubjectController(
+            ApplicationContext applicationContext,
+            LogActionService logActionService)
         {
-            ObjectId objectId = ObjectId.Parse(id);
-
-            var subject = await _subjectsCollection.Find(a => a.Id == objectId).FirstOrDefaultAsync();
-
-            if (subject == null)
-                return NotFound();
-
-            return Ok(new SubjectDto(subject));
+            _applicationContext = applicationContext;
+            _logActionService = logActionService;
         }
 
         [HttpGet]
-        [Route("get-all")]
-        [ValidateToken]
-        [RequireClaim(ClaimsEnum.ViewSubject)]
-        public IActionResult GetAll()
+        [Route("{id}")]
+        public async Task<IActionResult> Get(int id)
         {
-            List<SubjectDto> result = [];
+            var subject = await _applicationContext.Subjects.FirstOrDefaultAsync(s => s.Id == id);
 
-            var subjects = _subjectsCollection.AsQueryable();
+            if (subject == null)
+                return NotFound(ErrorMessages.ModelNotFound(nameof(Subject), id.ToString()));
 
-            foreach (var subject in subjects)
-            {
-                result.Add(new SubjectDto(subject));
-            }
+            return Ok(subject);
+        }
 
-            return Ok(result);
+        [HttpGet]
+        [Route("page")]
+        public async Task<IActionResult> GetPaginated(int skip, int take)
+        {
+            var subjects = await PaginationHelper.GetPagedListAsync(_applicationContext.Subjects, skip, take);
+
+            return Ok(subjects);
         }
 
         [HttpPost]
         [Route("create")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.CreateSubject)]
-        public async Task<IActionResult> Create([FromBody] SubjectDto subjectDto)
+        public async Task<IActionResult> Create([FromBody] string name)
         {
             if (!ModelState.IsValid)
+                return BadRequest(ErrorMessages.ModelNotValid);
+
+            Subject subject = new()
             {
-                return BadRequest(ModelState);
-            }
+                Name = name
+            };
 
-            Subject subject = new(subjectDto);
+            await _applicationContext.Subjects.AddAsync(subject);
 
-            await _subjectsCollection.InsertOneAsync(subject);
+            await _applicationContext.SaveChangesAsync();
+
+            await _logActionService.LogActionAsync<Subject>(HttpContext.Items["User"] as AdminUser, subject.Id, CrudOperation.Create.ToString());
 
             return Ok();
         }
 
-        [HttpPatch]
-        [Route("update")]
+        [HttpPut]
+        [Route("{id}/update")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.UpdateSubject)]
-        public async Task<IActionResult> Update([FromForm] SubjectDto subjectDto, string id)
+        public async Task<IActionResult> Update([FromBody] string name, int id)
         {
             if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+                return BadRequest(ErrorMessages.ModelNotValid);
 
-            ObjectId objectId = ObjectId.Parse(id);
-
-            var subject = await _subjectsCollection.Find(a => a.Id == objectId).FirstOrDefaultAsync();
+            var subject = await _applicationContext.Subjects.FirstOrDefaultAsync(s => s.Id == id);
 
             if (subject == null)
-                return NotFound();
+                return NotFound(ErrorMessages.ModelNotFound(nameof(Subject), id.ToString()));
 
-            subject.UpdateByDtoModel(subjectDto);
+            subject.Name = name;
 
-            var filter = Builders<Subject>.Filter.Eq(a => a.Id, subject.Id);
+            await _applicationContext.SaveChangesAsync();
 
-            await _subjectsCollection.FindOneAndReplaceAsync(filter, subject);
+            await _logActionService.LogActionAsync<Subject>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Update.ToString());
 
             return Ok();
         }
 
         [HttpDelete]
-        [Route("delete")]
+        [Route("{id}/delete")]
         [ValidateToken]
-        [RequireClaim(ClaimsEnum.DeleteSubject)]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(int id)
         {
-            ObjectId objectId = ObjectId.Parse(id);
+            var subject = await _applicationContext.Subjects.FirstOrDefaultAsync(s => s.Id == id);
 
-            var result = await _subjectsCollection.FindOneAndDeleteAsync(a => a.Id == objectId);
+            if (subject == null)
+                return NotFound(ErrorMessages.ModelNotFound(nameof(Subject), id.ToString()));
 
-            if (result == null)
-            {
-                return NotFound();
-            }
+            _applicationContext.Remove(subject);
+
+            await _applicationContext.SaveChangesAsync();
+
+            await _logActionService.LogActionAsync<Subject>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Delete.ToString());
 
             return Ok();
         }

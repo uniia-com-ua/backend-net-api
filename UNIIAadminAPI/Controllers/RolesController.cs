@@ -1,111 +1,111 @@
-﻿using AspNetCore.Identity.MongoDbCore.Extensions;
-using AspNetCore.Identity.MongoDbCore.Models;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using UNIIAadminAPI.Enums;
+using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Models;
 using UNIIAadminAPI.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
     [ApiController]
-    [Route("admin/api/roles")]
-    public class RolesController(RoleManager<MongoIdentityRole> roleManager) : ControllerBase
+    [Route("roles")]
+    public class RolesController : ControllerBase
     {
-        [HttpPatch]
-        [Route("add-to-role")]
-        [ValidateToken]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> AddClaimToRole(string roleName, ClaimsEnum claim)
+        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly ApplicationContext _applicationContext;
+        public RolesController
+            (ApplicationContext applicationContext,
+            RoleManager<IdentityRole> signInManager)
         {
-            var role = await roleManager.FindByNameAsync(roleName);
+            _roleManager = signInManager;
+            _applicationContext = applicationContext;
+        }
+
+        [HttpPatch]
+        [Route("add-claim-to-role")]
+        [ValidateToken]
+        public async Task<IActionResult> AddClaimToRole(string roleName, string claim)
+        {
+            var role = await _roleManager.FindByNameAsync(roleName);
 
             if (role == null)
             {
-                return NotFound();
+                return NotFound($"Role with name {roleName} not found");
             }
 
-            var claimValue = claim.ToString();
+            var existingClaims = await _roleManager.GetClaimsAsync(role);
 
-            var existingClaims = await roleManager.GetClaimsAsync(role);
-
-            if (existingClaims.Any(c => c.Type == ClaimTypes.Role && c.Value == claimValue))
+            if (existingClaims.Any(c => c.Type == ClaimTypes.Role && c.Value == claim))
             {
                 return Conflict();
             }
 
-            var newClaim = new Claim(ClaimTypes.Role, claimValue);
+            var newClaim = new Claim(ClaimTypes.Role, claim);
 
-            var result = await roleManager.AddClaimAsync(role, newClaim);
+            var result = await _roleManager.AddClaimAsync(role, newClaim);
 
-            if (result.Succeeded)
+            if (!result.Succeeded)
             {
-                return Ok();
+                return BadRequest(result.Errors);
             }
-            else
-            {
-                return BadRequest();
-            }
+
+            return Ok();
         }
 
         [HttpPatch]
         [Route("remove-from-role")]
         [ValidateToken]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> RemoveClaimFromRole(string roleName, ClaimsEnum claim)
+        public async Task<IActionResult> RemoveClaimFromRole(string roleName, string claim)
         {
-            var role = await roleManager.FindByNameAsync(roleName);
+            var role = await _roleManager.FindByNameAsync(roleName);
 
             if (role == null)
             {
-                return NotFound();
+                return NotFound($"Role with name {roleName} not found");
             }
 
             var claimValue = claim.ToString();
 
-            var existingClaims = await roleManager.GetClaimsAsync(role);
+            var existingClaims = await _roleManager.GetClaimsAsync(role);
 
-            var roleClaim = existingClaims.FirstOrDefault(c => c.Type == ClaimTypes.Role && c.Value == claimValue);
+            var roleClaim = existingClaims.FirstOrDefault(c => c.Value == claimValue);
 
             if (roleClaim == null)
-                return NotFound();
+                return NotFound($"Role with name {roleName} and claim {claim} not found");
 
-            role.RemoveClaim(roleClaim);
-
-            await roleManager.UpdateAsync(role);
+            await _roleManager.RemoveClaimAsync(role, roleClaim);
 
             return Ok();
         }
 
         [HttpPost]
-        [Route("create")]
+        [Route("create-role")]
         [ValidateToken]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateRole(string roleName)
         {
-            var result = await roleManager.CreateAsync(new MongoIdentityRole(roleName));
+            var result = await _roleManager.CreateAsync(new IdentityRole(roleName));
 
             if (!result.Succeeded)
             {
-                return BadRequest();
+                return BadRequest(result.Errors);
             }
 
             return Ok();
         }
 
         [HttpDelete]
-        [Route("delete")]
+        [Route("delete-role")]
         [ValidateToken]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteRole(string roleName)
         {
-            var role = await roleManager.FindByNameAsync(roleName);
+            var role = await _roleManager.FindByNameAsync(roleName);
 
             if (role == null)
-                return NotFound();
+                return NotFound($"Role with name {roleName} not found");
 
-            var result = await roleManager.DeleteAsync(role);
+            var result = await _roleManager.DeleteAsync(role);
 
             if (!result.Succeeded)
                 return BadRequest();
@@ -114,15 +114,11 @@ namespace UNIIAadminAPI.Controllers
         }
 
         [HttpGet]
-        [Route("get-all")]
+        [Route("get-paginated-roles")]
         [ValidateToken]
-        [Authorize(Roles = "Admin")]
-        public IActionResult GetAllRoles()
+        public async Task<IActionResult> GetAllRoles(int skip, int take)
         {
-            var roles = roleManager.Roles;
-
-            if (roles == null)
-                BadRequest();
+            var roles = await _roleManager.Roles.Skip(skip).Take(take).ToListAsync();
 
             return Ok(roles);
         }
@@ -130,15 +126,39 @@ namespace UNIIAadminAPI.Controllers
         [HttpGet]
         [Route("get-role-by-name")]
         [ValidateToken]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetRoleByName(string roleName)
         {
-            var role = await roleManager.FindByNameAsync(roleName);
+            var role = await _roleManager.FindByNameAsync(roleName);
 
             if (role == null)
-                BadRequest();
+                return NotFound($"Role with name {roleName} not found");
 
             return Ok(role);
+        }
+
+        [HttpGet]
+        [Route("get-claims-by-role")]
+        [ValidateToken]
+        public async Task<IActionResult> GetClaimsByRoleName(string roleName)
+        {
+            var role = await _roleManager.FindByNameAsync(roleName);
+
+            if (role == null)
+                return NotFound($"Role with name {roleName} not found");
+
+            var claims = await _roleManager.GetClaimsAsync(role);
+
+            return Ok(claims);
+        }
+
+        [HttpGet]
+        [Route("get-paginated-claims")]
+        [ValidateToken]
+        public async Task<IActionResult> GetPaginatedClaims(int skip, int take)
+        {
+            var claims = await _applicationContext.RoleClaims.Skip(skip).Take(take).ToListAsync();
+
+            return Ok(claims);
         }
     }
 }
