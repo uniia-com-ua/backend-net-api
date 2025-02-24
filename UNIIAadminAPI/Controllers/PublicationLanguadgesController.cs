@@ -46,7 +46,6 @@ namespace UNIIAadminAPI.Controllers
         }
 
         [HttpPost]
-        [Route("create")]
         [ValidateToken]
         public async Task<IActionResult> Create([FromBody] string name)
         {
@@ -67,8 +66,8 @@ namespace UNIIAadminAPI.Controllers
             return Ok();
         }
 
-        [HttpPut]
-        [Route("{id}/update")]
+        [HttpPatch]
+        [Route("{id}")]
         [ValidateToken]
         public async Task<IActionResult> Update([FromBody] string name, int id)
         {
@@ -89,7 +88,7 @@ namespace UNIIAadminAPI.Controllers
         }
 
         [HttpDelete]
-        [Route("{id}/delete")]
+        [Route("{id}")]
         [ValidateToken]
         public async Task<IActionResult> Delete(int id)
         {
