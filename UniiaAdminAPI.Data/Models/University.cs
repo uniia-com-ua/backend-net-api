@@ -9,6 +9,7 @@ namespace UniiaAdmin.Data.Models
         public string? Name { get; set; }
         public string? ShortName { get; set; }
         public string? PhotoId { get; set; }
+        public string? SmallPhotoId { get; set; }
         public List<string>? Domens { get; set; }
         public List<Faculty>? Faculties { get; set; }
 

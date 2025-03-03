@@ -6,10 +6,11 @@ using System.Net.Mime;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Enums;
+using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
-using UniiaAdmin.WebApi.Services;
+using UniiaAdmin.WebApi.Helpers;
 using UNIIAadminAPI.Services;
 
 namespace UNIIAadminAPI.Controllers
@@ -20,7 +21,7 @@ namespace UNIIAadminAPI.Controllers
     {
         private readonly ApplicationContext _applicationContext;
         private readonly MongoDbContext _mongoDbContext;
-        private readonly LogActionService _logActionService;
+        private readonly ILogActionService _logActionService;
         private readonly IMapper _mapper;
         private readonly IFileEntityService _fileEntityService;
 
@@ -28,7 +29,7 @@ namespace UNIIAadminAPI.Controllers
             ApplicationContext applicationContext,
             MongoDbContext mongoDbContext,
             IMapper mapper,
-            LogActionService logActionService,
+            ILogActionService logActionService,
             IFileEntityService fileEntityService)
         {
             _applicationContext = applicationContext;
@@ -80,6 +81,33 @@ namespace UNIIAadminAPI.Controllers
         }
 
         [HttpGet]
+        [Route("{id}/small-photo")]
+        public async Task<IActionResult> GetSmallPicture(int id)
+        {
+            var photoId = await _applicationContext.Universities
+                                                   .Where(u => u.Id == id)
+                                                   .Select(u => u.SmallPhotoId)
+                                                   .FirstOrDefaultAsync();
+
+            var result = await _fileEntityService.GetFileAsync(photoId, _mongoDbContext.UniversityPhotos);
+
+            if (!result.IsSuccess)
+            {
+                if (result.Error is InvalidDataException)
+                {
+                    return BadRequest(result.Error?.Message);
+                }
+
+                if (result.Error is ArgumentException || result.Error is KeyNotFoundException)
+                {
+                    return NotFound(result.Error?.Message);
+                }
+            }
+
+            return File(result.Value!.File!, MediaTypeNames.Image.Jpeg);
+        }
+
+        [HttpGet]
         [Route("page")]
         public async Task<IActionResult> GetPagedUniversities(int skip, int take)
         {
@@ -92,7 +120,7 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpPost]
         [ValidateToken]
-        public async Task<IActionResult> Create([FromForm] UniversityDto universityDto, IFormFile? photoFile)
+        public async Task<IActionResult> Create([FromForm] UniversityDto universityDto, IFormFile? photoFile, IFormFile? smallPhotoFile)
         {
             if (!ModelState.IsValid)
             {
@@ -113,6 +141,18 @@ namespace UNIIAadminAPI.Controllers
                 university.PhotoId = result.Value!.Id.ToString();
             }
 
+            if (smallPhotoFile != null)
+            {
+                var result = await _fileEntityService.SaveFileAsync(smallPhotoFile, _mongoDbContext.UniversityPhotos, MediaTypeNames.Image.Jpeg);
+
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(result.Error?.Message);
+                }
+
+                university.SmallPhotoId = result.Value!.Id.ToString();
+            }
+
             await _applicationContext.Universities.AddAsync(university);
 
             await _applicationContext.SaveChangesAsync();
@@ -125,7 +165,7 @@ namespace UNIIAadminAPI.Controllers
         [HttpPatch]
         [Route("{id}")]
         [ValidateToken]
-        public async Task<IActionResult> Update([FromForm] UniversityDto universityDto, IFormFile? photoFile, int id)
+        public async Task<IActionResult> Update([FromForm] UniversityDto universityDto, IFormFile? photoFile, IFormFile? smallPhotoFile, int id)
         {
             if (!ModelState.IsValid)
             {
@@ -144,6 +184,18 @@ namespace UNIIAadminAPI.Controllers
             if (photoFile != null)
             {
                 var result = await _fileEntityService.UpdateFileAsync(photoFile, university.PhotoId, _mongoDbContext.UniversityPhotos, MediaTypeNames.Image.Jpeg);
+
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(result.Error?.Message);
+                }
+
+                university.PhotoId = result.Value!.Id.ToString();
+            }
+
+            if (smallPhotoFile != null)
+            {
+                var result = await _fileEntityService.UpdateFileAsync(smallPhotoFile, university.SmallPhotoId, _mongoDbContext.UniversityPhotos, MediaTypeNames.Image.Jpeg);
 
                 if (!result.IsSuccess)
                 {
