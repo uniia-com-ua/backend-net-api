@@ -1,18 +1,25 @@
 ﻿using MongoDB.Bson;
+using MongoDB.Driver;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 
 namespace UNIIAadminAPI.Services
 {
-    public class AuthService(HttpContext httpContext) : IDisposable
+    public class AuthService : IDisposable, IAuthService
     {
-        private readonly MongoDbContext _db = httpContext.RequestServices.GetRequiredService<MongoDbContext>();
-        private readonly HttpContext _httpContext = httpContext;
+        private readonly MongoDbContext _db;
+
         private bool disposedValue;
 
-        public async Task AddLoginInfoToHistory(AdminUser adminUser)
+        public AuthService(MongoDbContext mongoDatabase) 
         {
-            _httpContext.Request.Headers.TryGetValue("X-Real-IP", out var ipAdress);
+            _db = mongoDatabase;
+        }
+
+        public async Task AddLoginInfoToHistory(AdminUser adminUser, HttpContext httpContext)
+        {
+            httpContext.Request.Headers.TryGetValue("X-Real-IP", out var ipAdress);
 
             ipAdress.ToString();
 
@@ -23,7 +30,7 @@ namespace UNIIAadminAPI.Services
                 LogInType = "Credential login",
                 LogInTime = DateTime.UtcNow,
                 IpAdress = ipAdress,
-                UserAgent = _httpContext.Request.Headers.UserAgent
+                UserAgent = httpContext.Request.Headers.UserAgent
             };
 
             await _db.AdminLogInHistories.AddAsync(logInHistoryItem);

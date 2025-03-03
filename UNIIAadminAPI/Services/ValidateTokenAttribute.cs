@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
 using UniiaAdmin.Data.Models;
+using UniiaAdmin.Data.Interfaces;
 
 namespace UNIIAadminAPI.Services
 {
@@ -10,7 +11,7 @@ namespace UNIIAadminAPI.Services
     {
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
-            var tokenService = context.HttpContext.RequestServices.GetRequiredService<TokenService>();
+            var tokenService = context.HttpContext.RequestServices.GetRequiredService<ITokenService>();
 
             var userManager = context.HttpContext.RequestServices.GetRequiredService<UserManager<AdminUser>>();
 

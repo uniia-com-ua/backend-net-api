@@ -9,6 +9,7 @@ using MongoDB.Driver;
 using System.Security.Claims;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Dtos;
+using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UNIIAadminAPI.Services;
 
@@ -21,17 +22,19 @@ namespace UNIIAadminAPI.Controllers
     {
         private readonly UserManager<AdminUser> _userManager;
         private readonly SignInManager<AdminUser> _signInManager;
-        private readonly TokenService _tokenService;
+        private readonly ITokenService _tokenService;
         private readonly MongoDbContext _mongoDbContext;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IMapper _mapper;
+        private readonly IAuthService _authService;
         public AdminAuthController
             (UserManager<AdminUser> userManager, 
             SignInManager<AdminUser> signInManager,
             MongoDbContext mongoDbContext,
-            TokenService tokenService, 
+            ITokenService tokenService, 
             IHttpClientFactory httpClientFactory,
-            IMapper mapper)
+            IMapper mapper,
+            IAuthService authService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -39,6 +42,7 @@ namespace UNIIAadminAPI.Controllers
             _tokenService = tokenService;
             _httpClientFactory = httpClientFactory;
             _mapper = mapper;
+            _authService = authService;
         }
 
         [HttpGet]
@@ -109,9 +113,7 @@ namespace UNIIAadminAPI.Controllers
 
             await _signInManager.SignInAsync(user, isPersistent: false);
 
-            using AuthService authService = new(HttpContext);
-
-            await authService.AddLoginInfoToHistory(user);
+            await _authService.AddLoginInfoToHistory(user, HttpContext);
 
             return Ok();
         }

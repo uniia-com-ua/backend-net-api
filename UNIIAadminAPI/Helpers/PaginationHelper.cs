@@ -1,11 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using UniiaAdmin.WebApi.Constants;
 
-namespace UniiaAdmin.WebApi.Services
+namespace UniiaAdmin.WebApi.Helpers
 {
     public static class PaginationHelper
     {
-        public static async Task<List<T>> GetPagedListAsync<T>(IQueryable<T> query, int skip, int take) 
+        public static async Task<List<T>> GetPagedListAsync<T>(IQueryable<T> query, int skip, int take)
             where T : class
         {
             if (take <= 0)

@@ -6,10 +6,12 @@ using System.Net.Mime;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Enums;
+using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
 using UniiaAdmin.WebApi.FileServices;
+using UniiaAdmin.WebApi.Helpers;
 using UniiaAdmin.WebApi.Services;
 using UNIIAadminAPI.Services;
 
@@ -22,7 +24,7 @@ namespace UNIIAadminAPI.Controllers
         private readonly ApplicationContext _applicationContext;
         private readonly MongoDbContext _mongoDbContext;
         private readonly IFileEntityService _fileService;
-        private readonly LogActionService _logActionService;
+        private readonly ILogActionService _logActionService;
         private readonly IMapper _mapper;
 
         public AuthorController(
@@ -30,7 +32,7 @@ namespace UNIIAadminAPI.Controllers
             MongoDbContext mongoDbContext,
             IMapper mapper,
             IFileEntityService fileService,
-            LogActionService logActionService)
+            ILogActionService logActionService)
         {
             _applicationContext = applicationContext;
             _mongoDbContext = mongoDbContext;

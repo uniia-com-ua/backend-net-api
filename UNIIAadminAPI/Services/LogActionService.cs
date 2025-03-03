@@ -1,11 +1,12 @@
 ﻿using Microsoft.Extensions.Configuration.UserSecrets;
 using MongoDB.Bson;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 
 namespace UniiaAdmin.WebApi.Services
 {
-    public class LogActionService
+    public class LogActionService : ILogActionService
     {
         private readonly MongoDbContext _dbContext;
         public LogActionService(MongoDbContext mongoDbContext) 

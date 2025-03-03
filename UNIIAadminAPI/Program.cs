@@ -7,6 +7,7 @@ using MongoDB.Driver;
 using MongoDB.Driver.GridFS;
 using System.Security.Claims;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.FileServices;
@@ -46,7 +47,7 @@ services.AddDbContext<MongoDbContext>(options
     => options.UseMongoDB(Environment.GetEnvironmentVariable("MongoDbConnection")!, "test"));
 
 
-services.AddSingleton<TokenService>(provider =>
+services.AddTransient<ITokenService, TokenService>(provider =>
 {
     var clientId = Environment.GetEnvironmentVariable("OAUTH2_CLIENT_ID")!;
     var clientSecret = Environment.GetEnvironmentVariable("OAUTH2_CLIENT_SECRET")!;
@@ -63,12 +64,9 @@ services.AddSingleton<IFileProcessingService, FileProcessingService>();
 
 services.AddScoped<IFileEntityService, FileEntityService>();
 
-services.AddTransient(provider =>
-{
-    var db = provider.GetRequiredService<MongoDbContext>();
+services.AddTransient<ILogActionService, LogActionService>();
 
-    return new LogActionService(db);
-});
+services.AddScoped<IAuthService, AuthService>();
 
 services.AddSingleton(provider => 
 {

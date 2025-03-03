@@ -2,23 +2,25 @@
 using Microsoft.EntityFrameworkCore;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Enums;
+using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Helpers;
 using UniiaAdmin.WebApi.Services;
 using UNIIAadminAPI.Services;
 
-namespace UniiaAdmin.WebApi.Controllers
+namespace UniiaAdmin.Data.Controllers
 {
     [ApiController]
     [Route("publication-types")]
     public class PublicationTypeController : ControllerBase
     {
         private readonly ApplicationContext _applicationContext;
-        private readonly LogActionService _logActionService;
+        private readonly ILogActionService _logActionService;
 
         public PublicationTypeController(
             ApplicationContext applicationContext,
-            LogActionService logActionService)
+            ILogActionService logActionService)
         {
             _applicationContext = applicationContext;
             _logActionService = logActionService;

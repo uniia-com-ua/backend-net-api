@@ -3,11 +3,12 @@ using Newtonsoft.Json;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 
 namespace UNIIAadminAPI.Services
 {
-    public class TokenService
+    public class TokenService : ITokenService
     {
         private readonly string _clientId;
 
@@ -23,7 +24,7 @@ namespace UNIIAadminAPI.Services
             _tokenKey = tokenKey;
         }
 
-        public async Task<string?> RefreshTokenAsync(string refreshToken, HttpClient httpClient)
+        private async Task<string?> RefreshTokenAsync(string refreshToken, HttpClient httpClient)
         {
             var requestContent = new StringContent(
                 $"client_id={_clientId}&client_secret={_clientSecret}&refresh_token={refreshToken}&grant_type=refresh_token",
@@ -83,7 +84,7 @@ namespace UNIIAadminAPI.Services
             return false;
         }
 
-        public async Task<string?> GetTokenByUserAsync(AdminUser user, UserManager<AdminUser> userManager, string tokenName)
+        private async Task<string?> GetTokenByUserAsync(AdminUser user, UserManager<AdminUser> userManager, string tokenName)
         {
             var token = await userManager.GetAuthenticationTokenAsync(user, "Uniia", tokenName);
 

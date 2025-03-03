@@ -5,9 +5,10 @@ using MongoDB.Driver;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Enums;
+using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
-using UniiaAdmin.WebApi.Services;
+using UniiaAdmin.WebApi.Helpers;
 using UNIIAadminAPI.Services;
 
 namespace UNIIAadminAPI.Controllers
@@ -18,12 +19,12 @@ namespace UNIIAadminAPI.Controllers
     {
         private readonly ApplicationContext _applicationContext;
         private readonly IMapper _mapper;
-        private readonly LogActionService _logActionService;
+        private readonly ILogActionService _logActionService;
 
         public FacultyController(
             ApplicationContext applicationContext,
             IMapper mapper,
-            LogActionService logActionService)
+            ILogActionService logActionService)
         {
             _applicationContext = applicationContext;
             _mapper = mapper;
