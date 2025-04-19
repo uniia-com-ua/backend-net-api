@@ -15,5 +15,7 @@ namespace UniiaAdmin.Data.Models
         public string? ProfilePictureId { get; set; }
 
         public string? UserDescription { get; set; }
-    }
+
+        public string? RefreshTokenExpiryTime { get; set; }
+	}
 }

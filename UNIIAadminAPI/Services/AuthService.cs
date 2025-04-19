@@ -6,11 +6,9 @@ using UniiaAdmin.Data.Models;
 
 namespace UNIIAadminAPI.Services
 {
-    public class AuthService : IDisposable, IAuthService
+    public class AuthService : IAuthService
     {
         private readonly MongoDbContext _db;
-
-        private bool disposedValue;
 
         public AuthService(MongoDbContext mongoDatabase) 
         {
@@ -36,24 +34,6 @@ namespace UNIIAadminAPI.Services
             await _db.AdminLogInHistories.AddAsync(logInHistoryItem);
 
             await _db.SaveChangesAsync();
-        }
-
-        public void Dispose()
-        {
-            this.Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!this.disposedValue)
-            {
-                if (disposing)
-                {
-                    this._db.Dispose();
-                }
-
-                this.disposedValue = true;
-            }
         }
     }
 }

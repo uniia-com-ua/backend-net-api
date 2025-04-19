@@ -1,11 +1,13 @@
 using DotNetEnv;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using MongoDB.Driver.GridFS;
-using System.Security.Claims;
+using System.Text;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
@@ -25,7 +27,29 @@ services.AddControllers();
 
 services.AddEndpointsApiExplorer();
 
-services.AddSwaggerGen();
+services.AddSwaggerGen(options =>
+{
+	options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+	{
+		Name = "Authorization",
+		Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+		Scheme = "Bearer",
+		BearerFormat = "JWT",
+		In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+		Description = "JWT Authorization header using the Bearer scheme."
+	});
+	options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement {
+			{
+				new Microsoft.OpenApi.Models.OpenApiSecurityScheme {
+						Reference = new Microsoft.OpenApi.Models.OpenApiReference {
+							Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+								Id = "Bearer"
+						}
+					},
+					new string[] {}
+			}
+	});
+});
 
 services.AddHttpClient();
 
@@ -94,39 +118,26 @@ services.ConfigureApplicationCookie(options =>
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
 
-services
-    .AddAuthentication(options =>
-    {
-        options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-    })
-    .AddCookie(options =>
-    {
-        options.Cookie.Name = "googleAuthSession";
-    })
-    .AddGoogle(googleOptions =>
-    {
-        googleOptions.ClientId = Environment.GetEnvironmentVariable("OAUTH2_CLIENT_ID")!;
-        googleOptions.ClientSecret = Environment.GetEnvironmentVariable("OAUTH2_CLIENT_SECRET")!;
-        googleOptions.CallbackPath = "/admin/api/auth/google-callback";
-        googleOptions.SaveTokens = true;
-        googleOptions.AccessType = "offline";
+services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+	options.TokenValidationParameters = new TokenValidationParameters
+	{
+		ValidateIssuer = true,
+		ValidateAudience = true,
+		ValidateLifetime = true,
+		ValidateIssuerSigningKey = true,
+		ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
+		ValidAudience = builder.Configuration["JWT:ValidAudience"],
+		IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWT_TOKEN_KEY")!))
+	};
+});
 
-        googleOptions.Events.OnRedirectToAuthorizationEndpoint = context =>
-        {
-            context.Response.Redirect(context.RedirectUri + "&prompt=consent");
-            return Task.CompletedTask;
-        };
-
-        googleOptions.Events.OnCreatingTicket = (context) =>
-        {
-            var picture = context.User.GetProperty("picture").GetString();
-
-            context.Identity!.AddClaim(new Claim("picture", picture!));
-
-            return Task.CompletedTask;
-        };
-    });
+services.AddAuthorization(options =>
+{
+	options.DefaultPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
+		.RequireAuthenticatedUser()
+		.Build();
+});
 
 var app = builder.Build();
 

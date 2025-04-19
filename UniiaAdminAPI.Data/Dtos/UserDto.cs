@@ -22,6 +22,6 @@ namespace UniiaAdmin.Data.Dtos
 
         public string? UserDescription { get; set; }
 
-        public IList<string>? Roles { get; set; }
+        public List<string> Roles { get; set; } = new List<string>();
     }
 }
