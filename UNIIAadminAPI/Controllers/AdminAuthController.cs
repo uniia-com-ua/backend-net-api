@@ -10,16 +10,14 @@ using MongoDB.Driver;
 using System.Security.Claims;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Dtos;
-using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
-using UNIIAadminAPI.Services;
 
 
 namespace UNIIAadminAPI.Controllers
 {
-	[Authorize]
+    [Authorize]
 	[ApiController]
-    [Route("admin/api/auth")]
+    [Route("auth")]
     public class AdminAuthController : ControllerBase
     {
         private readonly UserManager<AdminUser> _userManager;

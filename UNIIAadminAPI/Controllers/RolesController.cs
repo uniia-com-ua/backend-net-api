@@ -5,11 +5,12 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
-using UNIIAadminAPI.Services;
+using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
-    [ApiController]
+	[Authorize]
+	[ApiController]
     [Route("roles")]
     public class RolesController : ControllerBase
     {
@@ -25,8 +26,7 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpPatch]
         [Route("add-claim-to-role")]
-        [ValidateToken]
-        public async Task<IActionResult> AddClaimToRole(string roleName, string claim)
+		public async Task<IActionResult> AddClaimToRole(string roleName, string claim)
         {
             var role = await _roleManager.FindByNameAsync(roleName);
 
@@ -56,7 +56,6 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpPatch]
         [Route("remove-from-role")]
-        [ValidateToken]
         public async Task<IActionResult> RemoveClaimFromRole(string roleName, string claim)
         {
             var role = await _roleManager.FindByNameAsync(roleName);
@@ -82,7 +81,6 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpPost]
         [Route("create-role")]
-        [ValidateToken]
         public async Task<IActionResult> CreateRole(string roleName)
         {
             var result = await _roleManager.CreateAsync(new IdentityRole(roleName));
@@ -97,7 +95,6 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpDelete]
         [Route("delete-role")]
-        [ValidateToken]
         public async Task<IActionResult> DeleteRole(string roleName)
         {
             var role = await _roleManager.FindByNameAsync(roleName);
@@ -115,7 +112,6 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpGet]
         [Route("get-paginated-roles")]
-        [ValidateToken]
         public async Task<IActionResult> GetAllRoles(int skip, int take)
         {
             var roles = await _roleManager.Roles.Skip(skip).Take(take).ToListAsync();
@@ -125,7 +121,6 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpGet]
         [Route("get-role-by-name")]
-        [ValidateToken]
         public async Task<IActionResult> GetRoleByName(string roleName)
         {
             var role = await _roleManager.FindByNameAsync(roleName);
@@ -138,7 +133,6 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpGet]
         [Route("get-claims-by-role")]
-        [ValidateToken]
         public async Task<IActionResult> GetClaimsByRoleName(string roleName)
         {
             var role = await _roleManager.FindByNameAsync(roleName);
@@ -153,7 +147,6 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpGet]
         [Route("get-paginated-claims")]
-        [ValidateToken]
         public async Task<IActionResult> GetPaginatedClaims(int skip, int take)
         {
             var claims = await _applicationContext.RoleClaims.Skip(skip).Take(take).ToListAsync();

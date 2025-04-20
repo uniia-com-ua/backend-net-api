@@ -2,11 +2,11 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using UniiaAdmin.Auth.Interfaces;
-using UniiaAdmin.Data.Models;
+using UniiaAdmin.Data.Models.AuthModels;
 
 namespace UniiaAdmin.Auth.Controllers
 {
-	[ApiController]
+    [ApiController]
 	[Route("admin/api/auth")]
 	public class AuthController : ControllerBase
 	{
@@ -24,14 +24,7 @@ namespace UniiaAdmin.Auth.Controllers
 		[HttpGet]
 		[Route("tokens")]
 		[ProducesResponseType(typeof(UserTokens), StatusCodes.Status200OK)]
-		public IActionResult Tokens([FromQuery] string accessToken, string refreshToken)
-		{
-			return Ok(new UserTokens
-			{
-				AccessToken = accessToken,
-				RefreshToken = refreshToken
-			});
-		}
+		public IActionResult Tokens([FromQuery] UserTokens userTokens) => Ok(userTokens);
 
 		[HttpGet]
 		[Route("refresh")]
@@ -44,14 +37,14 @@ namespace UniiaAdmin.Auth.Controllers
 				return BadRequest("Access token is not valid");
 			}
 
-			var email = principals.FindFirstValue(ClaimTypes.Email);
+			var id = principals.FindFirstValue(ClaimTypes.NameIdentifier);
 
-			if (string.IsNullOrEmpty(email))
+			if (string.IsNullOrEmpty(id))
 			{
 				return BadRequest("Access token is not valid");
 			}
 
-			if(!await _jwtAuthenticator.IsRefreshTokenValidAsync(email, refreshToken))
+			if(!await _jwtAuthenticator.IsRefreshTokenValidAsync(id, refreshToken))
 			{
 				return BadRequest("Refresh token was expired");
 			}

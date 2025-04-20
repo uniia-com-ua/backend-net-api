@@ -1,29 +1,32 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Identity;
 using MongoDB.Bson;
 using System.Security.Claims;
 using UniiaAdmin.Auth.Interfaces;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
+using UniiaAdmin.Data.Models.AuthModels;
 
 namespace UniiaAdmin.Auth.Services
 {
-	public class TokenCreationService : ITokenCreationService
+    public class TokenCreationService : ITokenCreationService
 	{
-		private readonly IJwtAuthenticator _jwtAuthenticator;
 		private readonly UserManager<AdminUser> _userManager;
+		private readonly RoleManager<IdentityRole> _roleManager;
+		private readonly IJwtAuthenticator _jwtAuthenticator;
+		private readonly IAuthService _authService;
 		private readonly IHttpClientFactory _httpClientFactory;
 		private readonly IClaimUserService _claimUserService;
-		private readonly MongoDbContext _mongoDbContext;
-		private readonly RoleManager<IdentityRole> _roleManager;
+		private readonly MongoDbContext _mongoDbContext;	
+
 		public TokenCreationService(
 			IJwtAuthenticator jwtAuthenticator,
 			UserManager<AdminUser> userManager,
 			IHttpClientFactory httpClientFactory,
 			IClaimUserService claimUserService,
 			MongoDbContext mongoDbContext,
-			RoleManager<IdentityRole> roleManager)
+			RoleManager<IdentityRole> roleManager,
+			IAuthService authService)
 		{
 			_jwtAuthenticator = jwtAuthenticator;
 			_userManager = userManager;
@@ -31,9 +34,10 @@ namespace UniiaAdmin.Auth.Services
 			_claimUserService = claimUserService;
 			_mongoDbContext = mongoDbContext;
 			_roleManager = roleManager;
+			_authService=authService;
 		}
 
-		public async Task<UserTokens> CreateTokensAsync(List<Claim> claims)
+		public async Task<UserTokens> CreateTokensAsync(List<Claim> claims, HttpContext httpContext)
 		{
 			var email = claims.First(c => c.Type == ClaimTypes.Email).Value;
 
@@ -48,7 +52,6 @@ namespace UniiaAdmin.Auth.Services
 				user = new AdminUser()
 				{
 					Email = email,
-					LastSingIn = DateTime.UtcNow,
 					UserName = email,
 					IsOnline = true,
 					Name = claims.FirstOrDefault(c => c.Type == ClaimTypes.GivenName)!.Value,
@@ -77,6 +80,8 @@ namespace UniiaAdmin.Auth.Services
 				await _userManager.AddToRoleAsync(user, "Admin");
 			}
 
+			user.LastSingIn = DateTime.UtcNow;
+
 			var userRoles = await _userManager.GetRolesAsync(user);
 
 			var newClaims = new ClaimsIdentity(new[]
@@ -98,7 +103,9 @@ namespace UniiaAdmin.Auth.Services
 
 			var refresh_token = _jwtAuthenticator.GenerateRefreshToken();
 
-			await _jwtAuthenticator.SaveRefreshTokenAsync(user.Email!, refresh_token);
+			await _jwtAuthenticator.SaveRefreshTokenAsync(user, refresh_token);
+
+			await _authService.AddLoginInfoToHistory(user, httpContext);
 
 			return new UserTokens
 			{

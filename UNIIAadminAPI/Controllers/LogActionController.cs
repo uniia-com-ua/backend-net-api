@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
@@ -6,7 +7,8 @@ using UniiaAdmin.WebApi.Helpers;
 
 namespace UniiaAdmin.WebApi.Controllers
 {
-    [Route("user-actions")]
+	[Authorize]
+	[Route("user-actions")]
     [ApiController]
     public class LogActionController : ControllerBase
     {

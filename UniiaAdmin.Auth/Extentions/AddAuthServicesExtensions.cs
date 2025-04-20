@@ -1,16 +1,14 @@
-﻿using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
 using UniiaAdmin.Auth.Interfaces;
-using UniiaAdmin.Data.Models;
+using UniiaAdmin.Data.Models.AuthModels;
 
 namespace UniiaAdmin.Auth.Extentions
 {
-	public static class AddAuthServicesExtensions
+    public static class AddAuthServicesExtensions
 	{
 		public static void AddAuthServices(this IServiceCollection Services, IConfiguration Configuration)
 		{
@@ -34,7 +32,7 @@ namespace UniiaAdmin.Auth.Extentions
 
 					var tokenService = context.HttpContext.RequestServices.GetRequiredService<ITokenCreationService>();
 
-					var userTokens = await tokenService.CreateTokensAsync(claims);
+					var userTokens = await tokenService.CreateTokensAsync(claims, context.HttpContext);
 
 					context.HttpContext.Items["UserTokens"] = userTokens;
 				};
@@ -43,7 +41,7 @@ namespace UniiaAdmin.Auth.Extentions
 				{
 					var userTokens = context.HttpContext.Items["UserTokens"] as UserTokens;
 
-					context.Response.Redirect($"tokens?accessToken={userTokens!.AccessToken}&refreshToken={userTokens.RefreshToken}");
+					context.Response.Redirect($"tokens?accessToken={Uri.EscapeDataString(userTokens!.AccessToken)}&refreshToken={Uri.EscapeDataString(userTokens!.RefreshToken)}");
 
 					context.HandleResponse();
 

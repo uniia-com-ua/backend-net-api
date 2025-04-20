@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using UniiaAdmin.Data.Models;
 
-namespace UniiaAdmin.Data.Interfaces
+namespace UniiaAdmin.Auth.Interfaces
 {
     public interface IAuthService
     {

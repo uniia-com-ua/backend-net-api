@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
@@ -12,32 +13,31 @@ using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
 using UniiaAdmin.WebApi.FileServices;
 using UniiaAdmin.WebApi.Helpers;
-using UNIIAadminAPI.Services;
+using UniiaAdmin.WebApi.Services;
+using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
 
 namespace UNIIAadminAPI.Controllers
 {
-    [ApiController]
+	[Authorize]
+	[ApiController]
     [Route("publications")]
     public class PublicationController : ControllerBase
     {
         private readonly ApplicationContext _applicationContext;
         private readonly MongoDbContext _mongoDbContext;
         private readonly IFileEntityService _fileService;
-        private readonly ILogActionService _logActionService;
         private readonly IMapper _mapper;
 
         public PublicationController(
             ApplicationContext applicationContext,
             MongoDbContext mongoDbContext,
             IMapper mapper,
-            IFileEntityService fileService,
-            ILogActionService logActionService)
+            IFileEntityService fileService)
         {
             _applicationContext = applicationContext;
             _mongoDbContext = mongoDbContext;
             _mapper = mapper;
             _fileService=fileService;
-            _logActionService=logActionService;
         }
 
         [HttpGet]
@@ -94,8 +94,8 @@ namespace UNIIAadminAPI.Controllers
         }
 
         [HttpPost]
-        [ValidateToken]
-        public async Task<IActionResult> Create([FromForm] PublicationDto publicationDto, IFormFile? file)
+		[LogAction(nameof(Publication), nameof(Create))]
+		public async Task<IActionResult> Create([FromForm] PublicationDto publicationDto, IFormFile? file)
         {
             if (!ModelState.IsValid)
             {
@@ -120,15 +120,15 @@ namespace UNIIAadminAPI.Controllers
 
             await _applicationContext.SaveChangesAsync();
 
-            await _logActionService.LogActionAsync<Publication>(HttpContext.Items["User"] as AdminUser, publication.Id, CrudOperation.Create.ToString());
+			HttpContext.Items.Add("id", publication.Id);
 
-            return Ok();
+			return Ok();
         }
 
         [HttpPatch]
         [Route("{id}")]
-        [ValidateToken]
-        public async Task<IActionResult> Update([FromForm] PublicationDto publicationDto, IFormFile? file, int id)
+		[LogAction(nameof(Publication), nameof(Update))]
+		public async Task<IActionResult> Update([FromForm] PublicationDto publicationDto, IFormFile? file, int id)
         {
             if (!ModelState.IsValid)
             {
@@ -158,15 +158,13 @@ namespace UNIIAadminAPI.Controllers
 
             await _applicationContext.SaveChangesAsync();
 
-            await _logActionService.LogActionAsync<Publication>(HttpContext.Items["User"] as AdminUser, publication.Id, CrudOperation.Update.ToString());
-
             return Ok();
         }
 
         [HttpDelete]
         [Route("{id}")]
-        [ValidateToken]
-        public async Task<IActionResult> Delete(int id)
+		[LogAction(nameof(Publication), nameof(Delete))]
+		public async Task<IActionResult> Delete(int id)
         {
             var publication = await _applicationContext.Publications.FirstOrDefaultAsync(a => a.Id == id);
 
@@ -180,8 +178,6 @@ namespace UNIIAadminAPI.Controllers
             _applicationContext.Publications.Remove(publication);
 
             await _applicationContext.SaveChangesAsync();
-
-            await _logActionService.LogActionAsync<Publication>(HttpContext.Items["User"] as AdminUser, publication.Id, CrudOperation.Delete.ToString());
 
             return Ok();
         }

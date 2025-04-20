@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
@@ -13,32 +14,29 @@ using UniiaAdmin.WebApi.Constants;
 using UniiaAdmin.WebApi.FileServices;
 using UniiaAdmin.WebApi.Helpers;
 using UniiaAdmin.WebApi.Services;
-using UNIIAadminAPI.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
-    [ApiController]
+	[Authorize]
+	[ApiController]
     [Route("authors")]
     public class AuthorController : ControllerBase
     {
         private readonly ApplicationContext _applicationContext;
         private readonly MongoDbContext _mongoDbContext;
         private readonly IFileEntityService _fileService;
-        private readonly ILogActionService _logActionService;
         private readonly IMapper _mapper;
 
         public AuthorController(
             ApplicationContext applicationContext,
             MongoDbContext mongoDbContext,
             IMapper mapper,
-            IFileEntityService fileService,
-            ILogActionService logActionService)
+            IFileEntityService fileService)
         {
             _applicationContext = applicationContext;
             _mongoDbContext = mongoDbContext;
             _mapper = mapper;
             _fileService=fileService;
-            _logActionService=logActionService;
         }
 
         [HttpGet]
@@ -84,7 +82,7 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpGet]
         [Route("page")]
-        public async Task<IActionResult> GetPagedAuthors(int skip, int take)
+        public async Task<IActionResult> GetPagedAuthors([FromQuery] int skip, int take)
         {
             var pagedAuthors = await PaginationHelper.GetPagedListAsync(_applicationContext.Authors, skip, take);
 
@@ -94,8 +92,8 @@ namespace UNIIAadminAPI.Controllers
         }
 
         [HttpPost]
-        [ValidateToken]
-        public async Task<IActionResult> Create([FromForm] AuthorDto authorDto, IFormFile? photoFile)
+		[LogAction(nameof(Author), nameof(Create))]
+		public async Task<IActionResult> Create([FromForm] AuthorDto authorDto, IFormFile? photoFile)
         {
             if (!ModelState.IsValid)
             {
@@ -120,15 +118,15 @@ namespace UNIIAadminAPI.Controllers
 
             await _applicationContext.SaveChangesAsync();
 
-            await _logActionService.LogActionAsync<Author>(HttpContext.Items["User"] as AdminUser, author.Id, CrudOperation.Create.ToString());
+            HttpContext.Items.Add("id", author.Id);
 
             return Ok();
         }
 
         [HttpPatch]
         [Route("{id}")]
-        [ValidateToken]
-        public async Task<IActionResult> Update([FromForm] AuthorDto authorDto, IFormFile? photoFile, int id)
+		[LogAction(nameof(Author), nameof(Update))]
+		public async Task<IActionResult> Update([FromForm] AuthorDto authorDto, IFormFile? photoFile, int id)
         {
             if (!ModelState.IsValid)
             {
@@ -158,15 +156,13 @@ namespace UNIIAadminAPI.Controllers
 
             await _applicationContext.SaveChangesAsync();
 
-            await _logActionService.LogActionAsync<Author>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Update.ToString());
-
             return Ok();
         }
 
         [HttpDelete]
         [Route("{id}")]
-        [ValidateToken]
-        public async Task<IActionResult> Delete(int id)
+		[LogAction(nameof(Author), nameof(Delete))]
+		public async Task<IActionResult> Delete(int id)
         {
             var author = await _applicationContext.Authors.FirstOrDefaultAsync(a => a.Id == id);
 
@@ -178,8 +174,6 @@ namespace UNIIAadminAPI.Controllers
             _applicationContext.Authors.Remove(author);
 
             await _applicationContext.SaveChangesAsync();
-
-            await _logActionService.LogActionAsync<Author>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Delete.ToString());
 
             return Ok();
         }

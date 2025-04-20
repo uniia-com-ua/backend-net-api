@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Enums;
@@ -7,23 +8,19 @@ using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
 using UniiaAdmin.WebApi.Helpers;
 using UniiaAdmin.WebApi.Services;
-using UNIIAadminAPI.Services;
 
 namespace UniiaAdmin.Data.Controllers
 {
-    [ApiController]
+	[Authorize]
+	[ApiController]
     [Route("publication-types")]
     public class PublicationTypeController : ControllerBase
     {
         private readonly ApplicationContext _applicationContext;
-        private readonly ILogActionService _logActionService;
 
-        public PublicationTypeController(
-            ApplicationContext applicationContext,
-            ILogActionService logActionService)
+        public PublicationTypeController(ApplicationContext applicationContext)
         {
             _applicationContext = applicationContext;
-            _logActionService = logActionService;
         }
 
         [HttpGet]
@@ -48,8 +45,8 @@ namespace UniiaAdmin.Data.Controllers
         }
 
         [HttpPost]
-        [ValidateToken]
-        public async Task<IActionResult> Create([FromBody] string name)
+		[LogAction(nameof(PublicationType), nameof(Create))]
+		public async Task<IActionResult> Create([FromBody] string name)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ErrorMessages.ModelNotValid);
@@ -63,15 +60,15 @@ namespace UniiaAdmin.Data.Controllers
 
             await _applicationContext.SaveChangesAsync();
 
-            await _logActionService.LogActionAsync<PublicationType>(HttpContext.Items["User"] as AdminUser, publicationType.Id, CrudOperation.Create.ToString());
+			HttpContext.Items.Add("id", publicationType.Id);
 
-            return Ok();
+			return Ok();
         }
 
         [HttpPatch]
         [Route("{id}")]
-        [ValidateToken]
-        public async Task<IActionResult> Update([FromBody] string name, int id)
+		[LogAction(nameof(PublicationType), nameof(Update))]
+		public async Task<IActionResult> Update([FromBody] string name, int id)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ErrorMessages.ModelNotValid);
@@ -85,15 +82,13 @@ namespace UniiaAdmin.Data.Controllers
 
             await _applicationContext.SaveChangesAsync();
 
-            await _logActionService.LogActionAsync<PublicationType>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Update.ToString());
-
             return Ok();
         }
 
         [HttpDelete]
         [Route("{id}")]
-        [ValidateToken]
-        public async Task<IActionResult> Delete(int id)
+		[LogAction(nameof(PublicationType), nameof(Delete))]
+		public async Task<IActionResult> Delete(int id)
         {
             var publicationType = await _applicationContext.PublicationTypes.FirstOrDefaultAsync(pt => pt.Id == id);
 
@@ -103,8 +98,6 @@ namespace UniiaAdmin.Data.Controllers
             _applicationContext.Remove(publicationType);
 
             await _applicationContext.SaveChangesAsync();
-
-            await _logActionService.LogActionAsync<PublicationType>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Delete.ToString());
 
             return Ok();
         }

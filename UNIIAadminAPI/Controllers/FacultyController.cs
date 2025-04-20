@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
@@ -9,26 +10,22 @@ using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
 using UniiaAdmin.WebApi.Helpers;
-using UNIIAadminAPI.Services;
+using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
-    [ApiController]
+	[Authorize]
+	[ApiController]
     [Route("faculties")]
     public class FacultyController : ControllerBase
     {
         private readonly ApplicationContext _applicationContext;
         private readonly IMapper _mapper;
-        private readonly ILogActionService _logActionService;
 
-        public FacultyController(
-            ApplicationContext applicationContext,
-            IMapper mapper,
-            ILogActionService logActionService)
+        public FacultyController(ApplicationContext applicationContext,IMapper mapper)
         {
             _applicationContext = applicationContext;
             _mapper = mapper;
-            _logActionService = logActionService;
         }
 
         [HttpGet]
@@ -57,8 +54,8 @@ namespace UNIIAadminAPI.Controllers
         }
 
         [HttpPost]
-        [ValidateToken]
-        public async Task<IActionResult> Create([FromForm] FacultyDto facultyDto)
+		[LogAction(nameof(Faculty), nameof(Create))]
+		public async Task<IActionResult> Create([FromForm] FacultyDto facultyDto)
         {
             if (!ModelState.IsValid)
             {
@@ -76,15 +73,15 @@ namespace UNIIAadminAPI.Controllers
 
             await _applicationContext.SaveChangesAsync();
 
-            await _logActionService.LogActionAsync<Faculty>(HttpContext.Items["User"] as AdminUser, faculty.Id, CrudOperation.Create.ToString());
+			HttpContext.Items.Add("id", faculty.Id);
 
-            return Ok();
+			return Ok();
         }
 
         [HttpPatch]
         [Route("{id}")]
-        [ValidateToken]
-        public async Task<IActionResult> Update(FacultyDto facultyDto, int id)
+		[LogAction(nameof(Faculty), nameof(Update))]
+		public async Task<IActionResult> Update(FacultyDto facultyDto, int id)
         {
             if (!ModelState.IsValid)
             {
@@ -105,15 +102,13 @@ namespace UNIIAadminAPI.Controllers
 
             await _applicationContext.SaveChangesAsync();
 
-            await _logActionService.LogActionAsync<Faculty>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Update.ToString());
-
             return Ok();
         }
 
         [HttpDelete]
         [Route("{id}")]
-        [ValidateToken]
-        public async Task<IActionResult> Delete(int id)
+		[LogAction(nameof(Faculty), nameof(Delete))]
+		public async Task<IActionResult> Delete(int id)
         {
             var faculty = await _applicationContext.Faculties.FirstOrDefaultAsync(a => a.Id == id);
 
@@ -123,8 +118,6 @@ namespace UNIIAadminAPI.Controllers
             _applicationContext.Remove(faculty);
 
             await _applicationContext.SaveChangesAsync();
-
-            await _logActionService.LogActionAsync<Faculty>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Delete.ToString());
 
             return Ok();
         }

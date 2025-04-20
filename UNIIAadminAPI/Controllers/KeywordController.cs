@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UniiaAdmin.Data.Data;
@@ -8,23 +9,20 @@ using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
 using UniiaAdmin.WebApi.Helpers;
-using UNIIAadminAPI.Services;
+using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
-    [ApiController]
+	[Authorize]
+	[ApiController]
     [Route("keywords")]
     public class KeywordController : ControllerBase
     {
         private readonly ApplicationContext _applicationContext;
-        private readonly ILogActionService _logActionService;
 
-        public KeywordController(
-            ApplicationContext applicationContext,
-            ILogActionService logActionService)
+        public KeywordController(ApplicationContext applicationContext)
         {
             _applicationContext = applicationContext;
-            _logActionService = logActionService;
         }
 
         [HttpGet]
@@ -49,8 +47,8 @@ namespace UNIIAadminAPI.Controllers
         }
 
         [HttpPost]
-        [ValidateToken]
-        public async Task<IActionResult> Create([FromBody] string word)
+		[LogAction(nameof(Keyword), nameof(Create))]
+		public async Task<IActionResult> Create([FromBody] string word)
         {
             if (!ModelState.IsValid)
             {
@@ -66,15 +64,15 @@ namespace UNIIAadminAPI.Controllers
 
             await _applicationContext.SaveChangesAsync();
 
-            await _logActionService.LogActionAsync<Keyword>(HttpContext.Items["User"] as AdminUser, keyword.Id, CrudOperation.Create.ToString());
+			HttpContext.Items.Add("id", keyword.Id);
 
-            return Ok();
+			return Ok();
         }
 
         [HttpPatch]
         [Route("{id}")]
-        [ValidateToken]
-        public async Task<IActionResult> Update([FromBody] string word, int id)
+		[LogAction(nameof(Keyword), nameof(Update))]
+		public async Task<IActionResult> Update([FromBody] string word, int id)
         {
             if (!ModelState.IsValid)
             {
@@ -90,15 +88,13 @@ namespace UNIIAadminAPI.Controllers
 
             await _applicationContext.SaveChangesAsync();
 
-            await _logActionService.LogActionAsync<Keyword>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Update.ToString());
-
             return Ok();
         }
 
         [HttpDelete]
         [Route("{id}")]
-        [ValidateToken]
-        public async Task<IActionResult> Delete(int id)
+		[LogAction(nameof(Keyword), nameof(Delete))]
+		public async Task<IActionResult> Delete(int id)
         {
             var keyword = await _applicationContext.Keywords.FirstOrDefaultAsync(k => k.Id == id);
 
@@ -108,8 +104,6 @@ namespace UNIIAadminAPI.Controllers
             _applicationContext.Remove(keyword);
 
             await _applicationContext.SaveChangesAsync();
-
-            await _logActionService.LogActionAsync<Keyword>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Delete.ToString());
 
             return Ok();
         }

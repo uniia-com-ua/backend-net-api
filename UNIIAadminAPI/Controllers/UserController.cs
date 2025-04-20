@@ -7,7 +7,6 @@ using MongoDB.Driver;
 using System.Security.Claims;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
-using UNIIAadminAPI.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
@@ -33,7 +32,7 @@ namespace UNIIAadminAPI.Controllers
 
 /*        [HttpPatch]
         [Route("add-claim-to-user")]
-        [ValidateToken]
+        
         public async Task<IActionResult> AddAdminUserClaim(ClaimsEnum claimsEnum, string userId)
         {
             ObjectId objectId = new(userId);
@@ -59,7 +58,7 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpPatch]
         [Route("remove-claim-from-user")]
-        [ValidateToken]
+        
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> RemoveAdminUserClaim(ClaimsEnum claimsEnum, string userId)
         {
@@ -84,7 +83,7 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpGet]
         [Route("get-all-users")]
-        [ValidateToken]
+        
         public async Task<IActionResult> GetAllUsers(int skip, int take)
         {
             var users = await _applicationContext.Users.Skip(skip).Take(take).ToListAsync();
@@ -94,7 +93,7 @@ namespace UNIIAadminAPI.Controllers
 
 /*        [HttpGet]
         [Route("get-by-id")]
-        [ValidateToken]
+        
         public async Task<IActionResult> GetUserById(string id)
         {
             var relatedUser = await _userManager.FindByIdAsync(id);
@@ -115,7 +114,7 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpGet]
         [Route("get-log-history")]
-        [ValidateToken]
+        
         public async Task<IActionResult> GetLogHistory(int take)
         {
             var user = HttpContext.Items["User"] as AdminUser;

@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using UniiaAdmin.Data.Models;
 
 namespace UniiaAdmin.Auth.Interfaces
 {
@@ -7,7 +8,7 @@ namespace UniiaAdmin.Auth.Interfaces
 		string GenerateAccessToken(IEnumerable<Claim>? claims);
 		string GenerateRefreshToken();
 		ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
-		Task SaveRefreshTokenAsync(string email, string refreshToken);
-		Task<bool> IsRefreshTokenValidAsync(string email, string? refreshToken);
+		Task SaveRefreshTokenAsync(AdminUser user, string refreshToken);
+		Task<bool> IsRefreshTokenValidAsync(string id, string? refreshToken);
 	}
 }

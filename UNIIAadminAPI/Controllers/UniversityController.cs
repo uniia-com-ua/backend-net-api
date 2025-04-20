@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
@@ -11,17 +12,17 @@ using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
 using UniiaAdmin.WebApi.Helpers;
-using UNIIAadminAPI.Services;
+using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
-    [ApiController]
+	[Authorize]
+	[ApiController]
     [Route("universities")]
     public class UniversityController : ControllerBase
     {
         private readonly ApplicationContext _applicationContext;
         private readonly MongoDbContext _mongoDbContext;
-        private readonly ILogActionService _logActionService;
         private readonly IMapper _mapper;
         private readonly IFileEntityService _fileEntityService;
 
@@ -29,13 +30,11 @@ namespace UNIIAadminAPI.Controllers
             ApplicationContext applicationContext,
             MongoDbContext mongoDbContext,
             IMapper mapper,
-            ILogActionService logActionService,
             IFileEntityService fileEntityService)
         {
             _applicationContext = applicationContext;
             _mongoDbContext = mongoDbContext;
             _mapper = mapper;
-            _logActionService = logActionService;
             _fileEntityService = fileEntityService;
         }
 
@@ -119,8 +118,8 @@ namespace UNIIAadminAPI.Controllers
         }
 
         [HttpPost]
-        [ValidateToken]
-        public async Task<IActionResult> Create([FromForm] UniversityDto universityDto, IFormFile? photoFile, IFormFile? smallPhotoFile)
+		[LogAction(nameof(University), nameof(Create))]
+		public async Task<IActionResult> Create([FromForm] UniversityDto universityDto, IFormFile? photoFile, IFormFile? smallPhotoFile)
         {
             if (!ModelState.IsValid)
             {
@@ -157,15 +156,15 @@ namespace UNIIAadminAPI.Controllers
 
             await _applicationContext.SaveChangesAsync();
 
-            await _logActionService.LogActionAsync<University>(HttpContext.Items["User"] as AdminUser, university.Id, CrudOperation.Create.ToString());
+			HttpContext.Items.Add("id", university.Id);
 
-            return Ok();
+			return Ok();
         }
 
         [HttpPatch]
         [Route("{id}")]
-        [ValidateToken]
-        public async Task<IActionResult> Update([FromForm] UniversityDto universityDto, IFormFile? photoFile, IFormFile? smallPhotoFile, int id)
+		[LogAction(nameof(University), nameof(Update))]
+		public async Task<IActionResult> Update([FromForm] UniversityDto universityDto, IFormFile? photoFile, IFormFile? smallPhotoFile, int id)
         {
             if (!ModelState.IsValid)
             {
@@ -207,15 +206,13 @@ namespace UNIIAadminAPI.Controllers
 
             await _applicationContext.SaveChangesAsync();
 
-            await _logActionService.LogActionAsync<University>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Update.ToString());
-
             return Ok();
         }
 
         [HttpDelete]
         [Route("{id}")]
-        [ValidateToken]
-        public async Task<IActionResult> Delete(int id)
+		[LogAction(nameof(University), nameof(Delete))]
+		public async Task<IActionResult> Delete(int id)
         {
             var university = await _applicationContext.Universities.FirstOrDefaultAsync(u => u.Id == id);
 
@@ -229,8 +226,6 @@ namespace UNIIAadminAPI.Controllers
             _applicationContext.Universities.Remove(university);
 
             await _applicationContext.SaveChangesAsync();
-
-            await _logActionService.LogActionAsync<University>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Delete.ToString());
 
             return Ok();
         }

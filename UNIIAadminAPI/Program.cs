@@ -2,19 +2,16 @@ using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using MongoDB.Driver.GridFS;
 using System.Text;
 using UniiaAdmin.Data.Data;
-using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.FileServices;
-using UniiaAdmin.WebApi.Services;
-using UNIIAadminAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -70,16 +67,6 @@ services.AddIdentity<AdminUser, IdentityRole>().AddEntityFrameworkStores<AdminCo
 services.AddDbContext<MongoDbContext>(options 
     => options.UseMongoDB(Environment.GetEnvironmentVariable("MongoDbConnection")!, "test"));
 
-
-services.AddTransient<ITokenService, TokenService>(provider =>
-{
-    var clientId = Environment.GetEnvironmentVariable("OAUTH2_CLIENT_ID")!;
-    var clientSecret = Environment.GetEnvironmentVariable("OAUTH2_CLIENT_SECRET")!;
-    var tokenKey = Environment.GetEnvironmentVariable("OAUTH2_TOKEN_KEY")!;
-
-    return new(clientId, clientSecret, tokenKey);
-});
-
 services.AddSingleton<IFileValidatorFactory, FileValidatorFactory>();
 
 services.AddSingleton<IFileValidationService, FileValidationService>();
@@ -88,34 +75,12 @@ services.AddSingleton<IFileProcessingService, FileProcessingService>();
 
 services.AddScoped<IFileEntityService, FileEntityService>();
 
-services.AddTransient<ILogActionService, LogActionService>();
-
-services.AddScoped<IAuthService, AuthService>();
-
 services.AddSingleton(provider => 
 {
     var mongoClient = new MongoClient(Environment.GetEnvironmentVariable("MongoDbConnection")!);
     var mongoDatabase = mongoClient.GetDatabase("test");
 
     return new GridFSBucket(mongoDatabase);
-});
-
-services.AddSession(options =>
-{
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
-    options.IdleTimeout = TimeSpan.FromMinutes(15);
-});
-
-services.ConfigureApplicationCookie(options =>
-{
-    options.Cookie.Name = "authSessionCookie";
-    options.ExpireTimeSpan = TimeSpan.FromDays(7);
-    options.SlidingExpiration = true;
-    options.Cookie.IsEssential = true;
-    options.Cookie.HttpOnly = true;
-    options.Cookie.SameSite = SameSiteMode.Strict;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
 
 services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
@@ -157,8 +122,6 @@ using (var scope = app.Services.CreateScope())
     
     await applicationContext.Database.EnsureCreatedAsync();
 }
-
-app.UseSession();
 
 app.UseHttpsRedirection();
 

@@ -6,6 +6,7 @@ using UniiaAdmin.Auth.Interfaces;
 using UniiaAdmin.Auth.Services;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
+using UNIIAadmin.Auth.Services;
 
 Env.Load();
 
@@ -46,6 +47,7 @@ builder.Services.AddAuthServices(builder.Configuration);
 builder.Services.AddTransient<IJwtAuthenticator, JwtValidationService>();
 builder.Services.AddTransient<IClaimUserService, ClaimUserService>();
 builder.Services.AddTransient<ITokenCreationService, TokenCreationService>();
+builder.Services.AddTransient<IAuthService, AuthService>();
 
 builder.Services.AddDbContext<AdminContext>(options =>
 	options.UseNpgsql(Environment.GetEnvironmentVariable("PostgresAdminConnection")));

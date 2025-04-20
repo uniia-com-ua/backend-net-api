@@ -74,15 +74,8 @@ namespace UniiaAdmin.Auth.Services
 			return principal;
 		}
 
-		public async Task SaveRefreshTokenAsync(string email, string refreshToken)
+		public async Task SaveRefreshTokenAsync(AdminUser user, string refreshToken)
 		{
-			var user = await _userManager.FindByEmailAsync(email);
-
-			if (user == null)
-			{
-				return;
-			}
-
 			user.RefreshTokenExpiryTime = DateTime.UtcNow
 													.AddDays(double.Parse(_configuration["JWT:RefreshTokenValidityInDays"]!))
 													.ToString();
@@ -92,9 +85,9 @@ namespace UniiaAdmin.Auth.Services
 			await _userManager.SetAuthenticationTokenAsync(user!, _configuration["JWT:ValidIssuer"]!, "refresh_token", refreshToken);
 		}
 
-		public async Task<bool> IsRefreshTokenValidAsync(string email, string? refreshToken)
+		public async Task<bool> IsRefreshTokenValidAsync(string id, string? refreshToken)
 		{
-			var user = await _userManager.FindByEmailAsync(email);
+			var user = await _userManager.FindByIdAsync(id);
 
 			if (user == null)
 			{

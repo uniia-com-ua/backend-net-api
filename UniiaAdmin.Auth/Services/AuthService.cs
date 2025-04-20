@@ -1,10 +1,9 @@
 ﻿using MongoDB.Bson;
-using MongoDB.Driver;
+using UniiaAdmin.Auth.Interfaces;
 using UniiaAdmin.Data.Data;
-using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 
-namespace UNIIAadminAPI.Services
+namespace UNIIAadmin.Auth.Services
 {
     public class AuthService : IAuthService
     {

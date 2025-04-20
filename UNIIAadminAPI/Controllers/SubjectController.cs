@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Enums;
@@ -6,23 +7,20 @@ using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
 using UniiaAdmin.WebApi.Helpers;
-using UNIIAadminAPI.Services;
+using UniiaAdmin.WebApi.Services;
 
 namespace UniiaAdmin.WebApi.Controllers
 {
-    [ApiController]
+	[Authorize]
+	[ApiController]
     [Route("subjects")]
     public class SubjectController : ControllerBase
     {
         private readonly ApplicationContext _applicationContext;
-        private readonly ILogActionService _logActionService;
 
-        public SubjectController(
-            ApplicationContext applicationContext,
-            ILogActionService logActionService)
+        public SubjectController(ApplicationContext applicationContext)
         {
             _applicationContext = applicationContext;
-            _logActionService = logActionService;
         }
 
         [HttpGet]
@@ -47,7 +45,7 @@ namespace UniiaAdmin.WebApi.Controllers
         }
 
         [HttpPost]
-        [ValidateToken]
+        [LogAction(nameof(Subject), nameof(Create))]
         public async Task<IActionResult> Create([FromBody] string name)
         {
             if (!ModelState.IsValid)
@@ -62,15 +60,15 @@ namespace UniiaAdmin.WebApi.Controllers
 
             await _applicationContext.SaveChangesAsync();
 
-            await _logActionService.LogActionAsync<Subject>(HttpContext.Items["User"] as AdminUser, subject.Id, CrudOperation.Create.ToString());
+			HttpContext.Items.Add("id", subject.Id);
 
-            return Ok();
+			return Ok();
         }
 
         [HttpPatch]
         [Route("{id}")]
-        [ValidateToken]
-        public async Task<IActionResult> Update([FromBody] string name, int id)
+		[LogAction(nameof(Subject), nameof(Update))]
+		public async Task<IActionResult> Update([FromBody] string name, int id)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ErrorMessages.ModelNotValid);
@@ -84,15 +82,13 @@ namespace UniiaAdmin.WebApi.Controllers
 
             await _applicationContext.SaveChangesAsync();
 
-            await _logActionService.LogActionAsync<Subject>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Update.ToString());
-
             return Ok();
         }
 
         [HttpDelete]
         [Route("{id}")]
-        [ValidateToken]
-        public async Task<IActionResult> Delete(int id)
+		[LogAction(nameof(Subject), nameof(Delete))]
+		public async Task<IActionResult> Delete(int id)
         {
             var subject = await _applicationContext.Subjects.FirstOrDefaultAsync(s => s.Id == id);
 
@@ -102,8 +98,6 @@ namespace UniiaAdmin.WebApi.Controllers
             _applicationContext.Remove(subject);
 
             await _applicationContext.SaveChangesAsync();
-
-            await _logActionService.LogActionAsync<Subject>(HttpContext.Items["User"] as AdminUser, id, CrudOperation.Delete.ToString());
 
             return Ok();
         }
