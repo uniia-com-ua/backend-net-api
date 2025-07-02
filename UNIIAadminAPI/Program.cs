@@ -43,7 +43,7 @@ services.AddSwaggerGen(options =>
 								Id = "Bearer"
 						}
 					},
-					new string[] {}
+					Array.Empty<string>()
 			}
 	});
 });
@@ -57,15 +57,15 @@ services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 configuration.AddJsonFile("appsettings.json");
 
 services.AddDbContext<AdminContext>(options =>
-    options.UseNpgsql(Environment.GetEnvironmentVariable("PostgresAdminConnection")));
+    options.UseNpgsql(Environment.GetEnvironmentVariable("POSTGRES_ADMIN_CONNECTION")));
 
 services.AddDbContext<ApplicationContext>(options =>
-    options.UseNpgsql(Environment.GetEnvironmentVariable("PostgresApplicationConnection")));
+    options.UseNpgsql(Environment.GetEnvironmentVariable("POSTGRES_APPLICATION_CONNECTION")));
 
 services.AddIdentity<AdminUser, IdentityRole>().AddEntityFrameworkStores<AdminContext>();
 
 services.AddDbContext<MongoDbContext>(options 
-    => options.UseMongoDB(Environment.GetEnvironmentVariable("MongoDbConnection")!, "test"));
+    => options.UseMongoDB(Environment.GetEnvironmentVariable("MONGODB_CONNECTION")!, "test"));
 
 services.AddSingleton<IFileValidatorFactory, FileValidatorFactory>();
 
@@ -97,12 +97,10 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(
 	};
 });
 
-services.AddAuthorization(options =>
-{
-	options.DefaultPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
+services.AddAuthorizationBuilder()
+		.SetDefaultPolicy(new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
 		.RequireAuthenticatedUser()
-		.Build();
-});
+		.Build());
 
 var app = builder.Build();
 

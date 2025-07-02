@@ -50,10 +50,10 @@ builder.Services.AddTransient<ITokenCreationService, TokenCreationService>();
 builder.Services.AddTransient<IAuthService, AuthService>();
 
 builder.Services.AddDbContext<AdminContext>(options =>
-	options.UseNpgsql(Environment.GetEnvironmentVariable("PostgresAdminConnection")));
+	options.UseNpgsql(Environment.GetEnvironmentVariable("POSTGRES_ADMIN_CONNECTION")));
 
 builder.Services.AddDbContext<MongoDbContext>(options
-	=> options.UseMongoDB(Environment.GetEnvironmentVariable("MongoDbConnection")!, "test"));
+	=> options.UseMongoDB(Environment.GetEnvironmentVariable("MONGODB_CONNECTION")!, "test"));
 
 builder.Services.AddIdentity<AdminUser, IdentityRole>().AddEntityFrameworkStores<AdminContext>();
 
@@ -63,6 +63,13 @@ if (app.Environment.IsDevelopment())
 {
 	app.UseSwagger();
 	app.UseSwaggerUI(options => options.DisplayRequestDuration());
+}
+
+using (var scope = app.Services.CreateScope())
+{
+	var adminContext = scope.ServiceProvider.GetRequiredService<AdminContext>();
+
+	await adminContext.Database.EnsureCreatedAsync();
 }
 
 app.UseAuthentication();

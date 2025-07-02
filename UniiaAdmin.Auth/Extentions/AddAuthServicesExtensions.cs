@@ -41,7 +41,7 @@ namespace UniiaAdmin.Auth.Extentions
 				{
 					var userTokens = context.HttpContext.Items["UserTokens"] as UserTokens;
 
-					context.Response.Redirect($"tokens?accessToken={Uri.EscapeDataString(userTokens!.AccessToken)}&refreshToken={Uri.EscapeDataString(userTokens!.RefreshToken)}");
+					context.Response.Redirect($"tokens?accessToken={Uri.EscapeDataString(userTokens!.AccessToken!)}&refreshToken={Uri.EscapeDataString(userTokens!.RefreshToken!)}");
 
 					context.HandleResponse();
 
@@ -61,12 +61,10 @@ namespace UniiaAdmin.Auth.Extentions
 				};
 			});
 
-			Services.AddAuthorization(options =>
-			{
-				options.DefaultPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
+			Services.AddAuthorizationBuilder()
+					.SetDefaultPolicy(new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
 					.RequireAuthenticatedUser()
-					.Build();
-			});
+					.Build());
 		}
 	}
 }

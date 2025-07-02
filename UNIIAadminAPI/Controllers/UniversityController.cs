@@ -6,8 +6,6 @@ using MongoDB.Driver;
 using System.Net.Mime;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Dtos;
-using UniiaAdmin.Data.Enums;
-using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
