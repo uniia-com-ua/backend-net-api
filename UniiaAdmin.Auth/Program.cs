@@ -53,7 +53,7 @@ builder.Services.AddDbContext<AdminContext>(options =>
 	options.UseNpgsql(Environment.GetEnvironmentVariable("POSTGRES_ADMIN_CONNECTION")));
 
 builder.Services.AddDbContext<MongoDbContext>(options
-	=> options.UseMongoDB(Environment.GetEnvironmentVariable("MONGODB_CONNECTION")!, "test"));
+	=> options.UseMongoDB(Environment.GetEnvironmentVariable("MONGODB_CONNECTION")!, Environment.GetEnvironmentVariable("MONGODB_NAME")!));
 
 builder.Services.AddIdentity<AdminUser, IdentityRole>().AddEntityFrameworkStores<AdminContext>();
 

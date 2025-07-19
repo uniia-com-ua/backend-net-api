@@ -65,7 +65,7 @@ services.AddDbContext<ApplicationContext>(options =>
 services.AddIdentity<AdminUser, IdentityRole>().AddEntityFrameworkStores<AdminContext>();
 
 services.AddDbContext<MongoDbContext>(options 
-    => options.UseMongoDB(Environment.GetEnvironmentVariable("MONGODB_CONNECTION")!, "test"));
+    => options.UseMongoDB(Environment.GetEnvironmentVariable("MONGODB_CONNECTION")!, Environment.GetEnvironmentVariable("MONGODB_NAME")!));
 
 services.AddSingleton<IFileValidatorFactory, FileValidatorFactory>();
 
@@ -77,8 +77,8 @@ services.AddScoped<IFileEntityService, FileEntityService>();
 
 services.AddSingleton(provider => 
 {
-    var mongoClient = new MongoClient(Environment.GetEnvironmentVariable("MongoDbConnection")!);
-    var mongoDatabase = mongoClient.GetDatabase("test");
+    var mongoClient = new MongoClient(Environment.GetEnvironmentVariable("MONGODB_CONNECTION")!);
+    var mongoDatabase = mongoClient.GetDatabase(Environment.GetEnvironmentVariable("MONGODB_NAME")!);
 
     return new GridFSBucket(mongoDatabase);
 });
