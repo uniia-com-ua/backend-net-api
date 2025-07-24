@@ -25,6 +25,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
 
       - name: Extract version from release tag
         id: version
@@ -60,8 +61,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .  # Контекст - корінь репозиторію
-          file: ./${{ env.SERVICE_PATH }}/Dockerfile  # Явно вказуємо шлях до Dockerfile
+          context: .
+          file: ./${{ env.SERVICE_PATH }}/Dockerfile
           push: true
           tags: |
             ${{ env.REGISTRY }}/uniia-com-ua/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
@@ -80,6 +81,10 @@ jobs:
           echo "🏷️  Тег: ${{ github.event.release.tag_name }}"
           echo "📝 Версія: ${{ steps.version.outputs.VERSION }}"
           
+          # Переконуємося що ми на правильній гілці
+          git status
+          git branch -a
+          
           # Оновлюємо тег образу в kustomization.yaml
           sed -i "s/newTag: .*/newTag: ${{ steps.version.outputs.VERSION }}/" ${{ env.FLEET_PATH }}/kustomization.yaml
           
@@ -95,8 +100,15 @@ jobs:
 
       - name: Commit and push Fleet changes
         run: |
+          # Налаштовуємо git
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          
+          # Переконуємося що ми на main гілці
+          echo "Current branch status:"
+          git status
+          
+          # Додаємо зміни
           git add ${{ env.FLEET_PATH }}/kustomization.yaml ${{ env.FLEET_PATH }}/configmap.yaml
           
           # Перевіряємо чи є зміни для коміту
@@ -104,6 +116,7 @@ jobs:
             echo "Немає змін для коміту"
             exit 0
           else
+            echo "Комітимо зміни..."
             git commit -m "🚀 [Admin Auth] Реліз ${{ github.event.release.tag_name }}
 
             Оновлено Fleet конфігурацію до версії ${{ steps.version.outputs.VERSION }}
@@ -115,7 +128,8 @@ jobs:
             
             Контролер може отримати версію через endpoint /ver використовуючи env змінну APP_VERSION"
             
-            git push
+            echo "Відправляємо зміни..."
+            git push origin main
             echo "✅ Fleet конфігурацію оновлено та відправлено в репозиторій"
           fi
 
