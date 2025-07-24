@@ -25,12 +25,27 @@ spec:
             cpu: "300m"
             memory: "768Mi"
         env:
+        # Версія з ConfigMap для endpoint /ver
+        - name: APP_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: admin-auth-config
+              key: APP_VERSION
         - name: ASPNETCORE_ENVIRONMENT
-          value: "Production"
+          valueFrom:
+            configMapKeyRef:
+              name: admin-auth-config
+              key: ASPNETCORE_ENVIRONMENT
         - name: DOTNET_GCHeapHardLimit
-          value: "786432000"  # 750MB для GC
+          valueFrom:
+            configMapKeyRef:
+              name: admin-auth-config
+              key: DOTNET_GCHeapHardLimit
         - name: DOTNET_GCHighMemPercent
-          value: "75"
+          valueFrom:
+            configMapKeyRef:
+              name: admin-auth-config
+              key: DOTNET_GCHighMemPercent
         envFrom:
         - secretRef:
             name: admin-auth-secrets
@@ -47,7 +62,7 @@ spec:
           httpGet:
             path: /healthz/live
             port: 7193
-          initialDelaySeconds: 40  # Збільшено для .NET warm-up
+          initialDelaySeconds: 40
           periodSeconds: 20
           timeoutSeconds: 5
           successThreshold: 1

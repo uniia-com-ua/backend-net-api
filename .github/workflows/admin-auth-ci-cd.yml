@@ -78,20 +78,26 @@ jobs:
           echo "🚀 Оновлюємо Fleet конфігурацію для Admin Auth API..."
           echo "📦 Реліз: ${{ github.event.release.name }}"
           echo "🏷️  Тег: ${{ github.event.release.tag_name }}"
-          echo "📝 Опис релізу: ${{ github.event.release.body }}"
+          echo "📝 Версія: ${{ steps.version.outputs.VERSION }}"
           
           # Оновлюємо тег образу в kustomization.yaml
           sed -i "s/newTag: .*/newTag: ${{ steps.version.outputs.VERSION }}/" ${{ env.FLEET_PATH }}/kustomization.yaml
           
+          # Оновлюємо версію в ConfigMap
+          sed -i "s/APP_VERSION: .*/APP_VERSION: \"${{ steps.version.outputs.VERSION }}\"/" ${{ env.FLEET_PATH }}/configmap.yaml
+          
           # Показуємо зміни
           echo "Зміни в Fleet конфігурації:"
+          echo "=== kustomization.yaml ==="
           git diff ${{ env.FLEET_PATH }}/kustomization.yaml
+          echo "=== configmap.yaml ==="
+          git diff ${{ env.FLEET_PATH }}/configmap.yaml
 
       - name: Commit and push Fleet changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add ${{ env.FLEET_PATH }}/kustomization.yaml
+          git add ${{ env.FLEET_PATH }}/kustomization.yaml ${{ env.FLEET_PATH }}/configmap.yaml
           
           # Перевіряємо чи є зміни для коміту
           if git diff --staged --quiet; then
@@ -103,9 +109,11 @@ jobs:
             Оновлено Fleet конфігурацію до версії ${{ steps.version.outputs.VERSION }}
             
             📦 Образ: ${{ env.REGISTRY }}/uniia-com-ua/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
+            🔧 ConfigMap: Версія APP_VERSION = ${{ steps.version.outputs.VERSION }}
             🏷️  Реліз: ${{ github.event.release.name }}
             🔗 Посилання: ${{ github.event.release.html_url }}
-            📝 Опис: ${{ github.event.release.body }}"
+            
+            Контролер може отримати версію через endpoint /ver використовуючи env змінну APP_VERSION"
             
             git push
             echo "✅ Fleet конфігурацію оновлено та відправлено в репозиторій"
@@ -120,6 +128,8 @@ jobs:
 
             ## 🚀 Deployment Info
             - **Docker Image**: \`${{ env.REGISTRY }}/uniia-com-ua/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}\`
+            - **App Version (ENV)**: \`${{ steps.version.outputs.VERSION }}\`
+            - **Version Endpoint**: \`/ver\` (reads from APP_VERSION env)
             - **Fleet Configuration**: Updated automatically
             - **Deployment Status**: ✅ Ready for Fleet sync
 
@@ -136,6 +146,8 @@ jobs:
         run: |
           echo "🎉 Admin Auth API успішно зібрано та розгорнуто!"
           echo "📦 Образ: ${{ env.REGISTRY }}/uniia-com-ua/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}"
+          echo "🔧 APP_VERSION env: ${{ steps.version.outputs.VERSION }}"
           echo "🏷️  Реліз: ${{ github.event.release.tag_name }}"
           echo "🔗 Посилання на реліз: ${{ github.event.release.html_url }}"
+          echo "📍 Версія доступна через endpoint /ver"
           echo "🚀 Fleet автоматично розгорне нову версію в кластері"
