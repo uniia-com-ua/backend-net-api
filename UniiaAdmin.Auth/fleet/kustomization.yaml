@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- deployment.yaml
+- service.yaml
+
+namespace: admin-auth-prod
+
+images:
+- name: ghcr.io/uniia-com-ua/uniia-admin-auth
+  newTag: 0.0.1

@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: admin-auth
+  template:
+    metadata:
+      labels:
+        app: admin-auth
+    spec:
+      containers:
+      - name: admin-auth
+        image: ghcr.io/uniia-com-ua/uniia-admin-auth:latest
+        ports:
+        - containerPort: 7193
+        resources:
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+          requests:
+            cpu: "300m"
+            memory: "768Mi"
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
+        - name: DOTNET_GCHeapHardLimit
+          value: "786432000"  # 750MB для GC
+        - name: DOTNET_GCHighMemPercent
+          value: "75"
+        envFrom:
+        - secretRef:
+            name: admin-auth-secrets
+        readinessProbe:
+          httpGet:
+            path: /healthz/ready
+            port: 7193
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /healthz/live
+            port: 7193
+          initialDelaySeconds: 40  # Збільшено для .NET warm-up
+          periodSeconds: 20
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3 
