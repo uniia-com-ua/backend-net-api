@@ -46,6 +46,11 @@ spec:
             configMapKeyRef:
               name: admin-auth-config
               key: DOTNET_GCHighMemPercent
+        - name: DOTNET_hostBuilder__reloadConfigOnChange
+          valueFrom:
+            configMapKeyRef:
+              name: admin-auth-config
+              key: DOTNET_hostBuilder__reloadConfigOnChange
         envFrom:
         - secretRef:
             name: admin-auth-secrets
