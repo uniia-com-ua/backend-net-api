@@ -10,4 +10,4 @@ namespace: admin-auth-prod
 
 images:
 - name: ghcr.io/uniia-com-ua/uniia-admin-auth
-  newTag: 0.0.1-alpha
+  newTag: 0.0.1-beta
