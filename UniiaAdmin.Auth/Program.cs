@@ -1,6 +1,7 @@
 using DotNetEnv;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.HttpOverrides;
 using UniiaAdmin.Auth.Extentions;
 using UniiaAdmin.Auth.Interfaces;
 using UniiaAdmin.Auth.Services;
@@ -11,6 +12,18 @@ using UNIIAadmin.Auth.Services;
 Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ДОДАЙТЕ ЦЕ для правильної роботи з proxy
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | 
+                              ForwardedHeaders.XForwardedProto |
+                              ForwardedHeaders.XForwardedHost;
+    
+    // Довіряємо всім proxy (для Kubernetes)
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 builder.Services.AddControllers();
 
@@ -59,6 +72,8 @@ builder.Services.AddIdentity<AdminUser, IdentityRole>().AddEntityFrameworkStores
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
+
 if (app.Environment.IsDevelopment())
 {
 	app.UseSwagger();
@@ -75,7 +90,7 @@ using (var scope = app.Services.CreateScope())
 app.UseAuthentication();
 app.UseAuthorization();
 
-//app.UseHttpsRedirection();
+app.UseHttpsRedirection();
 
 app.MapControllers();
 
