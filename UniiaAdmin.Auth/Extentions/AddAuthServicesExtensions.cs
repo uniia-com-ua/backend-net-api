@@ -17,7 +17,7 @@ namespace UniiaAdmin.Auth.Extentions
 			{
 				googleOptions.ClientId = Environment.GetEnvironmentVariable("OAUTH2_CLIENT_ID")!;
 				googleOptions.ClientSecret = Environment.GetEnvironmentVariable("OAUTH2_CLIENT_SECRET")!;
-				googleOptions.CallbackPath = "/admin/api/auth/google-callback";
+				googleOptions.CallbackPath = "/google-callback";
 
 				googleOptions.Events.OnCreatingTicket = async context =>
 				{
