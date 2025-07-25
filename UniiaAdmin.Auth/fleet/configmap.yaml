@@ -4,7 +4,7 @@ metadata:
   name: admin-auth-config
 data:
   # Версія застосунку, синхронізована з образом
-  APP_VERSION: "0.0.1-beta"
+  APP_VERSION: "0.0.1-alpha"
   # Додаткові налаштування
   ASPNETCORE_ENVIRONMENT: "Production"
   DOTNET_GCHeapHardLimit: "786432000"
