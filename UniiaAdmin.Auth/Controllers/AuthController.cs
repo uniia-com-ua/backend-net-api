@@ -7,7 +7,7 @@ using UniiaAdmin.Data.Models.AuthModels;
 namespace UniiaAdmin.Auth.Controllers
 {
     [ApiController]
-	[Route("admin/api/auth")]
+	[Route("/")]
 	public class AuthController : ControllerBase
 	{
 		private readonly IJwtAuthenticator _jwtAuthenticator;
