@@ -70,5 +70,40 @@ namespace UniiaAdmin.Auth.Controllers
         {
             return Ok(new { status = "alive", timestamp = DateTime.UtcNow });
         }
+
+        /// <summary>
+        /// Повертає версію додатку з ConfigMap
+        /// </summary>
+        [HttpGet("version")]
+        public IActionResult Version()
+        {
+            var version = Environment.GetEnvironmentVariable("APP_VERSION") ?? "unknown";
+            
+            return Ok(new 
+            { 
+                version = version,
+                service = "UniiaAdmin.Auth",
+                timestamp = DateTime.UtcNow 
+            });
+        }
+    }
+
+    /// <summary>
+    /// Короткий endpoint для версії
+    /// </summary>
+    [Route("ver")]
+    [ApiController]
+    public class VersionController : ControllerBase
+    {
+        /// <summary>
+        /// Короткий endpoint для отримання версії
+        /// </summary>
+        [HttpGet]
+        public IActionResult Get()
+        {
+            var version = Environment.GetEnvironmentVariable("APP_VERSION") ?? "unknown";
+            
+            return Ok(new { version });
+        }
     }
 } 
