@@ -1,109 +1,81 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Models;
 
-namespace UniiaAdmin.Auth.Controllers
+namespace UniiaAdmin.Auth.Controllers;
+
+[Route("healthz")]
+[ApiController]
+public class HealthzController : ControllerBase
 {
-    [Route("healthz")]
-    [ApiController]
-    public class HealthzController : ControllerBase
-    {
-        private readonly AdminContext _adminContext;
-        private readonly MongoDbContext _mongoContext;
+	private readonly AdminContext _adminContext;
+	private readonly MongoDbContext _mongoContext;
 
-        public HealthzController(AdminContext adminContext, MongoDbContext mongoContext)
-        {
-            _adminContext = adminContext;
-            _mongoContext = mongoContext;
-        }
+	public HealthzController
+		(AdminContext adminContext,
+		MongoDbContext mongoContext)
+	{
+		_adminContext = adminContext;
+		_mongoContext = mongoContext;
+	}
 
-        /// <summary>
-        /// Базова перевірка працездатності сервісу
-        /// </summary>
-        [HttpGet]
-        public IActionResult Get()
-        {
-            return Ok(new { status = "healthy", timestamp = DateTime.UtcNow });
-        }
+	/// <summary>
+	/// Базова перевірка працездатності сервісу
+	/// </summary>
+	[HttpGet]
+	public IActionResult Get()
+	{
+		return Ok(new HealthCheckComponent { Status = "healthy", Timestamp = DateTime.UtcNow });
+	}
 
-        /// <summary>
-        /// Детальна перевірка готовності з перевіркою БД
-        /// </summary>
-        [HttpGet("ready")]
-        public async Task<IActionResult> Ready()
-        {
-            try
-            {
-                // Перевірка PostgreSQL підключення
-                await _adminContext.Database.CanConnectAsync();
-                
-                // Перевірка MongoDB підключення
-                var mongoCanConnect = await _mongoContext.Database.CanConnectAsync();
+	/// <summary>
+	/// Детальна перевірка готовності з перевіркою БД
+	/// </summary>
+	[HttpGet("ready")]
+	public async Task<IActionResult> Ready()
+	{
+		var postgresCanConnect = await _adminContext.Database.CanConnectAsync();
 
-                return Ok(new 
-                { 
-                    status = "ready", 
-                    timestamp = DateTime.UtcNow,
-                    databases = new 
-                    {
-                        postgresql = "healthy",
-                        mongodb = mongoCanConnect ? "healthy" : "warning"
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(503, new 
-                { 
-                    status = "unhealthy", 
-                    timestamp = DateTime.UtcNow,
-                    error = ex.Message 
-                });
-            }
-        }
+		var mongoCanConnect = await _mongoContext.Database.CanConnectAsync();
 
-        /// <summary>
-        /// Швидка перевірка живучості
-        /// </summary>
-        [HttpGet("live")]
-        public IActionResult Live()
-        {
-            return Ok(new { status = "alive", timestamp = DateTime.UtcNow });
-        }
+		return Ok(new
+		{
+			status = "ready",
+			timestamp = DateTime.UtcNow,
+			databases = new
+			{
+				postgresql = postgresCanConnect ? "healthy" : "warning",
+				mongodb = mongoCanConnect ? "healthy" : "warning"
+			}
+		});
+	}
 
-        /// <summary>
-        /// Повертає версію додатку з ConfigMap
-        /// </summary>
-        [HttpGet("version")]
-        public IActionResult Version()
-        {
-            var version = Environment.GetEnvironmentVariable("APP_VERSION") ?? "unknown";
-            
-            return Ok(new 
-            { 
-                version = version,
-                service = "UniiaAdmin.Auth",
-                timestamp = DateTime.UtcNow 
-            });
-        }
-    }
+	/// <summary>
+	/// Швидка перевірка живучості
+	/// </summary>
+	[HttpGet("live")]
+	public IActionResult Live()
+	{
+		return Ok(new HealthCheckComponent { Status = "alive", Timestamp = DateTime.UtcNow });
+	}
 
-    /// <summary>
-    /// Короткий endpoint для версії
-    /// </summary>
-    [Route("ver")]
-    [ApiController]
-    public class VersionController : ControllerBase
-    {
-        /// <summary>
-        /// Короткий endpoint для отримання версії
-        /// </summary>
-        [HttpGet]
-        public IActionResult Get()
-        {
-            var version = Environment.GetEnvironmentVariable("APP_VERSION") ?? "unknown";
-            
-            return Ok(new { version });
-        }
-    }
-} 
+	/// <summary>
+	/// Повертає версію додатку з ConfigMap
+	/// </summary>
+	[HttpGet("version")]
+	public IActionResult Version()
+	{
+		var version = Environment.GetEnvironmentVariable("APP_VERSION") ?? "unknown";
+
+		var service = Assembly.GetExecutingAssembly().GetName().Name;
+
+		return Ok(new
+		{
+			version,
+			service,
+			timestamp = DateTime.UtcNow
+		});
+	}
+}

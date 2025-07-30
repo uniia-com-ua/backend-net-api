@@ -1,0 +1,25 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Models;
+
+namespace UniiaAdmin.Auth.Controllers;
+
+/// <summary>
+/// Короткий endpoint для версії
+/// </summary>
+[Route("ver")]
+[ApiController]
+public class VersionController : ControllerBase
+{
+	/// <summary>
+	/// Короткий endpoint для отримання версії
+	/// </summary>
+	[HttpGet]
+	public IActionResult Get()
+	{
+		var version = Environment.GetEnvironmentVariable("APP_VERSION") ?? "unknown";
+
+		return Ok(new { version });
+	}
+}

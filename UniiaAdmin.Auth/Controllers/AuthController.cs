@@ -4,54 +4,54 @@ using System.Security.Claims;
 using UniiaAdmin.Auth.Interfaces;
 using UniiaAdmin.Data.Models.AuthModels;
 
-namespace UniiaAdmin.Auth.Controllers
+namespace UniiaAdmin.Auth.Controllers;
+
+[ApiController]
+[Route("api/v1")]
+public class AuthController : ControllerBase
 {
-    [ApiController]
-	[Route("api/v1")]
-	public class AuthController : ControllerBase
+	private readonly IJwtAuthenticator _jwtAuthenticator;
+
+	public AuthController(IJwtAuthenticator jwtAuthenticator)
 	{
-		private readonly IJwtAuthenticator _jwtAuthenticator;
+		_jwtAuthenticator = jwtAuthenticator;
+	}
 
-		public AuthController(IJwtAuthenticator jwtAuthenticator)
+	[HttpGet]
+	[Route("signingoogle")]
+	public IActionResult Login() => Challenge(GoogleDefaults.AuthenticationScheme);
+
+	[HttpGet]
+	[Route("tokens")]
+	[ProducesResponseType(typeof(UserTokens), StatusCodes.Status200OK)]
+	public IActionResult Tokens([FromQuery] UserTokens userTokens) => Ok(userTokens);
+
+	[HttpGet]
+	[Route("refresh")]
+	public async Task<IActionResult> RefreshToken(string accessToken, string? refreshToken)
+	{
+		var principals = _jwtAuthenticator.GetPrincipalFromExpiredToken(accessToken);
+
+		if (principals == null)
 		{
-			_jwtAuthenticator = jwtAuthenticator;
+			return BadRequest("Access token is not valid");
 		}
 
-		[HttpGet]
-		[Route("signingoogle")]
-		public IActionResult Login() => Challenge(GoogleDefaults.AuthenticationScheme);
+		var id = principals.FindFirstValue(ClaimTypes.NameIdentifier);
 
-		[HttpGet]
-		[Route("tokens")]
-		[ProducesResponseType(typeof(UserTokens), StatusCodes.Status200OK)]
-		public IActionResult Tokens([FromQuery] UserTokens userTokens) => Ok(userTokens);
-
-		[HttpGet]
-		[Route("refresh")]
-		public async Task<IActionResult> RefreshToken(string accessToken, string? refreshToken)
+		if (string.IsNullOrEmpty(id))
 		{
-			var principals = _jwtAuthenticator.GetPrincipalFromExpiredToken(accessToken);
-
-			if (principals == null)
-			{
-				return BadRequest("Access token is not valid");
-			}
-
-			var id = principals.FindFirstValue(ClaimTypes.NameIdentifier);
-
-			if (string.IsNullOrEmpty(id))
-			{
-				return BadRequest("Access token is not valid");
-			}
-
-			if(!await _jwtAuthenticator.IsRefreshTokenValidAsync(id, refreshToken))
-			{
-				return BadRequest("Refresh token was expired");
-			}
-
-			var newToken = _jwtAuthenticator.GenerateAccessToken(principals.Claims);
-
-			return Ok(newToken);
+			return BadRequest("Access token is not valid");
 		}
+
+		if (!await _jwtAuthenticator.IsRefreshTokenValidAsync(id, refreshToken))
+		{
+			return BadRequest("Refresh token was expired");
+		}
+
+		var newToken = _jwtAuthenticator.GenerateAccessToken(principals.Claims);
+
+		return Ok(newToken);
 	}
 }
+

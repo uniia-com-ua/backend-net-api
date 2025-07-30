@@ -9,9 +9,11 @@ using MongoDB.Driver;
 using MongoDB.Driver.GridFS;
 using System.Text;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.FileServices;
+using UniiaAdmin.WebApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -74,6 +76,8 @@ services.AddSingleton<IFileValidationService, FileValidationService>();
 services.AddSingleton<IFileProcessingService, FileProcessingService>();
 
 services.AddScoped<IFileEntityService, FileEntityService>();
+
+services.AddTransient<IHealthCheckService, HealthCheckService>();
 
 services.AddSingleton(provider => 
 {
