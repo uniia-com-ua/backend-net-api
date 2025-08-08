@@ -30,6 +30,7 @@ jobs:
             SERVICE="admin-auth"
             IMAGE_NAME="uniia-admin-auth"
             SERVICE_PATH="UniiaAdmin.Auth"
+            PACKAGE_PATH="UniiaAdmin.Auth/UniiaAdmin.Auth.csproj"
             FLEET_PATH="UniiaAdmin.Auth/fleet"
             TITLE="Admin Auth API"
             DESC="UNIIA Admin Authentication Service"
@@ -37,6 +38,7 @@ jobs:
             SERVICE="admin-api"
             IMAGE_NAME="uniia-admin-api"
             SERVICE_PATH="UNIIAadminAPI"
+            PACKAGE_PATH="UNIIAadminAPI/UniiaAdmin.WebApi.csproj"
             FLEET_PATH="UNIIAadminAPI/fleet"
             TITLE="Admin Main API"
             DESC="UNIIA Admin Main API"
@@ -67,13 +69,13 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore ${{ steps.meta.outputs.SERVICE_PATH }}/${{ steps.meta.outputs.SERVICE_PATH }}.csproj
+        run: dotnet restore ${{ steps.meta.outputs.PACKAGE_PATH }}
 
       - name: Build
-        run: dotnet build ${{ steps.meta.outputs.SERVICE_PATH }}/${{ steps.meta.outputs.SERVICE_PATH }}.csproj --no-restore
+        run: dotnet build ${{ steps.meta.outputs.PACKAGE_PATH }} --no-restore
 
       - name: Test
-        run: dotnet test ${{ steps.meta.outputs.SERVICE_PATH }}/${{ steps.meta.outputs.SERVICE_PATH }}.csproj --no-build --verbosity normal
+        run: dotnet test ${{ steps.meta.outputs.PACKAGE_PATH }} --no-build --verbosity normal
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
