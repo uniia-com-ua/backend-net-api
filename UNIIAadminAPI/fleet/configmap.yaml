@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: admin-api-config
+data:
+  # Версія застосунку, синхронізована з образом
+  APP_VERSION: "0.0.1-rc0"
+  # Додаткові налаштування
+  ASPNETCORE_ENVIRONMENT: "Production"
+  DOTNET_GCHeapHardLimit: "786432000"
+  DOTNET_GCHighMemPercent: "75"
+  DOTNET_hostBuilder__reloadConfigOnChange: "false"

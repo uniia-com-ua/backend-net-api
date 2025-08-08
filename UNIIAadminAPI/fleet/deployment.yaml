@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: admin-api
+  template:
+    metadata:
+      labels:
+        app: admin-api
+    spec:
+      containers:
+      - name: admin-api
+        image: ghcr.io/uniia-com-ua/uniia-admin-api:latest
+        ports:
+        - containerPort: 7193
+        resources:
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+          requests:
+            cpu: "300m"
+            memory: "768Mi"
+        env:
+        # Версія з ConfigMap для endpoint /ver
+        - name: APP_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: admin-api-config
+              key: APP_VERSION
+        - name: ASPNETCORE_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: admin-api-config
+              key: ASPNETCORE_ENVIRONMENT
+        - name: DOTNET_GCHeapHardLimit
+          valueFrom:
+            configMapKeyRef:
+              name: admin-api-config
+              key: DOTNET_GCHeapHardLimit
+        - name: DOTNET_GCHighMemPercent
+          valueFrom:
+            configMapKeyRef:
+              name: admin-api-config
+              key: DOTNET_GCHighMemPercent
+        - name: DOTNET_hostBuilder__reloadConfigOnChange
+          valueFrom:
+            configMapKeyRef:
+              name: admin-api-config
+              key: DOTNET_hostBuilder__reloadConfigOnChange
+        envFrom:
+        - secretRef:
+            name: admin-api-secrets
+        readinessProbe:
+          httpGet:
+            path: /healthz/ready
+            port: 7193
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /healthz/live
+            port: 7193
+          initialDelaySeconds: 40
+          periodSeconds: 20
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3 

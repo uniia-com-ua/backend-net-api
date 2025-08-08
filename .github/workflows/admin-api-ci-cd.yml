@@ -1,0 +1,167 @@
+name: Admin Main API - Docker CI/CD with Fleet
+
+on:
+  release:
+    types: [published]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: uniia-admin-api
+  SERVICE_PATH: UNIIAadminAPI
+  FLEET_PATH: UNIIAadminAPI/fleet
+
+jobs:
+  check-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    
+    # Перевіряємо чи це реліз для admin-api
+    if: startsWith(github.event.release.tag_name, 'admin-api-')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
+
+      - name: Extract version from release tag
+        id: version
+        run: |
+          # Видаляємо префікс admin-api- з тегу релізу
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          VERSION=${TAG_NAME#admin-api-}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Release tag: $TAG_NAME"
+          echo "Extracted version: $VERSION"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies for Admin API
+        run: dotnet restore ${{ env.SERVICE_PATH }}/${{ env.SERVICE_PATH }}.csproj
+
+      - name: Build Admin API
+        run: dotnet build ${{ env.SERVICE_PATH }}/${{ env.SERVICE_PATH }}.csproj --no-restore
+
+      - name: Test Admin API
+        run: dotnet test ${{ env.SERVICE_PATH }}/${{ env.SERVICE_PATH }}.csproj --no-build --verbosity normal
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./${{ env.SERVICE_PATH }}/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/uniia-com-ua/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
+            ${{ env.REGISTRY }}/uniia-com-ua/${{ env.IMAGE_NAME }}:latest
+          labels: |
+            org.opencontainers.image.title=Admin Main API
+            org.opencontainers.image.description=UNIIA Admin Main API
+            org.opencontainers.image.version=${{ steps.version.outputs.VERSION }}
+            org.opencontainers.image.source=${{ github.event.repository.html_url }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Update Fleet configuration
+        run: |
+          echo "🚀 Оновлюємо Fleet конфігурацію для Admin Main API..."
+          echo "📦 Реліз: ${{ github.event.release.name }}"
+          echo "🏷️  Тег: ${{ github.event.release.tag_name }}"
+          echo "📝 Версія: ${{ steps.version.outputs.VERSION }}"
+          
+          # Переконуємося що ми на правильній гілці
+          git status
+          git branch -a
+          
+          # Оновлюємо тег образу в kustomization.yaml
+          sed -i "s/newTag: .*/newTag: ${{ steps.version.outputs.VERSION }}/" ${{ env.FLEET_PATH }}/kustomization.yaml
+          
+          # Оновлюємо версію в ConfigMap
+          sed -i "s/APP_VERSION: .*/APP_VERSION: \"${{ steps.version.outputs.VERSION }}\"/" ${{ env.FLEET_PATH }}/configmap.yaml
+          
+          # Показуємо зміни
+          echo "Зміни в Fleet конфігурації:"
+          echo "=== kustomization.yaml ==="
+          git diff ${{ env.FLEET_PATH }}/kustomization.yaml
+          echo "=== configmap.yaml ==="
+          git diff ${{ env.FLEET_PATH }}/configmap.yaml
+
+      - name: Commit and push Fleet changes
+        run: |
+          # Налаштовуємо git
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # Переконуємося що ми на main гілці
+          echo "Current branch status:"
+          git status
+          
+          # Додаємо зміни
+          git add ${{ env.FLEET_PATH }}/kustomization.yaml ${{ env.FLEET_PATH }}/configmap.yaml
+          
+          # Перевіряємо чи є зміни для коміту
+          if git diff --staged --quiet; then
+            echo "Немає змін для коміту"
+            exit 0
+          else
+            echo "Комітимо зміни..."
+            git commit -m "🚀 [Admin Main API] Реліз ${{ github.event.release.tag_name }}
+
+            Оновлено Fleet конфігурацію до версії ${{ steps.version.outputs.VERSION }}
+            
+            📦 Образ: ${{ env.REGISTRY }}/uniia-com-ua/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
+            🔧 ConfigMap: Версія APP_VERSION = ${{ steps.version.outputs.VERSION }}
+            🏷️  Реліз: ${{ github.event.release.name }}
+            🔗 Посилання: ${{ github.event.release.html_url }}
+            
+            Контролер може отримати версію через endpoint /ver використовуючи env змінну APP_VERSION"
+            
+            echo "Відправляємо зміни..."
+            git push origin main
+            echo "✅ Fleet конфігурацію оновлено та відправлено в репозиторій"
+          fi
+
+      - name: Update release with deployment info
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const releaseBody = context.payload.release.body || '';
+            const deploymentInfo = `
+
+            ## 🚀 Deployment Info
+            - **Docker Image**: \`${{ env.REGISTRY }}/uniia-com-ua/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}\`
+            - **App Version (ENV)**: \`${{ steps.version.outputs.VERSION }}\`
+            - **Version Endpoint**: \`/ver\` (reads from APP_VERSION env)
+            - **Fleet Configuration**: Updated automatically
+            - **Deployment Status**: ✅ Ready for Fleet sync
+
+            _Auto-deployed via GitHub Actions_`;
+            
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: context.payload.release.id,
+              body: releaseBody + deploymentInfo
+            });
+
+      - name: Summary
+        run: |
+          echo "🎉 Admin Main API успішно зібрано та розгорнуто!"
+          echo "📦 Образ: ${{ env.REGISTRY }}/uniia-com-ua/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}"
+          echo "🔧 APP_VERSION env: ${{ steps.version.outputs.VERSION }}"
+          echo "🏷️  Реліз: ${{ github.event.release.tag_name }}"
+          echo "🔗 Посилання на реліз: ${{ github.event.release.html_url }}"
+          echo "📍 Версія доступна через endpoint /ver"
+          echo "🚀 Fleet автоматично розгорне нову версію в кластері"
