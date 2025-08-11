@@ -6,7 +6,7 @@ using UniiaAdmin.Data.Models;
 
 namespace UNIIAadminAPI.Controllers
 {
-    [Route("api/v1/healthz")]
+    [Route("healthz")]
     [ApiController]
     public class HealthController : ControllerBase
     {
