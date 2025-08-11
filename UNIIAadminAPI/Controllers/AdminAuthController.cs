@@ -1,5 +1,4 @@
 using AutoMapper;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,7 +15,7 @@ namespace UNIIAadminAPI.Controllers
 {
     [Authorize]
 	[ApiController]
-    [Route("auth")]
+	[Route("api/v1/auth")]
     public class AdminAuthController : ControllerBase
     {
         private readonly UserManager<AdminUser> _userManager;
@@ -33,14 +32,13 @@ namespace UNIIAadminAPI.Controllers
         }
 
 
-        [HttpGet]
-        [Route("get-auth-user")]
+        [HttpGet("user")]
         [ProducesResponseType(typeof(AdminUser), 200)]
         public async Task<IActionResult> GetAuthUser()
         {
             var user = await _userManager.GetUserAsync(HttpContext.User);
 
-			var mappedUser = _mapper.Map<UserDto>(user);
+			var mappedUser = _mapper.Map<AdminUserDto>(user);
 
             mappedUser.Roles.AddRange(HttpContext.User.Claims
                             .Where(c => c.Type == ClaimTypes.Role)
@@ -50,8 +48,9 @@ namespace UNIIAadminAPI.Controllers
         }
 
 		[HttpGet]
-        [Route("get-auth-user-picture")]
-        public async Task<IActionResult> GetAuthUserPicture()
+        [Route("picture")]
+        [ProducesResponseType(typeof(byte[]), 200)]
+		public async Task<IActionResult> GetAuthUserPicture()
         {
 			var user = await _userManager.GetUserAsync(HttpContext.User);
 
@@ -68,5 +67,27 @@ namespace UNIIAadminAPI.Controllers
 
             return File(photoFile.File, contentType);
         }
-    }
+
+		[HttpGet("log-history")]
+		public async Task<IActionResult> GetLogHistory(int skip = 0, int take = 10)
+		{
+			var userId = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+			var logInHistory = await _mongoDbContext.AdminLogInHistories
+				.Where(li => li.UserId == userId)
+				.OrderByDescending(li => li.LogInTime)
+				.Skip(skip)
+				.Take(take)
+				.Select(li => new
+				{
+					li.IpAdress,
+					li.LogInType,
+					li.LogInTime,
+					li.UserAgent
+				})
+				.ToListAsync();
+
+			return Ok(logInHistory);
+		}
+	}
 }

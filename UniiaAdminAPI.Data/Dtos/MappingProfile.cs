@@ -7,9 +7,10 @@ namespace UniiaAdmin.Data.Dtos
     {
         public MappingProfile()
         {
-            CreateMap<AdminUser, UserDto>();
+            CreateMap<AdminUser, AdminUserDto>();
+			CreateMap<User, UserDto>();
 
-            CreateMap<Author, AuthorDto>();
+			CreateMap<Author, AuthorDto>();
             CreateMap<AuthorDto, Author>();
 
             CreateMap<Faculty, FacultyDto>();
@@ -18,7 +19,10 @@ namespace UniiaAdmin.Data.Dtos
             CreateMap<University, UniversityDto>();
             CreateMap<UniversityDto, University>();
 
-            CreateMap<LogActionModel, LogActionModelDto>();
+			CreateMap<Publication, PublicationDto>();
+			CreateMap<PublicationDto, Publication>();
+
+			CreateMap<LogActionModel, LogActionModelDto>();
         }
     }
 }

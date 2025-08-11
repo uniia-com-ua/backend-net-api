@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -6,28 +7,31 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Security.Claims;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
+using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 
 namespace UNIIAadminAPI.Controllers
 {
-    [Route("admin/api/user")]
+    [Authorize]
+    [Route("api/v1/users")]
     [ApiController]
     public class UserController : ControllerBase
     {
-        private readonly UserManager<AdminUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ApplicationContext _applicationContext;
         private readonly MongoDbContext _mongoDbContext;
-        public UserController(
-            UserManager<AdminUser> userManager,
-            RoleManager<IdentityRole> roleManager,
+        private readonly IPaginationService _paginationService;
+		private readonly IMapper _mapper;
+		public UserController(
             ApplicationContext applicationContext,
-            MongoDbContext mongoDbContext) 
+            MongoDbContext mongoDbContext,
+            IPaginationService paginationService,
+            IMapper mapper) 
         {
-            _userManager = userManager;
-            _roleManager = roleManager;
             _mongoDbContext = mongoDbContext;
             _applicationContext = applicationContext;
+            _paginationService = paginationService;
+            _mapper = mapper;
         }
 
 /*        [HttpPatch]
@@ -82,57 +86,24 @@ namespace UNIIAadminAPI.Controllers
         }*/
 
         [HttpGet]
-        [Route("get-all-users")]
-        
-        public async Task<IActionResult> GetAllUsers(int skip, int take)
+        public async Task<IActionResult> GetAllUsers(int skip, int take = 10)
         {
-            var users = await _applicationContext.Users.Skip(skip).Take(take).ToListAsync();
+            var users = await _paginationService.GetPagedListAsync(_applicationContext.Users, skip, take);
 
             return Ok(users);
         }
 
-/*        [HttpGet]
-        [Route("get-by-id")]
-        
+        [HttpGet("{id}")]
         public async Task<IActionResult> GetUserById(string id)
         {
-            var relatedUser = await _userManager.FindByIdAsync(id);
+            var user = await _applicationContext.Users.FindAsync(id);
 
-            if (relatedUser == null)
+            if (user == null)
                 return NotFound();
 
-            var user = await db.GetCollection<User>().Find(u => u.AuthUserId == relatedUser.Id).FirstOrDefaultAsync();
+			var result = _mapper.Map<UserDto>(user);
 
-            var userRoles = roleManager.Roles.Where(r => relatedUser.Roles.Contains(r.Id)).Select(r => r.Name);
-
-            var faculty = await db.GetCollection<Faculty>("Faculties")
-            .Find(f => f.Id == user.FacultyId)
-            .FirstOrDefaultAsync();
-
-            return Ok(new UserDto(user, relatedUser, userRoles, faculty));
-        }*/
-
-        [HttpGet]
-        [Route("get-log-history")]
-        
-        public async Task<IActionResult> GetLogHistory(int take)
-        {
-            var user = HttpContext.Items["User"] as AdminUser;
-
-            var logInHistory = await _mongoDbContext.AdminLogInHistories
-                .Where(li => li.UserId == user!.Id)
-                .OrderByDescending(li => li.LogInTime)
-                .Take(take)
-                .Select(li => new
-                {
-                    li.IpAdress,
-                    li.LogInType,
-                    li.LogInTime,
-                    li.UserAgent
-                })
-                .ToListAsync();
-
-            return Ok(logInHistory);
+            return Ok(result);
         }
     }
 }

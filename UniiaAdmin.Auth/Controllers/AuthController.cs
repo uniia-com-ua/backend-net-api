@@ -17,17 +17,14 @@ public class AuthController : ControllerBase
 		_jwtAuthenticator = jwtAuthenticator;
 	}
 
-	[HttpGet]
-	[Route("signingoogle")]
+	[HttpGet("signingoogle")]
 	public IActionResult Login() => Challenge(GoogleDefaults.AuthenticationScheme);
 
-	[HttpGet]
-	[Route("tokens")]
+	[HttpGet("tokens")]
 	[ProducesResponseType(typeof(UserTokens), StatusCodes.Status200OK)]
 	public IActionResult Tokens([FromQuery] UserTokens userTokens) => Ok(userTokens);
 
-	[HttpGet]
-	[Route("refresh")]
+	[HttpGet("refresh")]
 	public async Task<IActionResult> RefreshToken(string accessToken, string? refreshToken)
 	{
 		var principals = _jwtAuthenticator.GetPrincipalFromExpiredToken(accessToken);

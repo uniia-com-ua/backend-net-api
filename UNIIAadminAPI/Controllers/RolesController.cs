@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Services;
 
@@ -11,17 +12,21 @@ namespace UNIIAadminAPI.Controllers
 {
 	[Authorize]
 	[ApiController]
-    [Route("roles")]
+    [Route("api/v1/roles")]
     public class RolesController : ControllerBase
     {
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ApplicationContext _applicationContext;
-        public RolesController
+		private readonly IPaginationService _paginationService;
+
+		public RolesController
             (ApplicationContext applicationContext,
-            RoleManager<IdentityRole> signInManager)
+            RoleManager<IdentityRole> signInManager,
+			IPaginationService paginationService)
         {
             _roleManager = signInManager;
             _applicationContext = applicationContext;
+            _paginationService = paginationService;
         }
 
         [HttpPatch]
@@ -112,9 +117,9 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpGet]
         [Route("get-paginated-roles")]
-        public async Task<IActionResult> GetAllRoles(int skip, int take)
+        public async Task<IActionResult> GetAllRoles(int skip = 0, int take = 10)
         {
-            var roles = await _roleManager.Roles.Skip(skip).Take(take).ToListAsync();
+            var roles = await _paginationService.GetPagedListAsync(_roleManager.Roles, skip, take);
 
             return Ok(roles);
         }
@@ -149,7 +154,7 @@ namespace UNIIAadminAPI.Controllers
         [Route("get-paginated-claims")]
         public async Task<IActionResult> GetPaginatedClaims(int skip, int take)
         {
-            var claims = await _applicationContext.RoleClaims.Skip(skip).Take(take).ToListAsync();
+			var claims = await _paginationService.GetPagedListAsync(_applicationContext.RoleClaims, skip, take);
 
             return Ok(claims);
         }

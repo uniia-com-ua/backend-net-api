@@ -79,6 +79,8 @@ services.AddScoped<IFileEntityService, FileEntityService>();
 
 services.AddTransient<IHealthCheckService, HealthCheckService>();
 
+services.AddTransient<IPaginationService, PaginationService>();
+
 services.AddSingleton(provider => 
 {
     var mongoClient = new MongoClient(Environment.GetEnvironmentVariable("MONGODB_CONNECTION")!);
