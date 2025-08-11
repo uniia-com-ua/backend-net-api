@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 public class HealthCheckComponent
 {
-	public string Status { get; set; }
+	public string? Status { get; set; }
 
 	public DateTime Timestamp { get; set; }
 }

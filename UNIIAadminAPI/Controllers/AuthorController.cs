@@ -6,41 +6,40 @@ using MongoDB.Driver;
 using System.Net.Mime;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Dtos;
-using UniiaAdmin.Data.Enums;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
-using UniiaAdmin.WebApi.FileServices;
-using UniiaAdmin.WebApi.Helpers;
 using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
 	[Authorize]
 	[ApiController]
-    [Route("authors")]
+    [Route("api/v1/authors")]
     public class AuthorController : ControllerBase
     {
         private readonly ApplicationContext _applicationContext;
         private readonly MongoDbContext _mongoDbContext;
         private readonly IFileEntityService _fileService;
+		private readonly IPaginationService _paginationService;
         private readonly IMapper _mapper;
 
         public AuthorController(
             ApplicationContext applicationContext,
             MongoDbContext mongoDbContext,
             IMapper mapper,
-            IFileEntityService fileService)
+            IFileEntityService fileService,
+            IPaginationService paginationService)
         {
             _applicationContext = applicationContext;
             _mongoDbContext = mongoDbContext;
             _mapper = mapper;
             _fileService=fileService;
+            _paginationService=paginationService;
         }
 
-        [HttpGet]
-        [Route("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> Get(int id)
         {
             var author = await _applicationContext.Authors.FirstOrDefaultAsync(a => a.Id == id);
@@ -53,8 +52,7 @@ namespace UNIIAadminAPI.Controllers
             return Ok(result);
         }
 
-        [HttpGet]
-        [Route("{id}/photo")]
+        [HttpGet("{id:int}/photo")]
         public async Task<IActionResult> GetPicture(int id)
         {
             var photoId = await _applicationContext.Authors
@@ -82,9 +80,9 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpGet]
         [Route("page")]
-        public async Task<IActionResult> GetPagedAuthors([FromQuery] int skip, int take)
+        public async Task<IActionResult> GetPagedAuthors([FromQuery] int skip = 0, int take = 10)
         {
-            var pagedAuthors = await PaginationHelper.GetPagedListAsync(_applicationContext.Authors, skip, take);
+            var pagedAuthors = await _paginationService.GetPagedListAsync(_applicationContext.Authors, skip, take);
 
             var resultList = pagedAuthors.Select(a => _mapper.Map<AuthorDto>(a));
 
@@ -123,8 +121,7 @@ namespace UNIIAadminAPI.Controllers
             return Ok();
         }
 
-        [HttpPatch]
-        [Route("{id}")]
+        [HttpPatch("{id}")]
 		[LogAction(nameof(Author), nameof(Update))]
 		public async Task<IActionResult> Update([FromForm] AuthorDto authorDto, IFormFile? photoFile, int id)
         {
@@ -159,8 +156,7 @@ namespace UNIIAadminAPI.Controllers
             return Ok();
         }
 
-        [HttpDelete]
-        [Route("{id}")]
+        [HttpDelete("{id:int}")]
 		[LogAction(nameof(Author), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {

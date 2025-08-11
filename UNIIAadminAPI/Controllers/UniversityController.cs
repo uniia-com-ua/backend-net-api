@@ -6,34 +6,37 @@ using MongoDB.Driver;
 using System.Net.Mime;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Dtos;
+using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
-using UniiaAdmin.WebApi.Helpers;
 using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
 	[Authorize]
 	[ApiController]
-    [Route("universities")]
+    [Route("api/v1/universities")]
     public class UniversityController : ControllerBase
     {
         private readonly ApplicationContext _applicationContext;
         private readonly MongoDbContext _mongoDbContext;
         private readonly IMapper _mapper;
         private readonly IFileEntityService _fileEntityService;
+        private readonly IPaginationService _paginationService;
 
         public UniversityController(
             ApplicationContext applicationContext,
             MongoDbContext mongoDbContext,
             IMapper mapper,
-            IFileEntityService fileEntityService)
+            IFileEntityService fileEntityService,
+            IPaginationService paginationService)
         {
             _applicationContext = applicationContext;
             _mongoDbContext = mongoDbContext;
             _mapper = mapper;
             _fileEntityService = fileEntityService;
+            _paginationService = paginationService;
         }
 
         [HttpGet]
@@ -108,7 +111,7 @@ namespace UNIIAadminAPI.Controllers
         [Route("page")]
         public async Task<IActionResult> GetPagedUniversities(int skip, int take)
         {
-            var universitiesList = await PaginationHelper.GetPagedListAsync(_applicationContext.Universities, skip, take);
+            var universitiesList = await _paginationService.GetPagedListAsync(_applicationContext.Universities, skip, take);
 
             var resultList = universitiesList.Select(u => _mapper.Map<UniversityDto>(u));
 

@@ -6,21 +6,24 @@ using UniiaAdmin.Data.Enums;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
-using UniiaAdmin.WebApi.Helpers;
 using UniiaAdmin.WebApi.Services;
 
 namespace UniiaAdmin.Data.Controllers
 {
 	[Authorize]
 	[ApiController]
-    [Route("publication-types")]
+    [Route("api/v1/publication-types")]
     public class PublicationTypeController : ControllerBase
     {
         private readonly ApplicationContext _applicationContext;
+		private readonly IPaginationService _paginationService;
 
-        public PublicationTypeController(ApplicationContext applicationContext)
+		public PublicationTypeController(
+            ApplicationContext applicationContext,
+            IPaginationService paginationService)
         {
             _applicationContext = applicationContext;
+            _paginationService = paginationService;
         }
 
         [HttpGet]
@@ -37,9 +40,9 @@ namespace UniiaAdmin.Data.Controllers
 
         [HttpGet]
         [Route("page")]
-        public async Task<IActionResult> GetPaginated(int skip, int take)
+        public async Task<IActionResult> GetPaginated(int skip = 0, int take = 10)
         {
-            var publicationTypes = await PaginationHelper.GetPagedListAsync(_applicationContext.PublicationTypes, skip, take);
+            var publicationTypes = await _paginationService.GetPagedListAsync(_applicationContext.PublicationTypes, skip, take);
 
             return Ok(publicationTypes);
         }

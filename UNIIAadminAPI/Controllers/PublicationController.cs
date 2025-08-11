@@ -5,39 +5,37 @@ using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
 using System.Net.Mime;
 using UniiaAdmin.Data.Data;
-using UniiaAdmin.Data.Dtos;
-using UniiaAdmin.Data.Enums;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
-using UniiaAdmin.WebApi.FileServices;
-using UniiaAdmin.WebApi.Helpers;
 using UniiaAdmin.WebApi.Services;
-using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
 
 namespace UNIIAadminAPI.Controllers
 {
 	[Authorize]
 	[ApiController]
-    [Route("publications")]
+    [Route("api/v1/publications")]
     public class PublicationController : ControllerBase
     {
         private readonly ApplicationContext _applicationContext;
         private readonly MongoDbContext _mongoDbContext;
         private readonly IFileEntityService _fileService;
         private readonly IMapper _mapper;
+        private readonly IPaginationService _paginationService;
 
         public PublicationController(
             ApplicationContext applicationContext,
             MongoDbContext mongoDbContext,
             IMapper mapper,
-            IFileEntityService fileService)
+            IFileEntityService fileService,
+            IPaginationService paginationService)
         {
             _applicationContext = applicationContext;
             _mongoDbContext = mongoDbContext;
             _mapper = mapper;
             _fileService=fileService;
+            _paginationService = paginationService;
         }
 
         [HttpGet]
@@ -84,9 +82,9 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpGet]
         [Route("page")]
-        public async Task<IActionResult> GetPagedPublications(int skip, int take)
+        public async Task<IActionResult> GetPagedPublications(int skip = 0, int take = 10)
         {
-            var publications = await PaginationHelper.GetPagedListAsync(_applicationContext.Universities, skip, take);
+            var publications = await _paginationService.GetPagedListAsync(_applicationContext.Universities, skip, take);
 
             var resultList = publications.Select(a => _mapper.Map<PublicationDto>(a));
 

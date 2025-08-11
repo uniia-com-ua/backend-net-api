@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
 
-namespace UniiaAdmin.Auth.Controllers;
+namespace UniiaAdmin.WebApi.Controllers;
 
 /// <summary>
 /// Короткий endpoint для версії

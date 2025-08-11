@@ -8,25 +8,27 @@ using UniiaAdmin.Data.Enums;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
-using UniiaAdmin.WebApi.Helpers;
 using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
 	[Authorize]
 	[ApiController]
-    [Route("keywords")]
+    [Route("api/v1/keywords")]
     public class KeywordController : ControllerBase
     {
         private readonly ApplicationContext _applicationContext;
+        private readonly IPaginationService _paginationService;
 
-        public KeywordController(ApplicationContext applicationContext)
+		public KeywordController(
+            ApplicationContext applicationContext,
+            IPaginationService paginationService)
         {
             _applicationContext = applicationContext;
+            _paginationService = paginationService;
         }
 
-        [HttpGet]
-        [Route("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> Get(int id)
         {
             var keyword = await _applicationContext.Keywords.FirstOrDefaultAsync(k => k.Id == id);
@@ -39,9 +41,9 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpGet]
         [Route("page")]
-        public async Task<IActionResult> GetPaginatedKeywords(int skip, int take)
+        public async Task<IActionResult> GetPaginatedKeywords(int skip = 0, int take = 10)
         {
-            var pagedKeywords = await PaginationHelper.GetPagedListAsync(_applicationContext.Keywords, skip, take);
+            var pagedKeywords = await _paginationService.GetPagedListAsync(_applicationContext.Keywords, skip, take);
 
             return Ok(pagedKeywords);
         }
@@ -69,8 +71,7 @@ namespace UNIIAadminAPI.Controllers
 			return Ok();
         }
 
-        [HttpPatch]
-        [Route("{id}")]
+        [HttpPatch("{id:int}")]
 		[LogAction(nameof(Keyword), nameof(Update))]
 		public async Task<IActionResult> Update([FromBody] string word, int id)
         {
@@ -91,8 +92,7 @@ namespace UNIIAadminAPI.Controllers
             return Ok();
         }
 
-        [HttpDelete]
-        [Route("{id}")]
+        [HttpDelete("{id:int}")]
 		[LogAction(nameof(Keyword), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {

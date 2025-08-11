@@ -9,27 +9,30 @@ using UniiaAdmin.Data.Enums;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
-using UniiaAdmin.WebApi.Helpers;
 using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
-	[Authorize]
-	[ApiController]
-    [Route("faculties")]
+    [Authorize]
+    [ApiController]
+    [Route("api/v1/faculties")]
     public class FacultyController : ControllerBase
     {
         private readonly ApplicationContext _applicationContext;
         private readonly IMapper _mapper;
+        private readonly IPaginationService _paginationService;
 
-        public FacultyController(ApplicationContext applicationContext,IMapper mapper)
+        public FacultyController(
+            ApplicationContext applicationContext,
+            IMapper mapper,
+            IPaginationService paginationService)
         {
             _applicationContext = applicationContext;
             _mapper = mapper;
+            _paginationService = paginationService;
         }
 
-        [HttpGet]
-        [Route("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> Get(int id)
         {
             var faculty = await _applicationContext.Faculties.FirstOrDefaultAsync(a => a.Id == id);
@@ -44,9 +47,9 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpGet]
         [Route("page")]
-        public async Task<IActionResult> GetPaginatedFacultied(int skip, int take)
+        public async Task<IActionResult> GetPaginatedFacultied(int skip = 0, int take = 10)
         {
-            var pagedFaculties = await PaginationHelper.GetPagedListAsync(_applicationContext.Faculties, skip, take);
+            var pagedFaculties = await _paginationService.GetPagedListAsync(_applicationContext.Faculties, skip, take);
 
             var result = pagedFaculties.Select(f => _mapper.Map<FacultyDto>(f));
 
@@ -54,8 +57,8 @@ namespace UNIIAadminAPI.Controllers
         }
 
         [HttpPost]
-		[LogAction(nameof(Faculty), nameof(Create))]
-		public async Task<IActionResult> Create([FromForm] FacultyDto facultyDto)
+        [LogAction(nameof(Faculty), nameof(Create))]
+        public async Task<IActionResult> Create([FromForm] FacultyDto facultyDto)
         {
             if (!ModelState.IsValid)
             {
@@ -73,13 +76,12 @@ namespace UNIIAadminAPI.Controllers
 
             await _applicationContext.SaveChangesAsync();
 
-			HttpContext.Items.Add("id", faculty.Id);
+            HttpContext.Items.Add("id", faculty.Id);
 
-			return Ok();
+            return Ok();
         }
 
-        [HttpPatch]
-        [Route("{id}")]
+        [HttpPatch("{id:int}")]
 		[LogAction(nameof(Faculty), nameof(Update))]
 		public async Task<IActionResult> Update(FacultyDto facultyDto, int id)
         {
@@ -105,8 +107,7 @@ namespace UNIIAadminAPI.Controllers
             return Ok();
         }
 
-        [HttpDelete]
-        [Route("{id}")]
+        [HttpDelete("{id:int}")]
 		[LogAction(nameof(Faculty), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {
