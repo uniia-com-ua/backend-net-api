@@ -8,7 +8,7 @@ using UniiaAdmin.Data.Models.AuthModels;
 namespace UniiaAdmin.Auth.Controllers;
 
 [ApiController]
-[Route("api/v1/healthz")]
+[Route("healthz")]
 public class HealthzController : ControllerBase
 {
 	private readonly AdminContext _adminContext;

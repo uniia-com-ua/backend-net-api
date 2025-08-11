@@ -9,7 +9,7 @@ namespace UniiaAdmin.WebApi.Controllers;
 /// Короткий endpoint для версії
 /// </summary>
 [ApiController]
-[Route("api/v1/ver")]
+[Route("ver")]
 public class VersionController : ControllerBase
 {
 	/// <summary>
