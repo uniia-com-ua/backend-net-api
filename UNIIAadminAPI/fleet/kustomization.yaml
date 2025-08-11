@@ -10,4 +10,4 @@ namespace: admin-api-prod
 
 images:
 - name: ghcr.io/uniia-com-ua/uniia-admin-api
-  newTag: 0.0.1-rc1
+  newTag: 0.0.1-rc2
