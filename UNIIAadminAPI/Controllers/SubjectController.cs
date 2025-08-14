@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
 namespace UniiaAdmin.WebApi.Controllers
@@ -16,13 +18,16 @@ namespace UniiaAdmin.WebApi.Controllers
     {
         private readonly ApplicationContext _applicationContext;
         private readonly IPaginationService _paginationService;
+		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public SubjectController(
             ApplicationContext applicationContext,
-            IPaginationService paginationService)
+            IPaginationService paginationService,
+			IStringLocalizer<ErrorMessages> localizer)
         {
             _applicationContext = applicationContext;
             _paginationService = paginationService;
+            _localizer = localizer;
         }
 
         [HttpGet]
@@ -32,7 +37,7 @@ namespace UniiaAdmin.WebApi.Controllers
             var subject = await _applicationContext.Subjects.FirstOrDefaultAsync(s => s.Id == id);
 
             if (subject == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(Subject), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(Subject), id.ToString()].Value);
 
             return Ok(subject);
         }
@@ -51,7 +56,7 @@ namespace UniiaAdmin.WebApi.Controllers
         public async Task<IActionResult> Create([FromBody] string name)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ErrorMessages.ModelNotValid);
+                return BadRequest(_localizer["ModelNotValid"].Value);
 
             Subject subject = new()
             {
@@ -73,12 +78,12 @@ namespace UniiaAdmin.WebApi.Controllers
 		public async Task<IActionResult> Update([FromBody] string name, int id)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ErrorMessages.ModelNotValid);
+                return BadRequest(_localizer["ModelNotValid"].Value);
 
             var subject = await _applicationContext.Subjects.FirstOrDefaultAsync(s => s.Id == id);
 
             if (subject == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(Subject), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(Subject), id.ToString()].Value);
 
             subject.Name = name;
 
@@ -95,7 +100,7 @@ namespace UniiaAdmin.WebApi.Controllers
             var subject = await _applicationContext.Subjects.FirstOrDefaultAsync(s => s.Id == id);
 
             if (subject == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(Subject), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(Subject), id.ToString()].Value);
 
             _applicationContext.Remove(subject);
 

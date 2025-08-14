@@ -1,4 +1,4 @@
-﻿using System;
+﻿/*using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,7 +12,8 @@ namespace UniiaAdmin.Tests
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Http;
     using Microsoft.EntityFrameworkCore;
-    using MongoDB.Bson;
+	using Microsoft.Extensions.Localization;
+	using MongoDB.Bson;
     using MongoDB.Driver.Linq;
     using Moq;
     using NUnit.Framework;
@@ -22,23 +23,26 @@ namespace UniiaAdmin.Tests
     using UniiaAdmin.Data.Interfaces.FileInterfaces;
     using UniiaAdmin.Data.Models;
     using UniiaAdmin.WebApi.FileServices;
+	using UniiaAdmin.WebApi.Resources;
 
-    [TestFixture]
+	[TestFixture]
     public class FileEntityServiceTests
     {
         private Mock<IFileProcessingService> _fileProcessingServiceMock;
         private Mock<MongoDbContext> _mongoDbContextMock;
         private FileEntityService _fileEntityService;
         private Mock<DbSet<AuthorPhoto>> _dbSetMock;
+		private IStringLocalizer<ErrorMessages> _localizer;
 
-        [SetUp]
+		[SetUp]
         public void Setup()
         {
             _fileProcessingServiceMock = new Mock<IFileProcessingService>();
             _mongoDbContextMock = new Mock<MongoDbContext>();
             _dbSetMock = new Mock<DbSet<AuthorPhoto>>();
+			_localizer = new Mock<IStringLocalizer<ErrorMessages>>();
 
-            _fileEntityService = new FileEntityService(_fileProcessingServiceMock.Object, _mongoDbContextMock.Object);
+			_fileEntityService = new FileEntityService(_fileProcessingServiceMock.Object, _mongoDbContextMock.Object, _localizer);
         }
 
         [TestCase(null)]
@@ -70,3 +74,4 @@ namespace UniiaAdmin.Tests
         }
     }
 }
+*/

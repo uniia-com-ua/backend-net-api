@@ -129,6 +129,7 @@ using (var scope = app.Services.CreateScope())
 
 app.UseHttpsRedirection();
 
+app.AddLocalization();
 app.UseAuthentication();
 app.UseAuthorization();
 

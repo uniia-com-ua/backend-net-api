@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using MongoDB.Driver;
 using System.Net.Mime;
 using UniiaAdmin.Data.Data;
@@ -10,6 +11,7 @@ using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
@@ -24,19 +26,22 @@ namespace UNIIAadminAPI.Controllers
         private readonly IMapper _mapper;
         private readonly IFileEntityService _fileEntityService;
         private readonly IPaginationService _paginationService;
+		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
         public UniversityController(
             ApplicationContext applicationContext,
             MongoDbContext mongoDbContext,
             IMapper mapper,
             IFileEntityService fileEntityService,
-            IPaginationService paginationService)
+            IPaginationService paginationService,
+			IStringLocalizer<ErrorMessages> localizer)
         {
             _applicationContext = applicationContext;
             _mongoDbContext = mongoDbContext;
             _mapper = mapper;
             _fileEntityService = fileEntityService;
             _paginationService = paginationService;
+            _localizer = localizer;
         }
 
         [HttpGet]
@@ -46,7 +51,7 @@ namespace UNIIAadminAPI.Controllers
             var university = await _applicationContext.Universities.FirstOrDefaultAsync(u => u.Id == id);
 
             if (university == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(University), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(University), id.ToString()].Value);
 
             var result = _mapper.Map<UniversityDto>(university);
 
@@ -124,7 +129,7 @@ namespace UNIIAadminAPI.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ErrorMessages.ModelNotValid);
+                return BadRequest(_localizer["ModelNotValid"].Value);
             }
 
             var university = _mapper.Map<University>(universityDto);
@@ -169,14 +174,14 @@ namespace UNIIAadminAPI.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ErrorMessages.ModelNotValid);
+                return BadRequest(_localizer["ModelNotValid"].Value);
             }
 
             var university = await _applicationContext.Universities.FirstOrDefaultAsync(u => u.Id == id);
 
             if (university == null)
             {
-                return NotFound(ErrorMessages.ModelNotFound(nameof(University), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(University), id.ToString()].Value);
             }
 
             university.Update(universityDto);
@@ -219,7 +224,7 @@ namespace UNIIAadminAPI.Controllers
 
             if (university == null)
             {
-                return NotFound(ErrorMessages.ModelNotFound(nameof(University), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(University), id.ToString()].Value);
             }
 
             await _fileEntityService.DeleteFileAsync(university.PhotoId, _mongoDbContext.UniversityPhotos);

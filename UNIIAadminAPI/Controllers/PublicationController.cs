@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using MongoDB.Driver;
 using System.Net.Mime;
 using UniiaAdmin.Data.Data;
@@ -9,6 +10,7 @@ using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
@@ -24,12 +26,13 @@ namespace UNIIAadminAPI.Controllers
         private readonly IMapper _mapper;
         private readonly IPaginationService _paginationService;
 
-        public PublicationController(
+		public PublicationController(
             ApplicationContext applicationContext,
             MongoDbContext mongoDbContext,
             IMapper mapper,
             IFileEntityService fileService,
-            IPaginationService paginationService)
+            IPaginationService paginationService,
+			IStringLocalizer<ErrorMessages> localizer)
         {
             _applicationContext = applicationContext;
             _mongoDbContext = mongoDbContext;
@@ -45,7 +48,7 @@ namespace UNIIAadminAPI.Controllers
             var publication = await _applicationContext.Publications.FirstOrDefaultAsync(a => a.Id == id);
 
             if (publication == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(Publication), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(Publication), id.ToString()].Value);
 
             var result = _mapper.Map<PublicationDto>(publication);
 
@@ -97,7 +100,7 @@ namespace UNIIAadminAPI.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ErrorMessages.ModelNotValid);
+                return BadRequest(_localizer["ModelNotValid"].Value);
             }
 
             var publication = _mapper.Map<Publication>(publicationDto);
@@ -130,14 +133,14 @@ namespace UNIIAadminAPI.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ErrorMessages.ModelNotValid);
+                return BadRequest(_localizer["ModelNotValid"].Value);
             }
 
             var publication = await _applicationContext.Publications.FirstOrDefaultAsync(a => a.Id == id);
 
             if (publication == null)
             {
-                return NotFound(ErrorMessages.ModelNotFound(nameof(Author), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(Publication), id.ToString()].Value);
             }
 
             publication.Update(publicationDto);
@@ -168,7 +171,7 @@ namespace UNIIAadminAPI.Controllers
 
             if (publication == null)
             {
-                return NotFound(ErrorMessages.ModelNotFound(nameof(Publication), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(Publication), id.ToString()].Value);
             }
 
             await _fileService.DeleteFileAsync(publication.FileId, _mongoDbContext.PublicationFiles);

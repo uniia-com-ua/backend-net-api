@@ -2,12 +2,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Enums;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
@@ -19,10 +21,13 @@ namespace UNIIAadminAPI.Controllers
     {
         private readonly ApplicationContext _applicationContext;
         private readonly IPaginationService _paginationService;
+		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public KeywordController(
             ApplicationContext applicationContext,
             IPaginationService paginationService)
+            IPaginationService paginationService,
+            IStringLocalizer<ErrorMessages> localizer)
         {
             _applicationContext = applicationContext;
             _paginationService = paginationService;
@@ -34,7 +39,7 @@ namespace UNIIAadminAPI.Controllers
             var keyword = await _applicationContext.Keywords.FirstOrDefaultAsync(k => k.Id == id);
 
             if (keyword == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(Keyword), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(Keyword), id.ToString()].Value);
 
             return Ok(keyword);
         }
@@ -54,7 +59,7 @@ namespace UNIIAadminAPI.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ErrorMessages.ModelNotValid);
+                return BadRequest(_localizer["ModelNotValid"].Value);
             }
 
             Keyword keyword = new()
@@ -77,13 +82,13 @@ namespace UNIIAadminAPI.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ErrorMessages.ModelNotValid);
+                return BadRequest(_localizer["ModelNotValid"].Value);
             }
 
             var keyword = await _applicationContext.Keywords.FirstOrDefaultAsync(k => k.Id == id);
 
             if (keyword == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(Keyword), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(Keyword), id.ToString()].Value);
 
             keyword.Word = word;
 
@@ -99,7 +104,7 @@ namespace UNIIAadminAPI.Controllers
             var keyword = await _applicationContext.Keywords.FirstOrDefaultAsync(k => k.Id == id);
 
             if (keyword == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(Keyword), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(Keyword), id.ToString()].Value);
 
             _applicationContext.Remove(keyword);
 

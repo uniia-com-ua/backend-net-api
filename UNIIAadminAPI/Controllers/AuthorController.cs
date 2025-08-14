@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using MongoDB.Driver;
 using System.Net.Mime;
 using UniiaAdmin.Data.Data;
@@ -10,6 +11,7 @@ using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
@@ -24,13 +26,15 @@ namespace UNIIAadminAPI.Controllers
         private readonly IFileEntityService _fileService;
 		private readonly IPaginationService _paginationService;
         private readonly IMapper _mapper;
+		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
-        public AuthorController(
+		public AuthorController(
             ApplicationContext applicationContext,
             MongoDbContext mongoDbContext,
             IMapper mapper,
             IFileEntityService fileService,
-            IPaginationService paginationService)
+            IPaginationService paginationService,
+            IStringLocalizer<ErrorMessages> localizer)
         {
             _applicationContext = applicationContext;
             _mongoDbContext = mongoDbContext;
@@ -44,8 +48,8 @@ namespace UNIIAadminAPI.Controllers
         {
             var author = await _applicationContext.Authors.FirstOrDefaultAsync(a => a.Id == id);
 
-            if (author == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(Author), id.ToString()));
+			if (author == null)
+                return NotFound(_localizer["ModelNotFound", nameof(Author), id.ToString()].Value);
 
             var result = _mapper.Map<AuthorDto>(author);
 
@@ -95,7 +99,7 @@ namespace UNIIAadminAPI.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ErrorMessages.ModelNotValid);
+                return BadRequest(_localizer["ModelNotValid"].Value);
             }
 
             var author = _mapper.Map<Author>(authorDto);
@@ -127,14 +131,14 @@ namespace UNIIAadminAPI.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ErrorMessages.ModelNotValid);
+                return BadRequest(_localizer["ModelNotValid"].Value);
             }
 
             var author = await _applicationContext.Authors.FirstOrDefaultAsync(a => a.Id == id);
 
             if (author == null)
             {
-                return NotFound(ErrorMessages.ModelNotFound(nameof(Author), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(Author), id.ToString()].Value);
             }
 
             author.Update(authorDto);
@@ -163,7 +167,7 @@ namespace UNIIAadminAPI.Controllers
             var author = await _applicationContext.Authors.FirstOrDefaultAsync(a => a.Id == id);
 
             if (author == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(Author), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(Author), id.ToString()].Value);
 
             await _fileService.DeleteFileAsync(author.PhotoId, _mongoDbContext.AuthorPhotos);
 

@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Enums;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
 namespace UniiaAdmin.Data.Controllers
@@ -16,14 +18,17 @@ namespace UniiaAdmin.Data.Controllers
     public class PublicationTypeController : ControllerBase
     {
         private readonly ApplicationContext _applicationContext;
-		private readonly IPaginationService _paginationService;
+        private readonly IPaginationService _paginationService;
+        private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public PublicationTypeController(
             ApplicationContext applicationContext,
-            IPaginationService paginationService)
+            IPaginationService paginationService,
+			IStringLocalizer<ErrorMessages> localizer)
         {
             _applicationContext = applicationContext;
             _paginationService = paginationService;
+            _localizer = localizer;
         }
 
         [HttpGet]
@@ -33,7 +38,7 @@ namespace UniiaAdmin.Data.Controllers
             var publicationType = await _applicationContext.PublicationTypes.FirstOrDefaultAsync(pt => pt.Id == id);
 
             if (publicationType == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(PublicationType), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(PublicationType), id.ToString()].Value);
 
             return Ok(publicationType);
         }
@@ -52,7 +57,7 @@ namespace UniiaAdmin.Data.Controllers
 		public async Task<IActionResult> Create([FromBody] string name)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ErrorMessages.ModelNotValid);
+                return BadRequest(_localizer["ModelNotValid"].Value);
 
             PublicationType publicationType = new()
             {
@@ -74,12 +79,12 @@ namespace UniiaAdmin.Data.Controllers
 		public async Task<IActionResult> Update([FromBody] string name, int id)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ErrorMessages.ModelNotValid);
+                return BadRequest(_localizer["ModelNotValid"].Value);
 
             var publicationType = await _applicationContext.PublicationTypes.FirstOrDefaultAsync(pt => pt.Id == id);
 
             if (publicationType == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(PublicationType), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(PublicationType), id.ToString()].Value);
 
             publicationType.Name = name;
 
@@ -96,7 +101,7 @@ namespace UniiaAdmin.Data.Controllers
             var publicationType = await _applicationContext.PublicationTypes.FirstOrDefaultAsync(pt => pt.Id == id);
 
             if (publicationType == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(PublicationType), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(PublicationType), id.ToString()].Value);
 
             _applicationContext.Remove(publicationType);
 

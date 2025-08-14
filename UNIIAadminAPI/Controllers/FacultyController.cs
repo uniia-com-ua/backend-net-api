@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using MongoDB.Driver;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Dtos;
@@ -9,6 +10,7 @@ using UniiaAdmin.Data.Enums;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
@@ -21,15 +23,18 @@ namespace UNIIAadminAPI.Controllers
         private readonly ApplicationContext _applicationContext;
         private readonly IMapper _mapper;
         private readonly IPaginationService _paginationService;
+		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
-        public FacultyController(
+		public FacultyController(
             ApplicationContext applicationContext,
             IMapper mapper,
-            IPaginationService paginationService)
+            IPaginationService paginationService,
+            IStringLocalizer<ErrorMessages> localizer)
         {
             _applicationContext = applicationContext;
             _mapper = mapper;
             _paginationService = paginationService;
+            _localizer = localizer;
         }
 
         [HttpGet("{id:int}")]
@@ -38,7 +43,7 @@ namespace UNIIAadminAPI.Controllers
             var faculty = await _applicationContext.Faculties.FirstOrDefaultAsync(a => a.Id == id);
 
             if (faculty == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(Faculty), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(Faculty), id.ToString()].Value);
 
             var result = _mapper.Map<FacultyDto>(faculty);
 
@@ -62,7 +67,7 @@ namespace UNIIAadminAPI.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ErrorMessages.ModelNotValid);
+                return BadRequest(_localizer["ModelNotValid"].Value);
             }
 
             Faculty faculty = _mapper.Map<Faculty>(facultyDto);
@@ -70,7 +75,7 @@ namespace UNIIAadminAPI.Controllers
             var isUniExist = await _applicationContext.Universities.AnyAsync(u => u.Id == faculty.UniversityId);
 
             if (!isUniExist)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(University), faculty.UniversityId.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(University), faculty.UniversityId.ToString()].Value);
 
             await _applicationContext.Faculties.AddAsync(faculty);
 
@@ -87,20 +92,19 @@ namespace UNIIAadminAPI.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ErrorMessages.ModelNotValid);
+                return BadRequest(_localizer["ModelNotValid"].Value);
             }
 
             var faculty = await _applicationContext.Faculties.FirstOrDefaultAsync(a => a.Id == id);
 
             if (faculty == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(Faculty), id.ToString()));
 
             faculty.Update(facultyDto);
 
             var isUniExist = await _applicationContext.Universities.AnyAsync(u => u.Id == faculty.UniversityId);
 
             if (!isUniExist)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(University), faculty.UniversityId.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(University), faculty.UniversityId.ToString()].Value);
 
             await _applicationContext.SaveChangesAsync();
 
@@ -114,7 +118,7 @@ namespace UNIIAadminAPI.Controllers
             var faculty = await _applicationContext.Faculties.FirstOrDefaultAsync(a => a.Id == id);
 
             if (faculty == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(Faculty), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(Faculty), id.ToString()].Value);
 
             _applicationContext.Remove(faculty);
 

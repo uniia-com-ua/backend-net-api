@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Enums;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
@@ -17,13 +19,16 @@ namespace UNIIAadminAPI.Controllers
     {
         private readonly ApplicationContext _applicationContext;
         private readonly IPaginationService _paginationService;
+		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public PublicationLanguageController(
             ApplicationContext applicationContext,
-            IPaginationService paginationService)
+            IPaginationService paginationService,
+			IStringLocalizer<ErrorMessages> localizer)
 		{
 			_applicationContext = applicationContext;
 			_paginationService = paginationService;
+            _localizer = localizer;
 		}
 
 		[HttpGet]
@@ -33,7 +38,7 @@ namespace UNIIAadminAPI.Controllers
             var language = await _applicationContext.PublicationLanguages.FirstOrDefaultAsync(l => l.Id == id);
 
             if (language == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(PublicationLanguage), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(PublicationLanguage), id.ToString()].Value);
 
             return Ok(language);
         }
@@ -52,7 +57,7 @@ namespace UNIIAadminAPI.Controllers
 		public async Task<IActionResult> Create([FromBody] string name)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ErrorMessages.ModelNotValid);
+                return BadRequest(_localizer["ModelNotValid"].Value);
 
             PublicationLanguage language = new()
             {
@@ -74,12 +79,12 @@ namespace UNIIAadminAPI.Controllers
 		public async Task<IActionResult> Update([FromBody] string name, int id)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ErrorMessages.ModelNotValid);
+                return BadRequest(_localizer["ModelNotValid"].Value);
 
             var language = await _applicationContext.PublicationLanguages.FirstOrDefaultAsync(l => l.Id == id);
 
             if (language == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(PublicationLanguage), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(PublicationLanguage), id.ToString()].Value);
 
             language.Name = name;
 
@@ -96,7 +101,7 @@ namespace UNIIAadminAPI.Controllers
             var language = await _applicationContext.PublicationLanguages.FirstOrDefaultAsync(l => l.Id == id);
 
             if (language == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(PublicationLanguage), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(PublicationLanguage), id.ToString()].Value);
 
             _applicationContext.Remove(language);
 
