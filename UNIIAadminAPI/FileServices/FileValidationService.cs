@@ -1,6 +1,4 @@
-﻿using System.Net.Mime;
-using UniiaAdmin.Data.Interfaces.FileInterfaces;
-using UniiaAdmin.WebApi.Constants;
+﻿using UniiaAdmin.Data.Interfaces.FileInterfaces;
 
 namespace UniiaAdmin.WebApi.FileServices
 {
