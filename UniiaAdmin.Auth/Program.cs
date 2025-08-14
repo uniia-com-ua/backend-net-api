@@ -61,6 +61,7 @@ builder.Services.AddTransient<IJwtAuthenticator, JwtValidationService>();
 builder.Services.AddTransient<IClaimUserService, ClaimUserService>();
 builder.Services.AddTransient<ITokenCreationService, TokenCreationService>();
 builder.Services.AddTransient<IAuthService, AuthService>();
+builder.Services.AddAutoMapper(_ => { }, AppDomain.CurrentDomain.GetAssemblies());
 
 builder.Services.AddDbContext<AdminContext>(options =>
 	options.UseNpgsql(Environment.GetEnvironmentVariable("POSTGRES_ADMIN_CONNECTION")));
@@ -84,7 +85,7 @@ using (var scope = app.Services.CreateScope())
 {
 	var adminContext = scope.ServiceProvider.GetRequiredService<AdminContext>();
 
-	await adminContext.Database.EnsureCreatedAsync();
+	await adminContext.Database.MigrateAsync();
 }
 
 app.UseAuthentication();
@@ -93,5 +94,7 @@ app.UseAuthorization();
 app.UseHttpsRedirection();
 
 app.MapControllers();
+
+await app.Services.SeedRoleClaimsAsync();
 
 await app.RunAsync();

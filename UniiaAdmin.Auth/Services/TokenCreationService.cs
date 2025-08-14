@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using MongoDB.Bson;
 using System.Security.Claims;
 using UniiaAdmin.Auth.Interfaces;
+using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.Data.Models.AuthModels;
@@ -72,27 +73,32 @@ namespace UniiaAdmin.Auth.Services
 
 				await _userManager.CreateAsync(user);
 
-				if (!await _roleManager.RoleExistsAsync("Admin"))
-				{
-					await _roleManager.CreateAsync(new IdentityRole("Admin"));
-				}
-
-				await _userManager.AddToRoleAsync(user, "Admin");
+				await _userManager.AddToRoleAsync(user, CustomRoles.AdminRole);
 			}
 
 			user.LastSingIn = DateTime.UtcNow;
 
 			var userRoles = await _userManager.GetRolesAsync(user);
 
-			var newClaims = new ClaimsIdentity(new[]
-			{
+			List<Claim> roleClaims = [];
+
+			var newClaims = new ClaimsIdentity(
+			[
 				new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
-			}, JwtBearerDefaults.AuthenticationScheme);
+			], JwtBearerDefaults.AuthenticationScheme);
 
 			foreach (var userRole in userRoles)
 			{
 				newClaims.AddClaim(new Claim(ClaimTypes.Role, userRole));
+
+				var role = await _roleManager.FindByNameAsync(userRole);
+
+				var userRoleClaims = await _roleManager.GetClaimsAsync(role!);
+
+				roleClaims.AddRange(userRoleClaims);
 			}
+
+			newClaims.AddClaims(roleClaims);
 
 			var access_token = _jwtAuthenticator.GenerateAccessToken(newClaims.Claims);
 
