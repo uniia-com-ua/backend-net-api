@@ -1,8 +1,8 @@
+using AutoMapper;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
@@ -12,6 +12,7 @@ using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
+using UniiaAdmin.WebApi.Extentions;
 using UniiaAdmin.WebApi.FileServices;
 using UniiaAdmin.WebApi.Services;
 
@@ -22,7 +23,8 @@ Env.Load();
 var services = builder.Services;
 var configuration = builder.Configuration;
 
-services.AddControllers();
+services.AddControllers()
+	.AddDataAnnotationsLocalization();
 
 services.AddEndpointsApiExplorer();
 
@@ -50,13 +52,13 @@ services.AddSwaggerGen(options =>
 	});
 });
 
+services.AddSwaggerWithJwtAuth();
+
 services.AddHttpClient();
 
-builder.Services.AddDistributedMemoryCache();
+services.AddDistributedMemoryCache();
 
-services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-
-configuration.AddJsonFile("appsettings.json");
+services.AddAutoMapper(_ => { }, AppDomain.CurrentDomain.GetAssemblies());
 
 services.AddDbContext<AdminContext>(options =>
     options.UseNpgsql(Environment.GetEnvironmentVariable("POSTGRES_ADMIN_CONNECTION")));
@@ -116,20 +118,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options => options.DisplayRequestDuration());
 }
 
-using (var scope = app.Services.CreateScope())
-{
-    var adminContext = scope.ServiceProvider.GetRequiredService<AdminContext>();
-
-    var applicationContext = scope.ServiceProvider.GetRequiredService<ApplicationContext>();
-
-    await adminContext.Database.EnsureCreatedAsync();
-    
-    await applicationContext.Database.EnsureCreatedAsync();
-}
+await app.Services.ApplyMigrationsAsync();
 
 app.UseHttpsRedirection();
 
 app.AddLocalization();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
