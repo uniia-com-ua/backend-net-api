@@ -1,20 +1,17 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
-using UniiaAdmin.Data.Dtos;
-using UniiaAdmin.Data.Enums;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
-using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Attributes;
 using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
-	[Authorize]
 	[ApiController]
     [Route("api/v1/keywords")]
     public class KeywordController : ControllerBase
@@ -25,15 +22,16 @@ namespace UNIIAadminAPI.Controllers
 
 		public KeywordController(
             ApplicationContext applicationContext,
-            IPaginationService paginationService)
             IPaginationService paginationService,
             IStringLocalizer<ErrorMessages> localizer)
         {
             _applicationContext = applicationContext;
             _paginationService = paginationService;
+            _localizer = localizer;
         }
 
-        [HttpGet("{id:int}")]
+		[HttpGet("{id:int}")]
+		[Permission(PermissionResource.Keyword, CrudActions.View)]
         public async Task<IActionResult> Get(int id)
         {
             var keyword = await _applicationContext.Keywords.FirstOrDefaultAsync(k => k.Id == id);
@@ -44,8 +42,8 @@ namespace UNIIAadminAPI.Controllers
             return Ok(keyword);
         }
 
-        [HttpGet]
-        [Route("page")]
+		[HttpGet("page")]
+		[Permission(PermissionResource.Keyword, CrudActions.View)]
         public async Task<IActionResult> GetPaginatedKeywords(int skip = 0, int take = 10)
         {
             var pagedKeywords = await _paginationService.GetPagedListAsync(_applicationContext.Keywords, skip, take);
@@ -53,7 +51,8 @@ namespace UNIIAadminAPI.Controllers
             return Ok(pagedKeywords);
         }
 
-        [HttpPost]
+		[HttpPost]
+		[Permission(PermissionResource.Keyword, CrudActions.Create)]
 		[LogAction(nameof(Keyword), nameof(Create))]
 		public async Task<IActionResult> Create([FromBody] string word)
         {
@@ -76,7 +75,8 @@ namespace UNIIAadminAPI.Controllers
 			return Ok();
         }
 
-        [HttpPatch("{id:int}")]
+		[HttpPatch("{id:int}")]
+		[Permission(PermissionResource.Keyword, CrudActions.Update)]
 		[LogAction(nameof(Keyword), nameof(Update))]
 		public async Task<IActionResult> Update([FromBody] string word, int id)
         {
@@ -97,7 +97,8 @@ namespace UNIIAadminAPI.Controllers
             return Ok();
         }
 
-        [HttpDelete("{id:int}")]
+		[HttpDelete("{id:int}")]
+		[Permission(PermissionResource.Keyword, CrudActions.Delete)]
 		[LogAction(nameof(Keyword), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {

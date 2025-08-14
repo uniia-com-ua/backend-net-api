@@ -1,22 +1,21 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using MongoDB.Driver;
 using System.Net.Mime;
+using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
-using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Attributes;
 using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
-	[Authorize]
 	[ApiController]
     [Route("api/v1/authors")]
     public class AuthorController : ControllerBase
@@ -41,12 +40,14 @@ namespace UNIIAadminAPI.Controllers
             _mapper = mapper;
             _fileService=fileService;
             _paginationService=paginationService;
+            _localizer = localizer;
         }
 
-        [HttpGet("{id:int}")]
+		[Permission(PermissionResource.Author, CrudActions.View)]
+		[HttpGet("{id:int}")]
         public async Task<IActionResult> Get(int id)
         {
-            var author = await _applicationContext.Authors.FirstOrDefaultAsync(a => a.Id == id);
+			var author = await _applicationContext.Authors.FirstOrDefaultAsync(a => a.Id == id);
 
 			if (author == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Author), id.ToString()].Value);
@@ -56,7 +57,8 @@ namespace UNIIAadminAPI.Controllers
             return Ok(result);
         }
 
-        [HttpGet("{id:int}/photo")]
+		[Permission(PermissionResource.Author, CrudActions.View)]
+		[HttpGet("{id:int}/photo")]
         public async Task<IActionResult> GetPicture(int id)
         {
             var photoId = await _applicationContext.Authors
@@ -82,8 +84,8 @@ namespace UNIIAadminAPI.Controllers
             return File(result.Value!.File!, MediaTypeNames.Image.Jpeg);
         }
 
-        [HttpGet]
-        [Route("page")]
+		[Permission(PermissionResource.Author, CrudActions.View)]
+		[HttpGet("page")]
         public async Task<IActionResult> GetPagedAuthors([FromQuery] int skip = 0, int take = 10)
         {
             var pagedAuthors = await _paginationService.GetPagedListAsync(_applicationContext.Authors, skip, take);
@@ -93,7 +95,8 @@ namespace UNIIAadminAPI.Controllers
             return Ok(resultList);
         }
 
-        [HttpPost]
+		[Permission(PermissionResource.Author, CrudActions.Create)]
+		[HttpPost]
 		[LogAction(nameof(Author), nameof(Create))]
 		public async Task<IActionResult> Create([FromForm] AuthorDto authorDto, IFormFile? photoFile)
         {
@@ -125,7 +128,8 @@ namespace UNIIAadminAPI.Controllers
             return Ok();
         }
 
-        [HttpPatch("{id}")]
+		[Permission(PermissionResource.Author, CrudActions.Update)]
+		[HttpPatch("{id}")]
 		[LogAction(nameof(Author), nameof(Update))]
 		public async Task<IActionResult> Update([FromForm] AuthorDto authorDto, IFormFile? photoFile, int id)
         {
@@ -160,7 +164,8 @@ namespace UNIIAadminAPI.Controllers
             return Ok();
         }
 
-        [HttpDelete("{id:int}")]
+		[Permission(PermissionResource.Author, CrudActions.Delete)]
+		[HttpDelete("{id:int}")]
 		[LogAction(nameof(Author), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {

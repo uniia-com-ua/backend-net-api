@@ -1,21 +1,20 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using MongoDB.Driver;
 using System.Net.Mime;
+using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
-using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Attributes;
 using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
-	[Authorize]
 	[ApiController]
     [Route("api/v1/publications")]
     public class PublicationController : ControllerBase
@@ -25,6 +24,7 @@ namespace UNIIAadminAPI.Controllers
         private readonly IFileEntityService _fileService;
         private readonly IMapper _mapper;
         private readonly IPaginationService _paginationService;
+		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public PublicationController(
             ApplicationContext applicationContext,
@@ -39,11 +39,12 @@ namespace UNIIAadminAPI.Controllers
             _mapper = mapper;
             _fileService=fileService;
             _paginationService = paginationService;
+            _localizer = localizer;
         }
 
-        [HttpGet]
-        [Route("{id}")]
-        public async Task<IActionResult> Get(int id)
+        [HttpGet("{id:int}")]
+		[Permission(PermissionResource.Publication, CrudActions.View)]
+		public async Task<IActionResult> Get(int id)
         {
             var publication = await _applicationContext.Publications.FirstOrDefaultAsync(a => a.Id == id);
 
@@ -55,9 +56,9 @@ namespace UNIIAadminAPI.Controllers
             return Ok(result);
         }
 
-        [HttpGet]
-        [Route("{id}/file")]
-        public async Task<IActionResult> GetFile(int id)
+        [HttpGet("{id:int}/file")]
+		[Permission(PermissionResource.Publication, CrudActions.View)]
+		public async Task<IActionResult> GetFile(int id)
         {
             var fileId = await _applicationContext.Publications
                                                    .Where(a => a.Id == id)
@@ -83,9 +84,9 @@ namespace UNIIAadminAPI.Controllers
             return File(result.Value!.File!, MediaTypeNames.Application.Pdf);
         }
 
-        [HttpGet]
-        [Route("page")]
-        public async Task<IActionResult> GetPagedPublications(int skip = 0, int take = 10)
+        [HttpGet("page")]
+		[Permission(PermissionResource.Publication, CrudActions.View)]
+		public async Task<IActionResult> GetPagedPublications(int skip = 0, int take = 10)
         {
             var publications = await _paginationService.GetPagedListAsync(_applicationContext.Universities, skip, take);
 
@@ -95,10 +96,12 @@ namespace UNIIAadminAPI.Controllers
         }
 
         [HttpPost]
+		[Permission(PermissionResource.Publication, CrudActions.Create)]
 		[LogAction(nameof(Publication), nameof(Create))]
 		public async Task<IActionResult> Create([FromForm] PublicationDto publicationDto, IFormFile? file)
         {
-            if (!ModelState.IsValid)
+			// TODO: change creation logic
+			if (!ModelState.IsValid)
             {
                 return BadRequest(_localizer["ModelNotValid"].Value);
             }
@@ -126,8 +129,8 @@ namespace UNIIAadminAPI.Controllers
 			return Ok();
         }
 
-        [HttpPatch]
-        [Route("{id}")]
+        [HttpPatch("{id:int}")]
+		[Permission(PermissionResource.Publication, CrudActions.Update)]
 		[LogAction(nameof(Publication), nameof(Update))]
 		public async Task<IActionResult> Update([FromForm] PublicationDto publicationDto, IFormFile? file, int id)
         {
@@ -162,8 +165,8 @@ namespace UNIIAadminAPI.Controllers
             return Ok();
         }
 
-        [HttpDelete]
-        [Route("{id}")]
+        [HttpDelete("{id:int}")]
+		[Permission(PermissionResource.Publication, CrudActions.Delete)]
 		[LogAction(nameof(Publication), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {

@@ -29,8 +29,7 @@ namespace UNIIAadminAPI.Controllers
             _paginationService = paginationService;
         }
 
-        [HttpPatch]
-        [Route("add-claim-to-role")]
+        [HttpPatch("add-claim-to-role")]
 		public async Task<IActionResult> AddClaimToRole(string roleName, string claim)
         {
             var role = await _roleManager.FindByNameAsync(roleName);
@@ -59,8 +58,7 @@ namespace UNIIAadminAPI.Controllers
             return Ok();
         }
 
-        [HttpPatch]
-        [Route("remove-from-role")]
+        [HttpPatch("remove-from-role")]
         public async Task<IActionResult> RemoveClaimFromRole(string roleName, string claim)
         {
             var role = await _roleManager.FindByNameAsync(roleName);
@@ -84,8 +82,7 @@ namespace UNIIAadminAPI.Controllers
             return Ok();
         }
 
-        [HttpPost]
-        [Route("create-role")]
+        [HttpPost("create-role")]
         public async Task<IActionResult> CreateRole(string roleName)
         {
             var result = await _roleManager.CreateAsync(new IdentityRole(roleName));
@@ -98,8 +95,7 @@ namespace UNIIAadminAPI.Controllers
             return Ok();
         }
 
-        [HttpDelete]
-        [Route("delete-role")]
+        [HttpDelete("delete-role")]
         public async Task<IActionResult> DeleteRole(string roleName)
         {
             var role = await _roleManager.FindByNameAsync(roleName);
@@ -152,7 +148,7 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpGet]
         [Route("get-paginated-claims")]
-        public async Task<IActionResult> GetPaginatedClaims(int skip, int take)
+        public async Task<IActionResult> GetPaginatedClaims(int skip = 0, int take = 10)
         {
 			var claims = await _paginationService.GetPagedListAsync(_applicationContext.RoleClaims, skip, take);
 

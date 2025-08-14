@@ -5,19 +5,19 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using MongoDB.Driver;
 using System.Net.Mime;
+using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
-using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Attributes;
 using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
-	[Authorize]
-	[ApiController]
+    [ApiController]
     [Route("api/v1/universities")]
     public class UniversityController : ControllerBase
     {
@@ -28,7 +28,7 @@ namespace UNIIAadminAPI.Controllers
         private readonly IPaginationService _paginationService;
 		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
-        public UniversityController(
+		public UniversityController(
             ApplicationContext applicationContext,
             MongoDbContext mongoDbContext,
             IMapper mapper,
@@ -44,9 +44,9 @@ namespace UNIIAadminAPI.Controllers
             _localizer = localizer;
         }
 
-        [HttpGet]
-        [Route("{id}")]
-        public async Task<IActionResult> Get(int id)
+        [HttpGet("{id:int}")]
+		[Permission(PermissionResource.University, CrudActions.View)]
+		public async Task<IActionResult> Get(int id)
         {
             var university = await _applicationContext.Universities.FirstOrDefaultAsync(u => u.Id == id);
 
@@ -58,9 +58,9 @@ namespace UNIIAadminAPI.Controllers
             return Ok(result);
         }
 
-        [HttpGet]
-        [Route("{id}/photo")]
-        public async Task<IActionResult> GetPicture(int id)
+        [HttpGet("{id:int}/photo")]
+		[Permission(PermissionResource.University, CrudActions.View)]
+		public async Task<IActionResult> GetPicture(int id)
         {
             var photoId = await _applicationContext.Universities
                                                    .Where(u => u.Id == id)
@@ -85,9 +85,9 @@ namespace UNIIAadminAPI.Controllers
             return File(result.Value!.File!, MediaTypeNames.Image.Jpeg);
         }
 
-        [HttpGet]
-        [Route("{id}/small-photo")]
-        public async Task<IActionResult> GetSmallPicture(int id)
+        [HttpGet("{id:int}/small-photo")]
+		[Permission(PermissionResource.University, CrudActions.View)]
+		public async Task<IActionResult> GetSmallPicture(int id)
         {
             var photoId = await _applicationContext.Universities
                                                    .Where(u => u.Id == id)
@@ -112,9 +112,9 @@ namespace UNIIAadminAPI.Controllers
             return File(result.Value!.File!, MediaTypeNames.Image.Jpeg);
         }
 
-        [HttpGet]
-        [Route("page")]
-        public async Task<IActionResult> GetPagedUniversities(int skip, int take)
+        [HttpGet("page")]
+		[Permission(PermissionResource.University, CrudActions.View)]
+		public async Task<IActionResult> GetPagedUniversities(int skip = 0, int take = 10)
         {
             var universitiesList = await _paginationService.GetPagedListAsync(_applicationContext.Universities, skip, take);
 
@@ -124,8 +124,9 @@ namespace UNIIAadminAPI.Controllers
         }
 
         [HttpPost]
+		[Permission(PermissionResource.University, CrudActions.Create)]
 		[LogAction(nameof(University), nameof(Create))]
-		public async Task<IActionResult> Create([FromForm] UniversityDto universityDto, IFormFile? photoFile, IFormFile? smallPhotoFile)
+        public async Task<IActionResult> Create([FromForm] UniversityDto universityDto, IFormFile? photoFile, IFormFile? smallPhotoFile)
         {
             if (!ModelState.IsValid)
             {
@@ -162,15 +163,15 @@ namespace UNIIAadminAPI.Controllers
 
             await _applicationContext.SaveChangesAsync();
 
-			HttpContext.Items.Add("id", university.Id);
+            HttpContext.Items.Add("id", university.Id);
 
-			return Ok();
+            return Ok();
         }
 
-        [HttpPatch]
-        [Route("{id}")]
+        [HttpPatch("{id:int}")]
+		[Permission(PermissionResource.University, CrudActions.Update)]
 		[LogAction(nameof(University), nameof(Update))]
-		public async Task<IActionResult> Update([FromForm] UniversityDto universityDto, IFormFile? photoFile, IFormFile? smallPhotoFile, int id)
+        public async Task<IActionResult> Update([FromForm] UniversityDto universityDto, IFormFile? photoFile, IFormFile? smallPhotoFile, int id)
         {
             if (!ModelState.IsValid)
             {
@@ -215,10 +216,10 @@ namespace UNIIAadminAPI.Controllers
             return Ok();
         }
 
-        [HttpDelete]
-        [Route("{id}")]
+        [HttpDelete("{id:int}")]
+		[Permission(PermissionResource.University, CrudActions.Delete)]
 		[LogAction(nameof(University), nameof(Delete))]
-		public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             var university = await _applicationContext.Universities.FirstOrDefaultAsync(u => u.Id == id);
 

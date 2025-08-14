@@ -4,18 +4,18 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using MongoDB.Driver;
+using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Enums;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
-using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Attributes;
 using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
-    [Authorize]
     [ApiController]
     [Route("api/v1/faculties")]
     public class FacultyController : ControllerBase
@@ -37,7 +37,8 @@ namespace UNIIAadminAPI.Controllers
             _localizer = localizer;
         }
 
-        [HttpGet("{id:int}")]
+		[HttpGet("{id:int}")]
+		[Permission(PermissionResource.Faculty, CrudActions.View)]
         public async Task<IActionResult> Get(int id)
         {
             var faculty = await _applicationContext.Faculties.FirstOrDefaultAsync(a => a.Id == id);
@@ -50,8 +51,8 @@ namespace UNIIAadminAPI.Controllers
             return Ok(result);
         }
 
-        [HttpGet]
-        [Route("page")]
+		[HttpGet("page")]
+		[Permission(PermissionResource.Faculty, CrudActions.View)]
         public async Task<IActionResult> GetPaginatedFacultied(int skip = 0, int take = 10)
         {
             var pagedFaculties = await _paginationService.GetPagedListAsync(_applicationContext.Faculties, skip, take);
@@ -61,7 +62,8 @@ namespace UNIIAadminAPI.Controllers
             return Ok(result);
         }
 
-        [HttpPost]
+		[HttpPost]
+		[Permission(PermissionResource.Faculty, CrudActions.Create)]
         [LogAction(nameof(Faculty), nameof(Create))]
         public async Task<IActionResult> Create([FromForm] FacultyDto facultyDto)
         {
@@ -86,7 +88,8 @@ namespace UNIIAadminAPI.Controllers
             return Ok();
         }
 
-        [HttpPatch("{id:int}")]
+		[HttpPatch("{id:int}")]
+		[Permission(PermissionResource.Faculty, CrudActions.Update)]
 		[LogAction(nameof(Faculty), nameof(Update))]
 		public async Task<IActionResult> Update(FacultyDto facultyDto, int id)
         {
@@ -98,6 +101,7 @@ namespace UNIIAadminAPI.Controllers
             var faculty = await _applicationContext.Faculties.FirstOrDefaultAsync(a => a.Id == id);
 
             if (faculty == null)
+                return NotFound(_localizer["ModelNotFound", nameof(Faculty), id.ToString()].Value);
 
             faculty.Update(facultyDto);
 
@@ -111,7 +115,8 @@ namespace UNIIAadminAPI.Controllers
             return Ok();
         }
 
-        [HttpDelete("{id:int}")]
+		[HttpDelete("{id:int}")]
+		[Permission(PermissionResource.Faculty, CrudActions.Delete)]
 		[LogAction(nameof(Faculty), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {

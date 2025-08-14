@@ -2,17 +2,16 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
-using UniiaAdmin.Data.Enums;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
-using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Attributes;
 using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
-    [Authorize]
     [ApiController]
     [Route("api/v1/publication-languages")]
     public class PublicationLanguageController : ControllerBase
@@ -31,9 +30,9 @@ namespace UNIIAadminAPI.Controllers
             _localizer = localizer;
 		}
 
-		[HttpGet]
-        [Route("{id}")]
-        public async Task<IActionResult> Get(int id)
+		[HttpGet("{id:int}")]
+		[Permission(PermissionResource.PublicationLanguadge, CrudActions.View)]
+		public async Task<IActionResult> Get(int id)
         {
             var language = await _applicationContext.PublicationLanguages.FirstOrDefaultAsync(l => l.Id == id);
 
@@ -43,9 +42,9 @@ namespace UNIIAadminAPI.Controllers
             return Ok(language);
         }
 
-        [HttpGet]
-        [Route("page")]
-        public async Task<IActionResult> GetPaginated(int skip = 0, int take = 10)
+        [HttpGet("page")]
+		[Permission(PermissionResource.PublicationLanguadge, CrudActions.View)]
+		public async Task<IActionResult> GetPaginated(int skip = 0, int take = 10)
         {
             var languages = await _paginationService.GetPagedListAsync(_applicationContext.PublicationLanguages, skip, take);
 
@@ -53,6 +52,7 @@ namespace UNIIAadminAPI.Controllers
         }
 
         [HttpPost]
+		[Permission(PermissionResource.PublicationLanguadge, CrudActions.Create)]
 		[LogAction(nameof(PublicationLanguage), nameof(Create))]
 		public async Task<IActionResult> Create([FromBody] string name)
         {
@@ -73,8 +73,8 @@ namespace UNIIAadminAPI.Controllers
 			return Ok();
         }
 
-        [HttpPatch]
-        [Route("{id}")]
+        [HttpPatch("{id:int}")]
+		[Permission(PermissionResource.PublicationLanguadge, CrudActions.Update)]
 		[LogAction(nameof(PublicationLanguage), nameof(Update))]
 		public async Task<IActionResult> Update([FromBody] string name, int id)
         {
@@ -93,8 +93,8 @@ namespace UNIIAadminAPI.Controllers
             return Ok();
         }
 
-        [HttpDelete]
-        [Route("{id}")]
+        [HttpDelete("{id:int}")]
+		[Permission(PermissionResource.PublicationLanguadge, CrudActions.Delete)]
 		[LogAction(nameof(PublicationLanguage), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {

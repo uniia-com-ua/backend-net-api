@@ -2,18 +2,17 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
-using UniiaAdmin.Data.Enums;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
-using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Attributes;
 using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
 namespace UniiaAdmin.Data.Controllers
 {
-	[Authorize]
-	[ApiController]
+    [ApiController]
     [Route("api/v1/publication-types")]
     public class PublicationTypeController : ControllerBase
     {
@@ -31,9 +30,9 @@ namespace UniiaAdmin.Data.Controllers
             _localizer = localizer;
         }
 
-        [HttpGet]
-        [Route("{id}")]
-        public async Task<IActionResult> Get(int id)
+        [HttpGet("{id:int}")]
+		[Permission(PermissionResource.PublicationType, CrudActions.View)]
+		public async Task<IActionResult> Get(int id)
         {
             var publicationType = await _applicationContext.PublicationTypes.FirstOrDefaultAsync(pt => pt.Id == id);
 
@@ -43,9 +42,9 @@ namespace UniiaAdmin.Data.Controllers
             return Ok(publicationType);
         }
 
-        [HttpGet]
-        [Route("page")]
-        public async Task<IActionResult> GetPaginated(int skip = 0, int take = 10)
+        [HttpGet("page")]
+		[Permission(PermissionResource.PublicationType, CrudActions.View)]
+		public async Task<IActionResult> GetPaginated(int skip = 0, int take = 10)
         {
             var publicationTypes = await _paginationService.GetPagedListAsync(_applicationContext.PublicationTypes, skip, take);
 
@@ -53,8 +52,9 @@ namespace UniiaAdmin.Data.Controllers
         }
 
         [HttpPost]
+		[Permission(PermissionResource.PublicationType, CrudActions.Create)]
 		[LogAction(nameof(PublicationType), nameof(Create))]
-		public async Task<IActionResult> Create([FromBody] string name)
+        public async Task<IActionResult> Create([FromBody] string name)
         {
             if (!ModelState.IsValid)
                 return BadRequest(_localizer["ModelNotValid"].Value);
@@ -68,15 +68,15 @@ namespace UniiaAdmin.Data.Controllers
 
             await _applicationContext.SaveChangesAsync();
 
-			HttpContext.Items.Add("id", publicationType.Id);
+            HttpContext.Items.Add("id", publicationType.Id);
 
-			return Ok();
+            return Ok();
         }
 
-        [HttpPatch]
-        [Route("{id}")]
+        [HttpPatch("{id:int}")]
+		[Permission(PermissionResource.PublicationType, CrudActions.Update)]
 		[LogAction(nameof(PublicationType), nameof(Update))]
-		public async Task<IActionResult> Update([FromBody] string name, int id)
+        public async Task<IActionResult> Update([FromBody] string name, int id)
         {
             if (!ModelState.IsValid)
                 return BadRequest(_localizer["ModelNotValid"].Value);
@@ -93,8 +93,8 @@ namespace UniiaAdmin.Data.Controllers
             return Ok();
         }
 
-        [HttpDelete]
-        [Route("{id}")]
+        [HttpDelete("{id:int}")]
+		[Permission(PermissionResource.PublicationType, CrudActions.Delete)]
 		[LogAction(nameof(PublicationType), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {
