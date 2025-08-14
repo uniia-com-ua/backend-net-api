@@ -8,7 +8,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace UniiaAdmin.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class test : Migration
+    public partial class Test : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -28,7 +28,7 @@ namespace UniiaAdmin.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "PublicationLanguadges",
+                name: "PublicationLanguages",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -37,7 +37,7 @@ namespace UniiaAdmin.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_PublicationLanguadges", x => x.Id);
+                    table.PrimaryKey("PK_PublicationLanguages", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -62,6 +62,7 @@ namespace UniiaAdmin.Data.Migrations
                     Name = table.Column<string>(type: "text", nullable: true),
                     ShortName = table.Column<string>(type: "text", nullable: true),
                     PhotoId = table.Column<string>(type: "text", nullable: true),
+                    SmallPhotoId = table.Column<string>(type: "text", nullable: true),
                     Domens = table.Column<List<string>>(type: "text[]", nullable: true)
                 },
                 constraints: table =>
@@ -117,9 +118,9 @@ namespace UniiaAdmin.Data.Migrations
                 {
                     table.PrimaryKey("PK_Publications", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Publications_PublicationLanguadges_PublicationLanguageId",
+                        name: "FK_Publications_PublicationLanguages_PublicationLanguageId",
                         column: x => x.PublicationLanguageId,
-                        principalTable: "PublicationLanguadges",
+                        principalTable: "PublicationLanguages",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -193,6 +194,30 @@ namespace UniiaAdmin.Data.Migrations
                         column: x => x.PublicationId,
                         principalTable: "Publications",
                         principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PublicationRoleClaims",
+                columns: table => new
+                {
+                    PublicationId = table.Column<int>(type: "integer", nullable: false),
+                    IdentityRoleClaimId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PublicationRoleClaims", x => new { x.PublicationId, x.IdentityRoleClaimId });
+                    table.ForeignKey(
+                        name: "FK_PublicationRoleClaims_AspNetRoleClaims_IdentityRoleClaimId",
+                        column: x => x.IdentityRoleClaimId,
+                        principalTable: "AspNetRoleClaims",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_PublicationRoleClaims_Publications_PublicationId",
+                        column: x => x.PublicationId,
+                        principalTable: "Publications",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -482,6 +507,11 @@ namespace UniiaAdmin.Data.Migrations
                 column: "PublicationId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_PublicationRoleClaims_IdentityRoleClaimId",
+                table: "PublicationRoleClaims",
+                column: "IdentityRoleClaimId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Publications_PublicationLanguageId",
                 table: "Publications",
                 column: "PublicationLanguageId");
@@ -549,9 +579,6 @@ namespace UniiaAdmin.Data.Migrations
                 table: "Collections");
 
             migrationBuilder.DropTable(
-                name: "AspNetRoleClaims");
-
-            migrationBuilder.DropTable(
                 name: "AspNetUserClaims");
 
             migrationBuilder.DropTable(
@@ -576,13 +603,16 @@ namespace UniiaAdmin.Data.Migrations
                 name: "Keywords");
 
             migrationBuilder.DropTable(
+                name: "PublicationRoleClaims");
+
+            migrationBuilder.DropTable(
                 name: "Students");
 
             migrationBuilder.DropTable(
                 name: "Subjects");
 
             migrationBuilder.DropTable(
-                name: "AspNetRoles");
+                name: "AspNetRoleClaims");
 
             migrationBuilder.DropTable(
                 name: "Faculties");
@@ -591,10 +621,13 @@ namespace UniiaAdmin.Data.Migrations
                 name: "Publications");
 
             migrationBuilder.DropTable(
+                name: "AspNetRoles");
+
+            migrationBuilder.DropTable(
                 name: "Universities");
 
             migrationBuilder.DropTable(
-                name: "PublicationLanguadges");
+                name: "PublicationLanguages");
 
             migrationBuilder.DropTable(
                 name: "PublicationTypes");

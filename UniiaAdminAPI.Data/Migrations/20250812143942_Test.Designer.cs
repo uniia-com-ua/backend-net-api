@@ -13,8 +13,8 @@ using UniiaAdmin.Data.Data;
 namespace UniiaAdmin.Data.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    [Migration("20250213152850_Test1")]
-    partial class Test1
+    [Migration("20250812143942_Test")]
+    partial class Test
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -435,7 +435,7 @@ namespace UniiaAdmin.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PublicationLanguadges");
+                    b.ToTable("PublicationLanguages");
                 });
 
             modelBuilder.Entity("UniiaAdmin.Data.Models.PublicationRoleClaim", b =>
@@ -530,6 +530,9 @@ namespace UniiaAdmin.Data.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("ShortName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SmallPhotoId")
                         .HasColumnType("text");
 
                     b.HasKey("Id");

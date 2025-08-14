@@ -6,7 +6,7 @@
         
         public int PublicationId { get; set; }
 
-        public PublicationDto? Publication { get; set; }
+        public Publication? Publication { get; set; }
 
         public Collection? Collection { get; set; }
 

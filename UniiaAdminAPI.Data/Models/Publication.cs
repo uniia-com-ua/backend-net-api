@@ -108,6 +108,5 @@ namespace UniiaAdmin.Data.Models
 
             CollectionPublications = newPublicationDto.CollectionPublications ?? CollectionPublications;
         }
-
     }
 }

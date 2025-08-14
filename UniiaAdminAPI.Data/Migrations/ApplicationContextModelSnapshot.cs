@@ -432,7 +432,7 @@ namespace UniiaAdmin.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PublicationLanguadges");
+                    b.ToTable("PublicationLanguages");
                 });
 
             modelBuilder.Entity("UniiaAdmin.Data.Models.PublicationRoleClaim", b =>
@@ -527,6 +527,9 @@ namespace UniiaAdmin.Data.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("ShortName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SmallPhotoId")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
