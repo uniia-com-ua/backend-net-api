@@ -48,9 +48,9 @@ public class AuthController : ControllerBase
 	}
 
 	[HttpGet("refresh")]
-	public async Task<IActionResult> RefreshToken(string accessToken, string? refreshToken)
+	public async Task<IActionResult> RefreshToken(string? accessToken, string? refreshToken)
 	{
-		var principals = _jwtAuthenticator.GetPrincipalFromExpiredToken(accessToken);
+		var principals = await _jwtAuthenticator.GetPrincipalFromExpiredToken(accessToken);
 
 		if (principals == null)
 		{

@@ -7,8 +7,8 @@ namespace UniiaAdmin.Auth.Interfaces
 	{
 		string GenerateAccessToken(IEnumerable<Claim>? claims);
 		string GenerateRefreshToken();
-		ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
-		Task SaveRefreshTokenAsync(AdminUser user, string refreshToken);
-		Task<bool> IsRefreshTokenValidAsync(string id, string? refreshToken);
+		public Task<ClaimsPrincipal?> GetPrincipalFromExpiredToken(string? token);
+		public Task SaveRefreshTokenAsync(AdminUser user, string refreshToken);
+		public Task<bool> IsRefreshTokenValidAsync(string id, string? refreshToken);
 	}
 }

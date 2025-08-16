@@ -17,6 +17,8 @@ public static class SeedExtention
 				await roleManager.CreateAsync(new(CustomRoles.AdminRole));
 			}
 
+			//TODO: add seed for artem.shyian@uniia.com.ua and seed for guest
+
 			var adminRole = await roleManager.FindByNameAsync(CustomRoles.AdminRole);
 
 			var claims = await roleManager.GetClaimsAsync(adminRole!);

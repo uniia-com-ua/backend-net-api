@@ -92,6 +92,8 @@ app.UseAuthorization();
 
 app.UseHttpsRedirection();
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 app.MapControllers();
 
 await app.Services.SeedRoleClaimsAsync();
