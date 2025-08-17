@@ -1,10 +1,5 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UniiaAdmin.Data.Interfaces;
 
 namespace UniiaAdmin.Data.Models
@@ -13,6 +8,7 @@ namespace UniiaAdmin.Data.Models
     {
         [BsonId]
         public ObjectId Id { get; set; }
+
         public byte[]? File { get; set; }
     }
 }

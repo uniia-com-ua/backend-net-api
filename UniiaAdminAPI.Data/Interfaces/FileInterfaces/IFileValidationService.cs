@@ -11,5 +11,4 @@ namespace UniiaAdmin.Data.Interfaces.FileInterfaces
     {
         void ValidateFile(IFormFile file, string? mediaType);
     }
-
 }

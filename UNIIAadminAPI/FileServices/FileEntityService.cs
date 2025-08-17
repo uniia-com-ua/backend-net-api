@@ -1,10 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using MongoDB.Bson;
 using UniiaAdmin.Data.Common;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
-using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Resources;
 
 namespace UniiaAdmin.WebApi.FileServices
 {
@@ -12,34 +13,38 @@ namespace UniiaAdmin.WebApi.FileServices
     {
         private readonly IFileProcessingService _fileProcessingService;
         private readonly MongoDbContext _mongoDbContext;
+		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
-        public FileEntityService(IFileProcessingService fileProcessingService,
-            MongoDbContext mongoDbContext) 
+		public FileEntityService(
+            IFileProcessingService fileProcessingService,
+            MongoDbContext mongoDbContext,
+			IStringLocalizer<ErrorMessages> localizer) 
         {
             _fileProcessingService = fileProcessingService;
             _mongoDbContext = mongoDbContext;
+            _localizer = localizer;
         }
 
-        public async Task<Result<T>> GetFileAsync<T>(string? fileId, IQueryable<T> dbSet)
+        public async Task<Result<T>> GetFileAsync<T>(string? fileId, DbSet<T> dbSet)
             where T : class, IMongoFileEntity
         {
             try
             {
                 if (string.IsNullOrEmpty(fileId))
                 {
-                    return Result<T>.Failure(new ArgumentException(ErrorMessages.ModelFileIdIsNull(typeof(T).Name)));
+                    return Result<T>.Failure(new ArgumentException(_localizer["ModelFileIdIsNull", typeof(T).Name].Value));
                 }
 
                 if (!ObjectId.TryParse(fileId, out var objectId))
                 {
-                    return Result<T>.Failure(new InvalidDataException(ErrorMessages.FileParsingFailed(fileId)));
+                    return Result<T>.Failure(new InvalidDataException(_localizer["FileParsingFailed", fileId].Value));
                 }
 
-                var file = await dbSet.FirstOrDefaultAsync(a => a.Id == objectId);
+                var file = await dbSet.FindAsync(objectId);
 
-                if (file?.File == null)
+				if (file?.File == null)
                 {
-                    return Result<T>.Failure(new KeyNotFoundException(ErrorMessages.ModelFileWithIdNotFound(typeof(T).Name, fileId)));
+                    return Result<T>.Failure(new KeyNotFoundException(_localizer["ModelFileWithIdNotFound", typeof(T).Name, fileId].Value));
                 }
 
                 return Result<T>.Success(file);
@@ -81,17 +86,21 @@ namespace UniiaAdmin.WebApi.FileServices
 
                 if (!ObjectId.TryParse(fileId, out var objectId))
                 {
-                    return Result<T>.Failure(new ArgumentException(ErrorMessages.FileParsingFailed(fileId)));
+                    return Result<T>.Failure(new ArgumentException(_localizer["FileParsingFailed", fileId].Value));
                 }
 
-                var photo = await dbSet.FirstOrDefaultAsync(a => a.Id == objectId);
+                var isExist = await dbSet.AnyAsync(a => a.Id == objectId);
 
-                if (photo == null)
-                {
+                if (!isExist)
+				{
                     return await SaveFileAsync(file, dbSet, mediaType);
                 }
 
-                photo = await _fileProcessingService.GetFileEntityAsync(file, mediaType, photo);
+				var photo = new T { Id = objectId };
+
+                dbSet.Attach(photo);
+
+				photo = await _fileProcessingService.GetFileEntityAsync(file, mediaType, photo);
 
                 dbSet.Update(photo);
 
@@ -112,10 +121,10 @@ namespace UniiaAdmin.WebApi.FileServices
             {
                 if (!ObjectId.TryParse(fileId, out var objectId))
                 {
-                    return Result<T>.Failure(new ArgumentException(ErrorMessages.FileParsingFailed(fileId)));
+                    return Result<T>.Failure(new ArgumentException(_localizer["FileParsingFailed", fileId!].Value));
                 }
 
-                var file = await dbSet.FirstOrDefaultAsync(af => af.Id == objectId);
+                var file = await dbSet.FindAsync(objectId);
 
                 if (file == null)
                 {

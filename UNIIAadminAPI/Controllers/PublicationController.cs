@@ -1,19 +1,21 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using MongoDB.Driver;
 using System.Net.Mime;
+using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
-using UniiaAdmin.WebApi.Constants;
+using UniiaAdmin.WebApi.Attributes;
+using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
-	[Authorize]
 	[ApiController]
     [Route("api/v1/publications")]
     public class PublicationController : ControllerBase
@@ -21,40 +23,49 @@ namespace UNIIAadminAPI.Controllers
         private readonly ApplicationContext _applicationContext;
         private readonly MongoDbContext _mongoDbContext;
         private readonly IFileEntityService _fileService;
-        private readonly IMapper _mapper;
+		private readonly IEntityQueryService _entityQueryService;
+		private readonly IMapper _mapper;
         private readonly IPaginationService _paginationService;
+		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
-        public PublicationController(
+		public PublicationController(
             ApplicationContext applicationContext,
             MongoDbContext mongoDbContext,
             IMapper mapper,
             IFileEntityService fileService,
-            IPaginationService paginationService)
+            IPaginationService paginationService,
+			IStringLocalizer<ErrorMessages> localizer,
+            IEntityQueryService entityQueryService)
         {
             _applicationContext = applicationContext;
             _mongoDbContext = mongoDbContext;
             _mapper = mapper;
             _fileService=fileService;
             _paginationService = paginationService;
+            _localizer = localizer;
+            _entityQueryService = entityQueryService;
         }
 
-        [HttpGet]
-        [Route("{id}")]
-        public async Task<IActionResult> Get(int id)
+        [HttpGet("{id:int}")]
+		[Permission(PermissionResource.Publication, CrudActions.View)]
+		public async Task<IActionResult> Get(int id)
         {
-            var publication = await _applicationContext.Publications.FirstOrDefaultAsync(a => a.Id == id);
+            var publication = await _applicationContext.Publications.Include(p => p.Keywords)
+                                                                    .Include(p => p.Authors)
+                                                                    .Include(p => p.Subjects)
+                                                                    .Include(p => p.PublicationType)
+                                                                    .Include(p => p.Language)
+                                                                    .FirstOrDefaultAsync(p => p.Id == id);
 
-            if (publication == null)
-                return NotFound(ErrorMessages.ModelNotFound(nameof(Publication), id.ToString()));
+			if (publication == null)
+                return NotFound(_localizer["ModelNotFound", nameof(Publication), id.ToString()].Value);
 
-            var result = _mapper.Map<PublicationDto>(publication);
-
-            return Ok(result);
+            return Ok(publication);
         }
 
-        [HttpGet]
-        [Route("{id}/file")]
-        public async Task<IActionResult> GetFile(int id)
+        [HttpGet("{id:int}/file")]
+		[Permission(PermissionResource.Publication, CrudActions.View)]
+		public async Task<IActionResult> GetFile(int id)
         {
             var fileId = await _applicationContext.Publications
                                                    .Where(a => a.Id == id)
@@ -80,31 +91,34 @@ namespace UNIIAadminAPI.Controllers
             return File(result.Value!.File!, MediaTypeNames.Application.Pdf);
         }
 
-        [HttpGet]
-        [Route("page")]
-        public async Task<IActionResult> GetPagedPublications(int skip = 0, int take = 10)
+        [HttpGet("page")]
+		[Permission(PermissionResource.Publication, CrudActions.View)]
+		public async Task<IActionResult> GetPagedPublications([FromQuery] int skip = 0, int take = 10)
         {
-            var publications = await _paginationService.GetPagedListAsync(_applicationContext.Universities, skip, take);
+            var publications = await _paginationService.GetPagedListAsync(_applicationContext.Publications, skip, take);
 
-            var resultList = publications.Select(a => _mapper.Map<PublicationDto>(a));
-
-            return Ok(resultList);
+            return Ok(publications);
         }
 
         [HttpPost]
+		[Permission(PermissionResource.Publication, CrudActions.Create)]
 		[LogAction(nameof(Publication), nameof(Create))]
-		public async Task<IActionResult> Create([FromForm] PublicationDto publicationDto, IFormFile? file)
+		public async Task<IActionResult> Create([FromForm] Publication publication, PublicationUpdateDto publicationUpdateDto)
         {
-            if (!ModelState.IsValid)
+			if (!ModelState.IsValid)
             {
-                return BadRequest(ErrorMessages.ModelNotValid);
+                return BadRequest(_localizer["ModelNotValid"].Value);
             }
 
-            var publication = _mapper.Map<Publication>(publicationDto);
+			publication.Subjects = await _entityQueryService.GetByIdsAsync(_applicationContext.Subjects, publicationUpdateDto.Subjects);
 
-            if (file != null)
+			publication.Authors = await _entityQueryService.GetByIdsAsync(_applicationContext.Authors, publicationUpdateDto.Authors);
+
+			publication.Keywords = await _entityQueryService.GetByIdsAsync(_applicationContext.Keywords, publicationUpdateDto.Keywords);
+
+			if (publicationUpdateDto.File != null)
             {
-                var result = await _fileService.SaveFileAsync(file, _mongoDbContext.PublicationFiles, MediaTypeNames.Application.Pdf);
+                var result = await _fileService.SaveFileAsync(publicationUpdateDto.File, _mongoDbContext.PublicationFiles, MediaTypeNames.Application.Pdf);
 
                 if (!result.IsSuccess)
                 {
@@ -114,7 +128,11 @@ namespace UNIIAadminAPI.Controllers
                 publication.FileId = result.Value!.Id.ToString();
             }
 
-            await _applicationContext.Publications.AddAsync(publication);
+            publication.CreatedDate = DateTime.UtcNow;
+
+			publication.LastModifiedDate = DateTime.UtcNow;
+
+			await _applicationContext.Publications.AddAsync(publication);
 
             await _applicationContext.SaveChangesAsync();
 
@@ -123,52 +141,60 @@ namespace UNIIAadminAPI.Controllers
 			return Ok();
         }
 
-        [HttpPatch]
-        [Route("{id}")]
+        [HttpPatch("{id:int}")]
+		[Permission(PermissionResource.Publication, CrudActions.Update)]
 		[LogAction(nameof(Publication), nameof(Update))]
-		public async Task<IActionResult> Update([FromForm] PublicationDto publicationDto, IFormFile? file, int id)
+		public async Task<IActionResult> Update([FromForm] Publication publication, PublicationUpdateDto publicationUpdateDto, int id)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ErrorMessages.ModelNotValid);
+                return BadRequest(_localizer["ModelNotValid"].Value);
             }
 
-            var publication = await _applicationContext.Publications.FirstOrDefaultAsync(a => a.Id == id);
+            var existedPublication = await _applicationContext.Publications.FindAsync(id);
 
-            if (publication == null)
+			if (existedPublication == null)
             {
-                return NotFound(ErrorMessages.ModelNotFound(nameof(Author), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(Publication), id.ToString()].Value);
             }
 
-            publication.Update(publicationDto);
+            _mapper.Map(publication, existedPublication);
 
-            if (file != null)
+			existedPublication.Subjects = await _entityQueryService.GetByIdsAsync(_applicationContext.Subjects, publicationUpdateDto.Subjects) ?? existedPublication.Subjects;
+
+            existedPublication.Authors = await _entityQueryService.GetByIdsAsync(_applicationContext.Authors, publicationUpdateDto.Authors) ?? existedPublication.Authors;
+
+            existedPublication.Keywords = await _entityQueryService.GetByIdsAsync(_applicationContext.Keywords, publicationUpdateDto.Keywords) ?? existedPublication.Keywords;
+
+			if (publicationUpdateDto.File != null)
             {
-                var result = await _fileService.UpdateFileAsync(file, publication.FileId, _mongoDbContext.PublicationFiles, MediaTypeNames.Image.Jpeg);
+                var result = await _fileService.UpdateFileAsync(publicationUpdateDto.File, publication.FileId, _mongoDbContext.PublicationFiles, MediaTypeNames.Image.Jpeg);
 
                 if (!result.IsSuccess)
                 {
                     return BadRequest(result.Error?.Message);
                 }
 
-                publication.FileId = result.Value!.Id.ToString();
+				existedPublication.FileId = result.Value!.Id.ToString();
             }
 
-            await _applicationContext.SaveChangesAsync();
+			existedPublication.LastModifiedDate = DateTime.UtcNow;
+
+			await _applicationContext.SaveChangesAsync();
 
             return Ok();
         }
 
-        [HttpDelete]
-        [Route("{id}")]
+        [HttpDelete("{id:int}")]
+		[Permission(PermissionResource.Publication, CrudActions.Delete)]
 		[LogAction(nameof(Publication), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {
-            var publication = await _applicationContext.Publications.FirstOrDefaultAsync(a => a.Id == id);
+            var publication = await _applicationContext.Publications.FindAsync(id);
 
             if (publication == null)
             {
-                return NotFound(ErrorMessages.ModelNotFound(nameof(Publication), id.ToString()));
+                return NotFound(_localizer["ModelNotFound", nameof(Publication), id.ToString()].Value);
             }
 
             await _fileService.DeleteFileAsync(publication.FileId, _mongoDbContext.PublicationFiles);

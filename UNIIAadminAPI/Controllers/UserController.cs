@@ -1,19 +1,13 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using MongoDB.Bson;
-using MongoDB.Driver;
-using System.Security.Claims;
+using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Interfaces;
-using UniiaAdmin.Data.Models;
+using UniiaAdmin.WebApi.Attributes;
 
 namespace UNIIAadminAPI.Controllers
 {
-    [Authorize]
     [Route("api/v1/users")]
     [ApiController]
     public class UserController : ControllerBase
@@ -34,67 +28,71 @@ namespace UNIIAadminAPI.Controllers
             _mapper = mapper;
         }
 
-/*        [HttpPatch]
-        [Route("add-claim-to-user")]
-        
-        public async Task<IActionResult> AddAdminUserClaim(ClaimsEnum claimsEnum, string userId)
-        {
-            ObjectId objectId = new(userId);
+		/*        [HttpPatch]
+				[Route("add-claim-to-user")]
 
-            var authUserId = await ClaimUserService.GetAuthUserIdByUserId(objectId, db);
+				public async Task<IActionResult> AddAdminUserClaim(ClaimsEnum claimsEnum, string userId)
+				{
+					ObjectId objectId = new(userId);
 
-            if (string.IsNullOrEmpty(authUserId))
-            {
-                return BadRequest();
-            }
+					var authUserId = await ClaimUserService.GetAuthUserIdByUserId(objectId, db);
 
-            var relatedUser = await userManager.FindByIdAsync(authUserId);
+					if (string.IsNullOrEmpty(authUserId))
+					{
+						return BadRequest();
+					}
 
-            Claim claim = new("http://schemas.microsoft.com/ws/2008/06/identity/claims/user", claimsEnum.ToString());
+					var relatedUser = await userManager.FindByIdAsync(authUserId);
 
-            var result = await userManager.AddClaimAsync(relatedUser, claim);
+					Claim claim = new("http://schemas.microsoft.com/ws/2008/06/identity/claims/user", claimsEnum.ToString());
 
-            if (!result.Succeeded)
-                return BadRequest();
+					var result = await userManager.AddClaimAsync(relatedUser, claim);
 
-            return Ok();
-        }
+					if (!result.Succeeded)
+						return BadRequest();
 
-        [HttpPatch]
-        [Route("remove-claim-from-user")]
-        
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> RemoveAdminUserClaim(ClaimsEnum claimsEnum, string userId)
-        {
-            ObjectId objectId = new(userId);
+					return Ok();
+				}
 
-            var authUserId = await ClaimUserService.GetAuthUserIdByUserId(objectId, db);
+				[HttpPatch]
+				[Route("remove-claim-from-user")]
 
-            if (string.IsNullOrEmpty(authUserId))
-                return NotFound();
+				[Authorize(Roles = "Admin")]
+				public async Task<IActionResult> RemoveAdminUserClaim(ClaimsEnum claimsEnum, string userId)
+				{
+					ObjectId objectId = new(userId);
 
-            Claim claim = new("http://schemas.microsoft.com/ws/2008/06/identity/claims/user", claimsEnum.ToString());
+					var authUserId = await ClaimUserService.GetAuthUserIdByUserId(objectId, db);
 
-            var relatedUser = await userManager.FindByIdAsync(authUserId);
+					if (string.IsNullOrEmpty(authUserId))
+						return NotFound();
 
-            var result = await userManager.RemoveClaimAsync(relatedUser, claim);
+					Claim claim = new("http://schemas.microsoft.com/ws/2008/06/identity/claims/user", claimsEnum.ToString());
 
-            if (!result.Succeeded)
-                return NotFound();
+					var relatedUser = await userManager.FindByIdAsync(authUserId);
 
-            return Ok();
-        }*/
+					var result = await userManager.RemoveClaimAsync(relatedUser, claim);
 
-        [HttpGet]
-        public async Task<IActionResult> GetAllUsers(int skip, int take = 10)
+					if (!result.Succeeded)
+						return NotFound();
+
+					return Ok();
+				}*/
+
+		[HttpGet]
+		[Permission(PermissionResource.User, CrudActions.View)]
+		public async Task<IActionResult> GetAllUsers([FromQuery] int skip = 0, int take = 10)
         {
             var users = await _paginationService.GetPagedListAsync(_applicationContext.Users, skip, take);
 
-            return Ok(users);
+			var result = users.Select(u => _mapper.Map<UserDto>(u));
+
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetUserById(string id)
+		[Permission(PermissionResource.User, CrudActions.View)]
+		public async Task<IActionResult> GetUserById(string id)
         {
             var user = await _applicationContext.Users.FindAsync(id);
 

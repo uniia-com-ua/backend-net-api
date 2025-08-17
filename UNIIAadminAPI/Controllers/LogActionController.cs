@@ -1,14 +1,13 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Interfaces;
-using UniiaAdmin.Data.Models;
+using UniiaAdmin.WebApi.Attributes;
 
 namespace UniiaAdmin.WebApi.Controllers
 {
-	[Authorize]
-	[Route("api/v1/user-actions")]
+	[Route("api/v1/log-actions")]
     [ApiController]
     public class LogActionController : ControllerBase
     {
@@ -24,45 +23,39 @@ namespace UniiaAdmin.WebApi.Controllers
             _paginationService = paginationService;
         }
 
-        [HttpGet]
-        [Route("page")]
-        public async Task<IActionResult> GetPagedLogs(int skip = 0, int take = 10)
+		[HttpGet("page")]
+		[Permission(PermissionResource.Logs, CrudActions.View)]
+        public async Task<IActionResult> GetPagedLogs([FromQuery] int skip = 0, int take = 10)
         {
-            var logActionModels = await _paginationService.GetPagedListAsync(_mongoDbContext.LogActionModels, skip, take);
-
-            var resultList = logActionModels.Select(a => _mapper.Map<LogActionModelDto>(a));
+			var logActionModels = await _paginationService.GetPagedListAsync(_mongoDbContext.LogActionModels, skip, take);
                                                   
-            return Ok(resultList);
+            return Ok(logActionModels);
         }
 
-        [HttpGet]
-        [Route("get-by-model")]
-        public async Task<IActionResult> GetLogByModelId(int modelId, string modelName, int skip, int take)
+		[HttpGet("model/{id:int}")]
+		[Permission(PermissionResource.Logs, CrudActions.View)]
+        public async Task<IActionResult> GetLogByModelId(int id, [FromQuery] string modelName, int skip = 0, int take = 10)
         {
             var logActionModels = await _paginationService.GetPagedListAsync(
                                                         _mongoDbContext.LogActionModels
-                                                        .Where(lam => lam.ModelId == modelId && lam.ModelName == modelName), 
+                                                        .Where(lam => lam.ModelId == id && lam.ModelName == modelName), 
                                                         skip, 
                                                         take);
 
-            var resultList = logActionModels.Select(a => _mapper.Map<LogActionModelDto>(a));
-
-            return Ok(resultList);
+            return Ok(logActionModels);
         }
 
-        [HttpGet]
-        [Route("get-by-userid")]
-        public async Task<IActionResult> GetByUserId(string userId, int skip = 0, int take = 10)
+		[HttpGet("user/{id}")]
+		[Permission(PermissionResource.Logs, CrudActions.View)]
+        public async Task<IActionResult> GetByUserId(string id, [FromQuery] int skip = 0, int take = 10)
         {
             var logActionModels = await _paginationService.GetPagedListAsync(
                                                         _mongoDbContext.LogActionModels
-                                                        .Where(lam => lam.UserId == userId),
+                                                        .Where(lam => lam.UserId == id),
                                                         skip,
                                                         take);
 
-            var resultList = logActionModels.Select(a => _mapper.Map<LogActionModelDto>(a));
-
-            return Ok(resultList);
+            return Ok(logActionModels);
         }
     }
 }

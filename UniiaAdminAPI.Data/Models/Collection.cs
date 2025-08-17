@@ -1,9 +1,10 @@
 ﻿using UniiaAdmin.Data.Enums;
+using UniiaAdmin.Data.Interfaces.FileInterfaces;
 
 namespace UniiaAdmin.Data.Models
 {
-    public class Collection
-    {
+    public class Collection : IEntity
+	{
         public int Id { get; set; }
 
         public string? Name { get; set; }

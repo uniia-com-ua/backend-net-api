@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace UniiaAdmin.Data.Dtos
+﻿namespace UniiaAdmin.Data.Dtos
 {
     public class AdminUserDto
     {

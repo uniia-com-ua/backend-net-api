@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using System.ComponentModel.DataAnnotations;
 using UniiaAdmin.Data.Enums;
 
 namespace UniiaAdmin.Data.Models

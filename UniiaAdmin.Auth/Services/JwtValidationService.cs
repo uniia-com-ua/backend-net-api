@@ -54,7 +54,7 @@ namespace UniiaAdmin.Auth.Services
 			return Convert.ToBase64String(randomBytes);
 		}
 
-		public ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
+		public async Task<ClaimsPrincipal?> GetPrincipalFromExpiredToken(string? token)
 		{
 			var tokenValidationParameters = new TokenValidationParameters
 			{
@@ -66,12 +66,15 @@ namespace UniiaAdmin.Auth.Services
 			};
 
 			var tokenHandler = new JwtSecurityTokenHandler();
-			var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var securityToken);
 
-			if (securityToken is not JwtSecurityToken jwtToken || jwtToken.Header.Alg != SecurityAlgorithms.HmacSha256)
+			var principal = await tokenHandler.ValidateTokenAsync(token, tokenValidationParameters);
+
+			if (principal.SecurityToken is not JwtSecurityToken jwtToken 
+				|| jwtToken.Header.Alg != SecurityAlgorithms.HmacSha256
+				|| principal.Exception != null)
 				return null;
 
-			return principal;
+			return new ClaimsPrincipal(principal.ClaimsIdentity);
 		}
 
 		public async Task SaveRefreshTokenAsync(AdminUser user, string refreshToken)

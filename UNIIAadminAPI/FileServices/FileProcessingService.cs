@@ -1,17 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore;
-using MongoDB.Bson;
-using Sprache;
-using UniiaAdmin.Data.Data;
+﻿using MongoDB.Bson;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
-using UniiaAdmin.Data.Models;
-using UniiaAdmin.WebApi.Constants;
 
 namespace UniiaAdmin.WebApi.FileServices
 {
     public class FileProcessingService : IFileProcessingService
     {
         private readonly IFileValidationService _fileValidationService;
+
         public FileProcessingService(IFileValidationService fileValidationService)
         {
             _fileValidationService = fileValidationService;

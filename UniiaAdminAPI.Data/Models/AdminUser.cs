@@ -3,7 +3,7 @@
 namespace UniiaAdmin.Data.Models
 {
     public class AdminUser : IdentityUser
-    {
+	{
         public DateTime LastSingIn { get; set; }
 
         public bool IsOnline { get; set; }

@@ -1,8 +1,8 @@
+using AutoMapper;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
@@ -12,6 +12,7 @@ using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
+using UniiaAdmin.WebApi.Extentions;
 using UniiaAdmin.WebApi.FileServices;
 using UniiaAdmin.WebApi.Services;
 
@@ -22,41 +23,20 @@ Env.Load();
 var services = builder.Services;
 var configuration = builder.Configuration;
 
-services.AddControllers();
+services.AddControllers()
+	.AddDataAnnotationsLocalization();
 
 services.AddEndpointsApiExplorer();
 
-services.AddSwaggerGen(options =>
-{
-	options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-	{
-		Name = "Authorization",
-		Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
-		Scheme = "Bearer",
-		BearerFormat = "JWT",
-		In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-		Description = "JWT Authorization header using the Bearer scheme."
-	});
-	options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement {
-			{
-				new Microsoft.OpenApi.Models.OpenApiSecurityScheme {
-						Reference = new Microsoft.OpenApi.Models.OpenApiReference {
-							Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-								Id = "Bearer"
-						}
-					},
-					Array.Empty<string>()
-			}
-	});
-});
+services.AddLocalization();
+
+services.AddSwaggerWithJwtAuth();
 
 services.AddHttpClient();
 
-builder.Services.AddDistributedMemoryCache();
+services.AddDistributedMemoryCache();
 
-services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-
-configuration.AddJsonFile("appsettings.json");
+services.AddAutoMapper(_ => { }, AppDomain.CurrentDomain.GetAssemblies());
 
 services.AddDbContext<AdminContext>(options =>
     options.UseNpgsql(Environment.GetEnvironmentVariable("POSTGRES_ADMIN_CONNECTION")));
@@ -81,6 +61,8 @@ services.AddTransient<IHealthCheckService, HealthCheckService>();
 
 services.AddTransient<IPaginationService, PaginationService>();
 
+services.AddTransient<IEntityQueryService, EntityQueryService>();
+
 services.AddSingleton(provider => 
 {
     var mongoClient = new MongoClient(Environment.GetEnvironmentVariable("MONGODB_CONNECTION")!);
@@ -103,10 +85,7 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(
 	};
 });
 
-services.AddAuthorizationBuilder()
-		.SetDefaultPolicy(new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
-		.RequireAuthenticatedUser()
-		.Build());
+services.SeedPolicies();
 
 var app = builder.Build();
 
@@ -116,18 +95,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options => options.DisplayRequestDuration());
 }
 
-using (var scope = app.Services.CreateScope())
-{
-    var adminContext = scope.ServiceProvider.GetRequiredService<AdminContext>();
-
-    var applicationContext = scope.ServiceProvider.GetRequiredService<ApplicationContext>();
-
-    await adminContext.Database.EnsureCreatedAsync();
-    
-    await applicationContext.Database.EnsureCreatedAsync();
-}
+await app.Services.ApplyMigrationsAsync();
 
 app.UseHttpsRedirection();
+
+app.AddLocalization();
 
 app.UseAuthentication();
 app.UseAuthorization();

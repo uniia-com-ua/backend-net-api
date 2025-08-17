@@ -1,22 +1,28 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using UniiaAdmin.Data.Interfaces;
-using UniiaAdmin.WebApi.Constants;
 
 namespace UniiaAdmin.WebApi.Services;
 
 public class PaginationService : IPaginationService
 {
-	public async Task<List<T>> GetPagedListAsync<T>(IQueryable<T> query, int skip, int take)
+	private readonly int _maxPageSize;
+
+	public PaginationService(IConfiguration configuration)
+	{
+		_maxPageSize = configuration.GetValue<int>("PageSettings:MaxPageSize");
+	}
+
+	public async Task<List<T>> GetPagedListAsync<T>(IQueryable<T>? query, int skip, int take)
 			where T : class
 	{
-		if (take <= 0)
+		if (take <= 0 || query == null)
 		{
 			return [];
 		}
 
-		if (take > AppConstants.MaxPageSize)
+		if (take > _maxPageSize)
 		{
-			take = AppConstants.MaxPageSize;
+			take = _maxPageSize;
 		}
 
 		var result = await query.Skip(skip).Take(take).ToListAsync();

@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MongoDB.Driver.GridFS;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
@@ -8,25 +7,22 @@ namespace UNIIAadminAPI.Controllers
 {
     [Route("healthz")]
     [ApiController]
-    public class HealthController : ControllerBase
+    public class HealthzController : ControllerBase
     {
         private readonly AdminContext _adminContext;
         private readonly ApplicationContext _applicationContext;
         private readonly MongoDbContext _mongoContext;
-        private readonly GridFSBucket _gridFsBucket;
         private readonly IHealthCheckService _healthCheckService;
 
-        public HealthController(
+        public HealthzController(
             AdminContext adminContext, 
             ApplicationContext applicationContext,
             MongoDbContext mongoContext,
-            GridFSBucket gridFsBucket,
             IHealthCheckService healthCheckService)
         {
             _adminContext = adminContext;
             _applicationContext = applicationContext;
             _mongoContext = mongoContext;
-            _gridFsBucket = gridFsBucket;
             _healthCheckService = healthCheckService;
         }
 
