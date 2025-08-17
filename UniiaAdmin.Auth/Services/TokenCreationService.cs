@@ -73,7 +73,7 @@ namespace UniiaAdmin.Auth.Services
 
 				await _userManager.CreateAsync(user);
 
-				await _userManager.AddToRoleAsync(user, CustomRoles.AdminRole);
+				await _userManager.AddToRoleAsync(user, CustomRoles.GuestRole);
 			}
 
 			user.LastSingIn = DateTime.UtcNow;

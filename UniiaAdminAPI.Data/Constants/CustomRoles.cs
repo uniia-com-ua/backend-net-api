@@ -8,4 +8,6 @@ using System.Threading.Tasks;
 public static class CustomRoles
 {
 	public const string AdminRole = "Admin";
+
+	public const string GuestRole = "Guest";
 }
