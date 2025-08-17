@@ -1,52 +1,55 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using System.Security.Claims;
+using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Interfaces;
-using UniiaAdmin.Data.Models;
-using UniiaAdmin.WebApi.Services;
+using UniiaAdmin.WebApi.Attributes;
+using UniiaAdmin.WebApi.Resources;
 
 namespace UNIIAadminAPI.Controllers
 {
-	[Authorize]
-	[ApiController]
+    [ApiController]
     [Route("api/v1/roles")]
     public class RolesController : ControllerBase
     {
         private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly ApplicationContext _applicationContext;
-		private readonly IPaginationService _paginationService;
+        private readonly AdminContext _adminContext;
+        private readonly IPaginationService _paginationService;
+        private readonly IStringLocalizer<ErrorMessages> _localizer;
 
-		public RolesController
-            (ApplicationContext applicationContext,
+        public RolesController
+            (AdminContext adminContext,
             RoleManager<IdentityRole> signInManager,
-			IPaginationService paginationService)
+            IPaginationService paginationService,
+            IStringLocalizer<ErrorMessages> stringLocalizer)
         {
             _roleManager = signInManager;
-            _applicationContext = applicationContext;
+			_adminContext = adminContext;
             _paginationService = paginationService;
+            _localizer = stringLocalizer;
         }
 
-        [HttpPatch("add-claim-to-role")]
-		public async Task<IActionResult> AddClaimToRole(string roleName, string claim)
+		[HttpPost("{roleName}/{claim}")]
+		[Permission(PermissionResource.Role, CrudActions.Update)]
+        public async Task<IActionResult> AddClaimToRole(string roleName, string claim)
         {
             var role = await _roleManager.FindByNameAsync(roleName);
 
             if (role == null)
             {
-                return NotFound($"Role with name {roleName} not found");
+                return NotFound(_localizer["RoleNotFound", roleName].Value);
             }
 
             var existingClaims = await _roleManager.GetClaimsAsync(role);
 
-            if (existingClaims.Any(c => c.Type == ClaimTypes.Role && c.Value == claim))
+            if (existingClaims.Any(c => c.Type == CustomClaimTypes.Permission && c.Value == claim))
             {
-                return Conflict();
+                return Conflict(_localizer["ClaimExist", claim, roleName].Value);
             }
 
-            var newClaim = new Claim(ClaimTypes.Role, claim);
+            var newClaim = new Claim(CustomClaimTypes.Permission, claim);
 
             var result = await _roleManager.AddClaimAsync(role, newClaim);
 
@@ -58,14 +61,15 @@ namespace UNIIAadminAPI.Controllers
             return Ok();
         }
 
-        [HttpPatch("remove-from-role")]
+        [HttpDelete("{roleName}/{claim}")]
+        [Permission(PermissionResource.Role, CrudActions.Update)]
         public async Task<IActionResult> RemoveClaimFromRole(string roleName, string claim)
         {
             var role = await _roleManager.FindByNameAsync(roleName);
 
             if (role == null)
             {
-                return NotFound($"Role with name {roleName} not found");
+                return NotFound(_localizer["RoleNotFound", roleName].Value);
             }
 
             var claimValue = claim.ToString();
@@ -75,16 +79,27 @@ namespace UNIIAadminAPI.Controllers
             var roleClaim = existingClaims.FirstOrDefault(c => c.Value == claimValue);
 
             if (roleClaim == null)
-                return NotFound($"Role with name {roleName} and claim {claim} not found");
+                return NotFound(_localizer["ClaimNotExist", claim, roleName].Value);
 
-            await _roleManager.RemoveClaimAsync(role, roleClaim);
+            var result = await _roleManager.RemoveClaimAsync(role, roleClaim);
+
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors);
+            }
 
             return Ok();
         }
 
-        [HttpPost("create-role")]
+        [HttpPost]
+        [Permission(PermissionResource.Role, CrudActions.Create)]
         public async Task<IActionResult> CreateRole(string roleName)
         {
+            if (await _roleManager.RoleExistsAsync(roleName))
+            {
+                return BadRequest(_localizer["RoleExist", roleName].Value);
+            }
+
             var result = await _roleManager.CreateAsync(new IdentityRole(roleName));
 
             if (!result.Succeeded)
@@ -95,24 +110,30 @@ namespace UNIIAadminAPI.Controllers
             return Ok();
         }
 
-        [HttpDelete("delete-role")]
+        [HttpDelete]
+        [Permission(PermissionResource.Role, CrudActions.Delete)]
         public async Task<IActionResult> DeleteRole(string roleName)
         {
             var role = await _roleManager.FindByNameAsync(roleName);
 
+            if (roleName == CustomRoles.AdminRole || roleName == CustomRoles.GuestRole)
+            {
+                return BadRequest(_localizer["RoleCannotBeDeleted"].Value);
+            }
+
             if (role == null)
-                return NotFound($"Role with name {roleName} not found");
+                return NotFound(_localizer["RoleNotFound", roleName].Value);
 
             var result = await _roleManager.DeleteAsync(role);
 
             if (!result.Succeeded)
-                return BadRequest();
+                return BadRequest(result.Errors);
 
             return Ok();
         }
 
-        [HttpGet]
-        [Route("get-paginated-roles")]
+        [HttpGet("page")]
+        [Permission(PermissionResource.Role, CrudActions.View)]
         public async Task<IActionResult> GetAllRoles(int skip = 0, int take = 10)
         {
             var roles = await _paginationService.GetPagedListAsync(_roleManager.Roles, skip, take);
@@ -120,37 +141,46 @@ namespace UNIIAadminAPI.Controllers
             return Ok(roles);
         }
 
-        [HttpGet]
-        [Route("get-role-by-name")]
+		[HttpGet("{roleName}")]
+		[Permission(PermissionResource.Role, CrudActions.View)]
         public async Task<IActionResult> GetRoleByName(string roleName)
         {
             var role = await _roleManager.FindByNameAsync(roleName);
 
             if (role == null)
-                return NotFound($"Role with name {roleName} not found");
+				return NotFound(_localizer["RoleNotFound", roleName].Value);
 
-            return Ok(role);
+			return Ok(role);
         }
 
-        [HttpGet]
-        [Route("get-claims-by-role")]
-        public async Task<IActionResult> GetClaimsByRoleName(string roleName)
+        [HttpGet("{roleName}/claims")]
+		[Permission(PermissionResource.Role, CrudActions.View)]
+		public async Task<IActionResult> GetClaimsByRoleName(string roleName, int skip = 0, int take = 10)
         {
             var role = await _roleManager.FindByNameAsync(roleName);
 
             if (role == null)
                 return NotFound($"Role with name {roleName} not found");
 
-            var claims = await _roleManager.GetClaimsAsync(role);
+            var roleClaims = await _roleManager.GetClaimsAsync(role);
 
-            return Ok(claims);
+			var claims = await _paginationService.GetPagedListAsync(_adminContext.RoleClaims
+                .Where(r => r.RoleId == role.Id)
+				.Select(rc => rc.ClaimValue!)
+	            .Distinct()
+	            .OrderBy(o => o), skip, take);
+
+			return Ok(claims);
         }
 
-        [HttpGet]
-        [Route("get-paginated-claims")]
-        public async Task<IActionResult> GetPaginatedClaims(int skip = 0, int take = 10)
+        [HttpGet("claims/page")]
+		[Permission(PermissionResource.Role, CrudActions.View)]
+		public async Task<IActionResult> GetPaginatedClaims(int skip = 0, int take = 10)
         {
-			var claims = await _paginationService.GetPagedListAsync(_applicationContext.RoleClaims, skip, take);
+            var claims = await _paginationService.GetPagedListAsync(_adminContext.RoleClaims
+                .Select(rc => rc.ClaimValue!)
+				.Distinct()
+                .OrderBy(o => o), skip, take);
 
             return Ok(claims);
         }

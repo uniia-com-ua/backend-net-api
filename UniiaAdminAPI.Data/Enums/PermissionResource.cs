@@ -11,5 +11,6 @@ public enum PermissionResource
 	Subject,
 	University,
 	User,
-	Logs
+	Logs,
+	Role
 }

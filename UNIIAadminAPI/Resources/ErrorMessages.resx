@@ -117,6 +117,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ClaimExist" xml:space="preserve">
+    <value>Claim {0} already attached to {1} role</value>
+  </data>
   <data name="FileParsingFailed" xml:space="preserve">
     <value>Parsing file with ID '{0}' failed</value>
   </data>
@@ -124,8 +127,7 @@
     <value>The ID parameter is required</value>
   </data>
   <data name="ModelFileIdIsNull" xml:space="preserve">
-    <value>File for {0} is 
-	or null.</value>
+    <value>File for {0} is empty or null.</value>
   </data>
   <data name="ModelFileMissing" xml:space="preserve">
     <value>{0} file with ID '{1}' not found. Please, delete the {2} model and create him again</value>
@@ -144,5 +146,17 @@
   </data>
   <data name="OnlyPdfAllowed" xml:space="preserve">
     <value>Only PDF files are allowed</value>
+  </data>
+  <data name="RoleNotFound" xml:space="preserve">
+    <value>Role with name {0} not found</value>
+  </data>
+  <data name="ClaimNotExist" xml:space="preserve">
+    <value>Claim {0} isn't attached to {1} role</value>
+  </data>
+  <data name="RoleExist" xml:space="preserve">
+    <value>Role {0} already exist</value>
+  </data>
+  <data name="RoleCannotBeDeleted" xml:space="preserve">
+    <value>This role cannot be deleted</value>
   </data>
 </root>
