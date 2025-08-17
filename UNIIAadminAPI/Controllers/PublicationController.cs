@@ -6,6 +6,7 @@ using MongoDB.Driver;
 using System.Net.Mime;
 using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
@@ -49,14 +50,17 @@ namespace UNIIAadminAPI.Controllers
 		[Permission(PermissionResource.Publication, CrudActions.View)]
 		public async Task<IActionResult> Get(int id)
         {
-            var publication = await _applicationContext.Publications.FindAsync(id);
+            var publication = await _applicationContext.Publications.Include(p => p.Keywords)
+                                                                    .Include(p => p.Authors)
+                                                                    .Include(p => p.Subjects)
+                                                                    .Include(p => p.PublicationType)
+                                                                    .Include(p => p.Language)
+                                                                    .FirstOrDefaultAsync(p => p.Id == id);
 
-            if (publication == null)
+			if (publication == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Publication), id.ToString()].Value);
 
-            var result = _mapper.Map<PublicationDto>(publication);
-
-            return Ok(result);
+            return Ok(publication);
         }
 
         [HttpGet("{id:int}/file")]
@@ -93,32 +97,28 @@ namespace UNIIAadminAPI.Controllers
         {
             var publications = await _paginationService.GetPagedListAsync(_applicationContext.Publications, skip, take);
 
-            var resultList = publications.Select(a => _mapper.Map<PublicationDto>(a));
-
             return Ok(publications);
         }
 
         [HttpPost]
 		[Permission(PermissionResource.Publication, CrudActions.Create)]
 		[LogAction(nameof(Publication), nameof(Create))]
-		public async Task<IActionResult> Create([FromForm] PublicationDto publicationDto, IFormFile? file)
+		public async Task<IActionResult> Create([FromForm] Publication publication, PublicationUpdateDto publicationUpdateDto)
         {
 			if (!ModelState.IsValid)
             {
                 return BadRequest(_localizer["ModelNotValid"].Value);
             }
 
-			var publication = _mapper.Map<Publication>(publicationDto);
+			publication.Subjects = await _entityQueryService.GetByIdsAsync(_applicationContext.Subjects, publicationUpdateDto.Subjects);
 
-			publication.Authors = await _entityQueryService.GetByIdsAsync(_applicationContext.Authors, publicationDto.Authors);
+			publication.Authors = await _entityQueryService.GetByIdsAsync(_applicationContext.Authors, publicationUpdateDto.Authors);
 
-			publication.Subjects = await _entityQueryService.GetByIdsAsync(_applicationContext.Subjects, publicationDto.Subjects);
+			publication.Keywords = await _entityQueryService.GetByIdsAsync(_applicationContext.Keywords, publicationUpdateDto.Keywords);
 
-			publication.Keywords = await _entityQueryService.GetByIdsAsync(_applicationContext.Keywords, publicationDto.Keywords);
-
-			if (file != null)
+			if (publicationUpdateDto.File != null)
             {
-                var result = await _fileService.SaveFileAsync(file, _mongoDbContext.PublicationFiles, MediaTypeNames.Application.Pdf);
+                var result = await _fileService.SaveFileAsync(publicationUpdateDto.File, _mongoDbContext.PublicationFiles, MediaTypeNames.Application.Pdf);
 
                 if (!result.IsSuccess)
                 {
@@ -128,7 +128,11 @@ namespace UNIIAadminAPI.Controllers
                 publication.FileId = result.Value!.Id.ToString();
             }
 
-            await _applicationContext.Publications.AddAsync(publication);
+            publication.CreatedDate = DateTime.UtcNow;
+
+			publication.LastModifiedDate = DateTime.UtcNow;
+
+			await _applicationContext.Publications.AddAsync(publication);
 
             await _applicationContext.SaveChangesAsync();
 
@@ -140,50 +144,43 @@ namespace UNIIAadminAPI.Controllers
         [HttpPatch("{id:int}")]
 		[Permission(PermissionResource.Publication, CrudActions.Update)]
 		[LogAction(nameof(Publication), nameof(Update))]
-		public async Task<IActionResult> Update([FromForm] PublicationDto publicationDto, IFormFile? file, int id)
+		public async Task<IActionResult> Update([FromForm] Publication publication, PublicationUpdateDto publicationUpdateDto, int id)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(_localizer["ModelNotValid"].Value);
             }
 
-            var publication = await _applicationContext.Publications.FindAsync(id);
+            var existedPublication = await _applicationContext.Publications.FindAsync(id);
 
-			if (publication == null)
+			if (existedPublication == null)
             {
                 return NotFound(_localizer["ModelNotFound", nameof(Publication), id.ToString()].Value);
             }
 
-            var authors = await _entityQueryService.GetByIdsAsync(_applicationContext.Authors, publicationDto.Authors);
+            _mapper.Map(publication, existedPublication);
 
-			var subjects = await _entityQueryService.GetByIdsAsync(_applicationContext.Subjects, publicationDto.Subjects);
+			existedPublication.Subjects = await _entityQueryService.GetByIdsAsync(_applicationContext.Subjects, publicationUpdateDto.Subjects) ?? existedPublication.Subjects;
 
-            List<CollectionPublication> collectionPublications = new List<CollectionPublication>();
+            existedPublication.Authors = await _entityQueryService.GetByIdsAsync(_applicationContext.Authors, publicationUpdateDto.Authors) ?? existedPublication.Authors;
 
-			if (publicationDto.Collections != null)
-			{
-				collectionPublications = await _applicationContext.CollectionPublications
-                    .Where(obj => publicationDto.Collections.Contains(obj.CollectionId))
-                    .ToListAsync();
-			}
+            existedPublication.Keywords = await _entityQueryService.GetByIdsAsync(_applicationContext.Keywords, publicationUpdateDto.Keywords) ?? existedPublication.Keywords;
 
-			var keywords = await _entityQueryService.GetByIdsAsync(_applicationContext.Keywords, publicationDto.Keywords);
-
-			publication.Update(publicationDto, authors, subjects, collectionPublications, keywords);
-
-            if (file != null)
+			if (publicationUpdateDto.File != null)
             {
-                var result = await _fileService.UpdateFileAsync(file, publication.FileId, _mongoDbContext.PublicationFiles, MediaTypeNames.Image.Jpeg);
+                var result = await _fileService.UpdateFileAsync(publicationUpdateDto.File, publication.FileId, _mongoDbContext.PublicationFiles, MediaTypeNames.Image.Jpeg);
 
                 if (!result.IsSuccess)
                 {
                     return BadRequest(result.Error?.Message);
                 }
 
-                publication.FileId = result.Value!.Id.ToString();
+				existedPublication.FileId = result.Value!.Id.ToString();
             }
 
-            await _applicationContext.SaveChangesAsync();
+			existedPublication.LastModifiedDate = DateTime.UtcNow;
+
+			await _applicationContext.SaveChangesAsync();
 
             return Ok();
         }

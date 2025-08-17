@@ -10,7 +10,7 @@ using UniiaAdmin.Data.Models;
 
 public class EntityQueryService : IEntityQueryService
 {
-	public async Task<List<T>> GetByIdsAsync<T>(DbSet<T>? dbSet, IEnumerable<int>? ids) where T : class, IEntity
+	public async Task<List<T>?> GetByIdsAsync<T>(DbSet<T>? dbSet, IEnumerable<int>? ids) where T : class, IEntity
 	{
 		if (dbSet != null && ids != null)
 		{
@@ -18,7 +18,7 @@ public class EntityQueryService : IEntityQueryService
 		}
 		else
 		{
-			return await Task.FromResult(new List<T>());
+			return null;
 		}	
 	}
 }
