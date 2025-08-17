@@ -84,7 +84,7 @@ using (var scope = app.Services.CreateScope())
 {
 	var adminContext = scope.ServiceProvider.GetRequiredService<AdminContext>();
 
-	await adminContext.Database.MigrateAsync();
+	await adminContext.Database.EnsureCreatedAsync();
 }
 
 app.UseAuthentication();

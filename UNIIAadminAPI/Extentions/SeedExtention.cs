@@ -22,7 +22,12 @@ public static class SeedExtention
 					options.AddPolicy(policyName, policy =>
 						policy.RequireAuthenticatedUser()
 						.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
-						.RequireClaim(CustomClaimTypes.Permission, policyName));
+								  .RequireAssertion(context =>
+									  context.User.IsInRole(CustomRoles.AdminRole) ||
+									  context.User.HasClaim(c =>
+										  c.Type == CustomClaimTypes.Permission &&
+										  c.Value == policyName)
+								  ));
 				}
 			}
 		});

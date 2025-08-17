@@ -16,9 +16,9 @@ public static class DatabaseExtention
 
 			var applicationContext = scope.ServiceProvider.GetRequiredService<ApplicationContext>();
 
-			await adminContext.Database.MigrateAsync();
+			await adminContext.Database.EnsureCreatedAsync();
 
-			await applicationContext.Database.MigrateAsync();
+			await applicationContext.Database.EnsureCreatedAsync();
 		}
 	}
 }
