@@ -174,7 +174,7 @@ namespace UNIIAadminAPI.Controllers
 
             var existedUniversity = await _applicationContext.Universities.FindAsync(id);
 
-            if (university == null)
+            if (existedUniversity == null)
             {
                 return NotFound(_localizer["ModelNotFound", nameof(University), id.ToString()].Value);
             }
@@ -190,7 +190,7 @@ namespace UNIIAadminAPI.Controllers
                     return BadRequest(result.Error?.Message);
                 }
 
-                university.PhotoId = result.Value!.Id.ToString();
+				existedUniversity.PhotoId = result.Value!.Id.ToString();
             }
 
             if (smallPhotoFile != null)
@@ -202,7 +202,7 @@ namespace UNIIAadminAPI.Controllers
                     return BadRequest(result.Error?.Message);
                 }
 
-                university.PhotoId = result.Value!.Id.ToString();
+				existedUniversity.SmallPhotoId = result.Value!.Id.ToString();
             }
 
             await _applicationContext.SaveChangesAsync();

@@ -151,7 +151,7 @@ namespace UNIIAadminAPI.Controllers
                     return BadRequest(result.Error?.Message);
                 }
 
-                author.PhotoId = result.Value!.Id.ToString();
+				existedAuthor.PhotoId = result.Value!.Id.ToString();
             }
 
             await _applicationContext.SaveChangesAsync();
