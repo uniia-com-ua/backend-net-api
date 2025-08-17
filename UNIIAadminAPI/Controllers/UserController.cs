@@ -79,17 +79,20 @@ namespace UNIIAadminAPI.Controllers
 					return Ok();
 				}*/
 
-		[Permission(PermissionResource.User, CrudActions.View)]
 		[HttpGet]
-        public async Task<IActionResult> GetAllUsers([FromQuery] int skip = 0, int take = 10)
+		[Permission(PermissionResource.User, CrudActions.View)]
+		public async Task<IActionResult> GetAllUsers([FromQuery] int skip = 0, int take = 10)
         {
             var users = await _paginationService.GetPagedListAsync(_applicationContext.Users, skip, take);
 
-            return Ok(users);
+			var result = users.Select(u => _mapper.Map<UserDto>(u));
+
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetUserById(string id)
+		[Permission(PermissionResource.User, CrudActions.View)]
+		public async Task<IActionResult> GetUserById(string id)
         {
             var user = await _applicationContext.Users.FindAsync(id);
 
