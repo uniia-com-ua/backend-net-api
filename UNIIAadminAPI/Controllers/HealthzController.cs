@@ -7,14 +7,14 @@ namespace UNIIAadminAPI.Controllers
 {
     [Route("healthz")]
     [ApiController]
-    public class HealthController : ControllerBase
+    public class HealthzController : ControllerBase
     {
         private readonly AdminContext _adminContext;
         private readonly ApplicationContext _applicationContext;
         private readonly MongoDbContext _mongoContext;
         private readonly IHealthCheckService _healthCheckService;
 
-        public HealthController(
+        public HealthzController(
             AdminContext adminContext, 
             ApplicationContext applicationContext,
             MongoDbContext mongoContext,
