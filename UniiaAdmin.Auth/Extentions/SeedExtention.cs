@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 using UniiaAdmin.Data.Constants;
+using UniiaAdmin.Data.Models;
 
 namespace UniiaAdmin.Auth.Extentions;
 
@@ -17,7 +18,10 @@ public static class SeedExtention
 				await roleManager.CreateAsync(new(CustomRoles.AdminRole));
 			}
 
-			//TODO: add seed for artem.shyian@uniia.com.ua and seed for guest
+			if (!await roleManager.RoleExistsAsync(CustomRoles.GuestRole))
+			{
+				await roleManager.CreateAsync(new(CustomRoles.GuestRole));
+			}
 
 			var adminRole = await roleManager.FindByNameAsync(CustomRoles.AdminRole);
 
@@ -32,6 +36,40 @@ public static class SeedExtention
 						await roleManager.AddClaimAsync(adminRole!, new Claim(CustomClaimTypes.Permission, $"{modelName}.{action}"));
 					}
 				}
+			}
+		}
+	}
+
+	public static async Task SeedUsersAsync(this IServiceProvider services)
+	{
+		using (var scope = services.CreateScope())
+		{
+			var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AdminUser>>();
+
+			var users = new List<AdminUser>
+			{
+				new()
+				{
+					Email = "artem.shyian@uniia.com.ua",
+					UserName = "artem.shyian@uniia.com.ua",
+					Name = "Артем",
+					Surname = "Шиян",
+					IsOnline = true,
+				},
+				new()
+				{
+					Email = "ivan.lazarenko@uniia.com.ua",
+					UserName = "ivan.lazarenko@uniia.com.ua",
+					Name = "Іван",
+					Surname = "Лазаренко",
+					IsOnline = true,
+				},
+			};
+
+			foreach(AdminUser user in users)
+			{
+				await userManager.CreateAsync(user);
+				await userManager.AddToRoleAsync(user, CustomRoles.AdminRole);
 			}
 		}
 	}

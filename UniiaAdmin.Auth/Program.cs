@@ -98,4 +98,6 @@ app.MapControllers();
 
 await app.Services.SeedRoleClaimsAsync();
 
+await app.Services.SeedUsersAsync();
+
 await app.RunAsync();
