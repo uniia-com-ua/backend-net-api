@@ -7,7 +7,7 @@ using UniiaAdmin.WebApi.Attributes;
 
 namespace UniiaAdmin.WebApi.Controllers
 {
-	[Route("api/v1/user-actions")]
+	[Route("api/v1/log-actions")]
     [ApiController]
     public class LogActionController : ControllerBase
     {
@@ -34,7 +34,7 @@ namespace UniiaAdmin.WebApi.Controllers
 
 		[HttpGet("model/{id:int}")]
 		[Permission(PermissionResource.Logs, CrudActions.View)]
-        public async Task<IActionResult> GetLogByModelId(int id, [FromQuery] string modelName, int skip, int take)
+        public async Task<IActionResult> GetLogByModelId(int id, [FromQuery] string modelName, int skip = 0, int take = 10)
         {
             var logActionModels = await _paginationService.GetPagedListAsync(
                                                         _mongoDbContext.LogActionModels
@@ -45,7 +45,7 @@ namespace UniiaAdmin.WebApi.Controllers
             return Ok(logActionModels);
         }
 
-		[HttpGet("{id}")]
+		[HttpGet("user/{id}")]
 		[Permission(PermissionResource.Logs, CrudActions.View)]
         public async Task<IActionResult> GetByUserId(string id, [FromQuery] int skip = 0, int take = 10)
         {
