@@ -1,10 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
-using UniiaAdmin.Data.Dtos;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+using UniiaAdmin.Data.Interfaces.FileInterfaces;
 
 namespace UniiaAdmin.Data.Models
 {
-    public class Faculty
-    {
+    public class Faculty : IEntity
+	{
         public int Id { get; set; }
 
         [Required]
@@ -17,13 +19,8 @@ namespace UniiaAdmin.Data.Models
 
         public int UniversityId { get; set; }
 
+		[BindNever]
+		[JsonIgnore]
         public University? University { get; set; }
-
-        public void Update(FacultyDto faculty)
-        {
-            FullName = faculty.FullName;
-            ShortName = faculty.ShortName;
-            UniversityId = faculty.UniversityId;
-        }
     }
 }

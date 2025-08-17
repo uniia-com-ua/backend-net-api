@@ -34,7 +34,7 @@ namespace UniiaAdmin.WebApi.Controllers
 		[Permission(PermissionResource.Subject, CrudActions.View)]
 		public async Task<IActionResult> Get(int id)
         {
-            var subject = await _applicationContext.Subjects.FirstOrDefaultAsync(s => s.Id == id);
+            var subject = await _applicationContext.Subjects.FindAsync(id);
 
             if (subject == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Subject), id.ToString()].Value);
@@ -44,7 +44,7 @@ namespace UniiaAdmin.WebApi.Controllers
 
         [HttpGet("page")]
 		[Permission(PermissionResource.Subject, CrudActions.View)]
-		public async Task<IActionResult> GetPaginated(int skip = 0, int take = 10)
+		public async Task<IActionResult> GetPaginated([FromQuery] int skip = 0, int take = 10)
         {
             var subjects = await _paginationService.GetPagedListAsync(_applicationContext.Subjects, skip, take);
 
@@ -81,9 +81,9 @@ namespace UniiaAdmin.WebApi.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(_localizer["ModelNotValid"].Value);
 
-            var subject = await _applicationContext.Subjects.FirstOrDefaultAsync(s => s.Id == id);
+            var subject = await _applicationContext.Subjects.FindAsync(id);
 
-            if (subject == null)
+			if (subject == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Subject), id.ToString()].Value);
 
             subject.Name = name;
@@ -98,7 +98,7 @@ namespace UniiaAdmin.WebApi.Controllers
 		[LogAction(nameof(Subject), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {
-            var subject = await _applicationContext.Subjects.FirstOrDefaultAsync(s => s.Id == id);
+            var subject = await _applicationContext.Subjects.FindAsync(id);
 
             if (subject == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Subject), id.ToString()].Value);

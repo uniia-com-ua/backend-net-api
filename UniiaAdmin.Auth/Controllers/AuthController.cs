@@ -99,7 +99,7 @@ public class AuthController : ControllerBase
 
 		var photoId = ObjectId.Parse(user!.ProfilePictureId);
 
-		var photoFile = await _mongoDbContext.UserPhotos.FirstOrDefaultAsync(ph => ph.Id == photoId);
+		var photoFile = await _mongoDbContext.UserPhotos.FindAsync(photoId);
 
 		if (photoFile == null || photoFile.File == null)
 		{

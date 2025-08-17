@@ -34,7 +34,7 @@ namespace UNIIAadminAPI.Controllers
 		[Permission(PermissionResource.Keyword, CrudActions.View)]
         public async Task<IActionResult> Get(int id)
         {
-            var keyword = await _applicationContext.Keywords.FirstOrDefaultAsync(k => k.Id == id);
+            var keyword = await _applicationContext.Keywords.FindAsync(id);
 
             if (keyword == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Keyword), id.ToString()].Value);
@@ -44,7 +44,7 @@ namespace UNIIAadminAPI.Controllers
 
 		[HttpGet("page")]
 		[Permission(PermissionResource.Keyword, CrudActions.View)]
-        public async Task<IActionResult> GetPaginatedKeywords(int skip = 0, int take = 10)
+        public async Task<IActionResult> GetPaginatedKeywords([FromQuery] int skip = 0, int take = 10)
         {
             var pagedKeywords = await _paginationService.GetPagedListAsync(_applicationContext.Keywords, skip, take);
 
@@ -85,9 +85,9 @@ namespace UNIIAadminAPI.Controllers
                 return BadRequest(_localizer["ModelNotValid"].Value);
             }
 
-            var keyword = await _applicationContext.Keywords.FirstOrDefaultAsync(k => k.Id == id);
+            var keyword = await _applicationContext.Keywords.FindAsync(id);
 
-            if (keyword == null)
+			if (keyword == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Keyword), id.ToString()].Value);
 
             keyword.Word = word;
@@ -102,7 +102,7 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(Keyword), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {
-            var keyword = await _applicationContext.Keywords.FirstOrDefaultAsync(k => k.Id == id);
+            var keyword = await _applicationContext.Keywords.FindAsync(id);
 
             if (keyword == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Keyword), id.ToString()].Value);

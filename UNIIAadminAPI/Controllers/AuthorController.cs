@@ -6,7 +6,6 @@ using MongoDB.Driver;
 using System.Net.Mime;
 using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
-using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
@@ -47,14 +46,12 @@ namespace UNIIAadminAPI.Controllers
 		[HttpGet("{id:int}")]
         public async Task<IActionResult> Get(int id)
         {
-			var author = await _applicationContext.Authors.FirstOrDefaultAsync(a => a.Id == id);
+			var author = await _applicationContext.Authors.FindAsync(id);
 
 			if (author == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Author), id.ToString()].Value);
 
-            var result = _mapper.Map<AuthorDto>(author);
-
-            return Ok(result);
+            return Ok(author);
         }
 
 		[Permission(PermissionResource.Author, CrudActions.View)]
@@ -90,24 +87,22 @@ namespace UNIIAadminAPI.Controllers
         {
             var pagedAuthors = await _paginationService.GetPagedListAsync(_applicationContext.Authors, skip, take);
 
-            var resultList = pagedAuthors.Select(a => _mapper.Map<AuthorDto>(a));
-
-            return Ok(resultList);
+            return Ok(pagedAuthors);
         }
 
 		[Permission(PermissionResource.Author, CrudActions.Create)]
 		[HttpPost]
 		[LogAction(nameof(Author), nameof(Create))]
-		public async Task<IActionResult> Create([FromForm] AuthorDto authorDto, IFormFile? photoFile)
+		public async Task<IActionResult> Create([FromForm] Author author, IFormFile? photoFile)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(_localizer["ModelNotValid"].Value);
             }
 
-            var author = _mapper.Map<Author>(authorDto);
+            author.Id = 0;
 
-            if (photoFile != null)
+			if (photoFile != null)
             {
                 var result = await _fileService.SaveFileAsync(photoFile, _mongoDbContext.AuthorPhotos, MediaTypeNames.Image.Jpeg);
 
@@ -131,23 +126,23 @@ namespace UNIIAadminAPI.Controllers
 		[Permission(PermissionResource.Author, CrudActions.Update)]
 		[HttpPatch("{id}")]
 		[LogAction(nameof(Author), nameof(Update))]
-		public async Task<IActionResult> Update([FromForm] AuthorDto authorDto, IFormFile? photoFile, int id)
+		public async Task<IActionResult> Update([FromForm] Author author, IFormFile? photoFile, int id)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(_localizer["ModelNotValid"].Value);
             }
 
-            var author = await _applicationContext.Authors.FirstOrDefaultAsync(a => a.Id == id);
+            var existedAuthor = await _applicationContext.Authors.FindAsync(id);
 
-            if (author == null)
+            if (existedAuthor == null)
             {
                 return NotFound(_localizer["ModelNotFound", nameof(Author), id.ToString()].Value);
             }
 
-            author.Update(authorDto);
+            _mapper.Map(author, existedAuthor);
 
-            if (photoFile != null)
+            if (photoFile != null) 
             {
                 var result = await _fileService.UpdateFileAsync(photoFile, author.PhotoId, _mongoDbContext.AuthorPhotos, MediaTypeNames.Image.Jpeg);
 
@@ -169,9 +164,9 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(Author), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {
-            var author = await _applicationContext.Authors.FirstOrDefaultAsync(a => a.Id == id);
+            var author = await _applicationContext.Authors.FindAsync(id);
 
-            if (author == null)
+			if (author == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Author), id.ToString()].Value);
 
             await _fileService.DeleteFileAsync(author.PhotoId, _mongoDbContext.AuthorPhotos);

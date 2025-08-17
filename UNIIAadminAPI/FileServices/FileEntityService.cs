@@ -25,7 +25,7 @@ namespace UniiaAdmin.WebApi.FileServices
             _localizer = localizer;
         }
 
-        public async Task<Result<T>> GetFileAsync<T>(string? fileId, IQueryable<T> dbSet)
+        public async Task<Result<T>> GetFileAsync<T>(string? fileId, DbSet<T> dbSet)
             where T : class, IMongoFileEntity
         {
             try
@@ -40,9 +40,9 @@ namespace UniiaAdmin.WebApi.FileServices
                     return Result<T>.Failure(new InvalidDataException(_localizer["FileParsingFailed", fileId].Value));
                 }
 
-                var file = await dbSet.FirstOrDefaultAsync(a => a.Id == objectId);
+                var file = await dbSet.FindAsync(objectId);
 
-                if (file?.File == null)
+				if (file?.File == null)
                 {
                     return Result<T>.Failure(new KeyNotFoundException(_localizer["ModelFileWithIdNotFound", typeof(T).Name, fileId].Value));
                 }
@@ -124,7 +124,7 @@ namespace UniiaAdmin.WebApi.FileServices
                     return Result<T>.Failure(new ArgumentException(_localizer["FileParsingFailed", fileId!].Value));
                 }
 
-                var file = await dbSet.FirstOrDefaultAsync(af => af.Id == objectId);
+                var file = await dbSet.FindAsync(objectId);
 
                 if (file == null)
                 {

@@ -1,12 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.IdentityModel.Tokens;
-using System.Globalization;
-using System.Security.Claims;
-using System.Text;
-using UniiaAdmin.Data.Models.AuthModels;
-
-namespace UniiaAdmin.WebApi.Extentions;
+﻿namespace UniiaAdmin.WebApi.Extentions;
 
 public static class SwaggerExtention
 {

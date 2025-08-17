@@ -34,7 +34,7 @@ namespace UNIIAadminAPI.Controllers
 		[Permission(PermissionResource.PublicationLanguadge, CrudActions.View)]
 		public async Task<IActionResult> Get(int id)
         {
-            var language = await _applicationContext.PublicationLanguages.FirstOrDefaultAsync(l => l.Id == id);
+            var language = await _applicationContext.PublicationLanguages.FindAsync(id);
 
             if (language == null)
                 return NotFound(_localizer["ModelNotFound", nameof(PublicationLanguage), id.ToString()].Value);
@@ -44,7 +44,7 @@ namespace UNIIAadminAPI.Controllers
 
         [HttpGet("page")]
 		[Permission(PermissionResource.PublicationLanguadge, CrudActions.View)]
-		public async Task<IActionResult> GetPaginated(int skip = 0, int take = 10)
+		public async Task<IActionResult> GetPaginated([FromQuery] int skip = 0, int take = 10)
         {
             var languages = await _paginationService.GetPagedListAsync(_applicationContext.PublicationLanguages, skip, take);
 
@@ -81,7 +81,7 @@ namespace UNIIAadminAPI.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(_localizer["ModelNotValid"].Value);
 
-            var language = await _applicationContext.PublicationLanguages.FirstOrDefaultAsync(l => l.Id == id);
+            var language = await _applicationContext.PublicationLanguages.FindAsync(id);
 
             if (language == null)
                 return NotFound(_localizer["ModelNotFound", nameof(PublicationLanguage), id.ToString()].Value);
@@ -98,7 +98,7 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(PublicationLanguage), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {
-            var language = await _applicationContext.PublicationLanguages.FirstOrDefaultAsync(l => l.Id == id);
+            var language = await _applicationContext.PublicationLanguages.FindAsync(id);
 
             if (language == null)
                 return NotFound(_localizer["ModelNotFound", nameof(PublicationLanguage), id.ToString()].Value);

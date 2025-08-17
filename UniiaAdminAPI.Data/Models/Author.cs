@@ -1,10 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using UniiaAdmin.Data.Dtos;
+using System.Text.Json.Serialization;
+using UniiaAdmin.Data.Interfaces.FileInterfaces;
 
 namespace UniiaAdmin.Data.Models
 {
-    public class Author
-    {
+    public class Author : IEntity
+	{
         public int Id { get; set; }
 
         [MaxLength(100)]
@@ -22,19 +23,10 @@ namespace UniiaAdmin.Data.Models
 
         public string? Bio { get; set; }
 
+        [JsonIgnore]
         public string? PhotoId { get; set; } 
 
         [MaxLength(64)]
         public string? Url { get; set; }
-
-        public void Update(AuthorDto authordto)
-        {
-            FullName = string.IsNullOrWhiteSpace(authordto.FullName) ? FullName : authordto.FullName;
-            ShortName = string.IsNullOrWhiteSpace(authordto.ShortName) ? ShortName : authordto.ShortName;
-            Email = string.IsNullOrWhiteSpace(authordto.Email) ? Email : authordto.Email;
-            OrcidId = string.IsNullOrWhiteSpace(authordto.OrcidId) ? OrcidId : authordto.OrcidId;
-            Bio = string.IsNullOrWhiteSpace(authordto.Bio) ? Bio : authordto.Bio;
-            Url = string.IsNullOrWhiteSpace(authordto.Url) ? Url : authordto.Url;
-        }
     }
 }

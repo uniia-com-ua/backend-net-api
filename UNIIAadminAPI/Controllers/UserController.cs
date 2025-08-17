@@ -1,16 +1,9 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using MongoDB.Bson;
-using MongoDB.Driver;
-using System.Security.Claims;
 using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Interfaces;
-using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Attributes;
 
 namespace UNIIAadminAPI.Controllers
@@ -88,7 +81,7 @@ namespace UNIIAadminAPI.Controllers
 
 		[Permission(PermissionResource.User, CrudActions.View)]
 		[HttpGet]
-        public async Task<IActionResult> GetAllUsers(int skip = 0, int take = 10)
+        public async Task<IActionResult> GetAllUsers([FromQuery] int skip = 0, int take = 10)
         {
             var users = await _paginationService.GetPagedListAsync(_applicationContext.Users, skip, take);
 

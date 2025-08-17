@@ -34,7 +34,7 @@ namespace UniiaAdmin.Data.Controllers
 		[Permission(PermissionResource.PublicationType, CrudActions.View)]
 		public async Task<IActionResult> Get(int id)
         {
-            var publicationType = await _applicationContext.PublicationTypes.FirstOrDefaultAsync(pt => pt.Id == id);
+            var publicationType = await _applicationContext.PublicationTypes.FindAsync(id);
 
             if (publicationType == null)
                 return NotFound(_localizer["ModelNotFound", nameof(PublicationType), id.ToString()].Value);
@@ -44,7 +44,7 @@ namespace UniiaAdmin.Data.Controllers
 
         [HttpGet("page")]
 		[Permission(PermissionResource.PublicationType, CrudActions.View)]
-		public async Task<IActionResult> GetPaginated(int skip = 0, int take = 10)
+		public async Task<IActionResult> GetPaginated([FromQuery] int skip = 0, int take = 10)
         {
             var publicationTypes = await _paginationService.GetPagedListAsync(_applicationContext.PublicationTypes, skip, take);
 
@@ -81,7 +81,7 @@ namespace UniiaAdmin.Data.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(_localizer["ModelNotValid"].Value);
 
-            var publicationType = await _applicationContext.PublicationTypes.FirstOrDefaultAsync(pt => pt.Id == id);
+            var publicationType = await _applicationContext.PublicationTypes.FindAsync(id);
 
             if (publicationType == null)
                 return NotFound(_localizer["ModelNotFound", nameof(PublicationType), id.ToString()].Value);
@@ -98,7 +98,7 @@ namespace UniiaAdmin.Data.Controllers
 		[LogAction(nameof(PublicationType), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {
-            var publicationType = await _applicationContext.PublicationTypes.FirstOrDefaultAsync(pt => pt.Id == id);
+            var publicationType = await _applicationContext.PublicationTypes.FindAsync(id);
 
             if (publicationType == null)
                 return NotFound(_localizer["ModelNotFound", nameof(PublicationType), id.ToString()].Value);

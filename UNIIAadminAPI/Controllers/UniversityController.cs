@@ -48,14 +48,12 @@ namespace UNIIAadminAPI.Controllers
 		[Permission(PermissionResource.University, CrudActions.View)]
 		public async Task<IActionResult> Get(int id)
         {
-            var university = await _applicationContext.Universities.FirstOrDefaultAsync(u => u.Id == id);
+            var university = await _applicationContext.Universities.FindAsync(id);
 
             if (university == null)
                 return NotFound(_localizer["ModelNotFound", nameof(University), id.ToString()].Value);
 
-            var result = _mapper.Map<UniversityDto>(university);
-
-            return Ok(result);
+            return Ok(university);
         }
 
         [HttpGet("{id:int}/photo")]
@@ -118,22 +116,18 @@ namespace UNIIAadminAPI.Controllers
         {
             var universitiesList = await _paginationService.GetPagedListAsync(_applicationContext.Universities, skip, take);
 
-            var resultList = universitiesList.Select(u => _mapper.Map<UniversityDto>(u));
-
-            return Ok(resultList);
+            return Ok(universitiesList);
         }
 
         [HttpPost]
 		[Permission(PermissionResource.University, CrudActions.Create)]
 		[LogAction(nameof(University), nameof(Create))]
-        public async Task<IActionResult> Create([FromForm] UniversityDto universityDto, IFormFile? photoFile, IFormFile? smallPhotoFile)
+        public async Task<IActionResult> Create([FromForm] University university, IFormFile? photoFile, IFormFile? smallPhotoFile)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(_localizer["ModelNotValid"].Value);
             }
-
-            var university = _mapper.Map<University>(universityDto);
 
             if (photoFile != null)
             {
@@ -171,21 +165,21 @@ namespace UNIIAadminAPI.Controllers
         [HttpPatch("{id:int}")]
 		[Permission(PermissionResource.University, CrudActions.Update)]
 		[LogAction(nameof(University), nameof(Update))]
-        public async Task<IActionResult> Update([FromForm] UniversityDto universityDto, IFormFile? photoFile, IFormFile? smallPhotoFile, int id)
+        public async Task<IActionResult> Update([FromForm] University university, IFormFile? photoFile, IFormFile? smallPhotoFile, int id)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(_localizer["ModelNotValid"].Value);
             }
 
-            var university = await _applicationContext.Universities.FirstOrDefaultAsync(u => u.Id == id);
+            var existedUniversity = await _applicationContext.Universities.FindAsync(id);
 
             if (university == null)
             {
                 return NotFound(_localizer["ModelNotFound", nameof(University), id.ToString()].Value);
             }
 
-            university.Update(universityDto);
+            _mapper.Map(university, existedUniversity);
 
             if (photoFile != null)
             {
@@ -221,7 +215,7 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(University), nameof(Delete))]
         public async Task<IActionResult> Delete(int id)
         {
-            var university = await _applicationContext.Universities.FirstOrDefaultAsync(u => u.Id == id);
+            var university = await _applicationContext.Universities.FindAsync(id);
 
             if (university == null)
             {
