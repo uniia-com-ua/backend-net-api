@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using UniiaAdmin.Data.Enums;
 
 namespace UniiaAdmin.Data.Models
@@ -64,7 +63,12 @@ namespace UniiaAdmin.Data.Models
 
         public List<PublicationRoleClaim>? PublicationRoleClaims { get; set; }
 
-        public void Update(PublicationDto newPublicationDto)
+        public void Update(
+            PublicationDto newPublicationDto, 
+            List<Author>? authors,
+			List<Subject>? subjects,
+			List<CollectionPublication>? collections,
+			List<Keyword>? keywords)
         {
             Title = string.IsNullOrWhiteSpace(newPublicationDto.Title) ? Title : newPublicationDto.Title;
 
@@ -96,17 +100,15 @@ namespace UniiaAdmin.Data.Models
 
             PublicationTypeId = newPublicationDto.PublicationTypeId == 0 ? PublicationTypeId : newPublicationDto.PublicationTypeId;
 
-            PublicationType = newPublicationDto.PublicationType ?? PublicationType;
-
             PublicationLanguageId = newPublicationDto.PublicationLanguageId == 0 ? PublicationLanguageId : newPublicationDto.PublicationLanguageId;
 
-            Language = newPublicationDto.Language ?? Language;
+			Authors = authors ?? Authors;
 
-            Subjects = newPublicationDto.Subjects ?? Subjects;
+			Subjects = subjects ?? Subjects;
 
-            Keywords = newPublicationDto.Keywords ?? Keywords;
+            Keywords = keywords ?? Keywords;
 
-            CollectionPublications = newPublicationDto.CollectionPublications ?? CollectionPublications;
+            CollectionPublications = collections ?? CollectionPublications;
         }
     }
 }

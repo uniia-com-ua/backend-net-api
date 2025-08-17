@@ -8,6 +8,7 @@ namespace UniiaAdmin.Data.Models
     public class PublicationDto
     {
         public int Id { get; set; }
+
         public string? Title { get; set; }
 
         public string? Annotation { get; set; }
@@ -38,18 +39,14 @@ namespace UniiaAdmin.Data.Models
 
         public int PublicationTypeId { get; set; }
 
-        public PublicationType? PublicationType { get; set; }
-
         public int PublicationLanguageId { get; set; }
 
-        public PublicationLanguage? Language { get; set; }
+        public List<int>? Authors { get; set; }
 
-        public List<AuthorDto>? Authors { get; set; }
+        public List<int>? Subjects { get; set; }
 
-        public List<Subject>? Subjects { get; set; }
+        public List<int>? Keywords { get; set; }
 
-        public List<Keyword>? Keywords { get; set; }
-
-        public List<CollectionPublication>? CollectionPublications { get; set; }
+        public List<int>? Collections { get; set; }
     }
 }

@@ -61,6 +61,8 @@ services.AddTransient<IHealthCheckService, HealthCheckService>();
 
 services.AddTransient<IPaginationService, PaginationService>();
 
+services.AddTransient<IEntityQueryService, EntityQueryService>();
+
 services.AddSingleton(provider => 
 {
     var mongoClient = new MongoClient(Environment.GetEnvironmentVariable("MONGODB_CONNECTION")!);
