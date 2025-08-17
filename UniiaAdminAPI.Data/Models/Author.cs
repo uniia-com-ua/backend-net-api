@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 
@@ -24,6 +25,7 @@ namespace UniiaAdmin.Data.Models
         public string? Bio { get; set; }
 
         [JsonIgnore]
+        [BindNever]
         public string? PhotoId { get; set; } 
 
         [MaxLength(64)]

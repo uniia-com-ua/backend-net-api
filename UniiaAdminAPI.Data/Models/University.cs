@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+using System.Text.Json.Serialization;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 
 namespace UniiaAdmin.Data.Models
@@ -12,9 +13,11 @@ namespace UniiaAdmin.Data.Models
         public string? ShortName { get; set; }
 
         [JsonIgnore]
-        public string? PhotoId { get; set; }
+		[BindNever]
+		public string? PhotoId { get; set; }
 		
         [JsonIgnore]
+		[BindNever]
 		public string? SmallPhotoId { get; set; }
 
         [JsonIgnore]
