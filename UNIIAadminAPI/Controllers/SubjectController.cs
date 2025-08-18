@@ -1,14 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using UniiaAdmin.Data.Constants;
-using UniiaAdmin.Data.Data;
-using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Attributes;
+using UniiaAdmin.WebApi.Interfaces;
 using UniiaAdmin.WebApi.Resources;
-using UniiaAdmin.WebApi.Services;
 
 namespace UniiaAdmin.WebApi.Controllers
 {
@@ -16,27 +12,27 @@ namespace UniiaAdmin.WebApi.Controllers
     [Route("api/v1/subjects")]
     public class SubjectController : ControllerBase
     {
-        private readonly ApplicationContext _applicationContext;
-        private readonly IPaginationService _paginationService;
+		private readonly IGenericRepository _genericRepository;
+		private readonly IQueryRepository _queryRepository;
 		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public SubjectController(
-            ApplicationContext applicationContext,
-            IPaginationService paginationService,
-			IStringLocalizer<ErrorMessages> localizer)
-        {
-            _applicationContext = applicationContext;
-            _paginationService = paginationService;
-            _localizer = localizer;
-        }
+			IGenericRepository genericRepository,
+			IStringLocalizer<ErrorMessages> localizer,
+			IQueryRepository queryRepository)
+		{
+			_localizer = localizer;
+			_genericRepository = genericRepository;
+			_queryRepository = queryRepository;
+		}
 
-        [HttpGet("{id:int}")]
+		[HttpGet("{id:int}")]
 		[Permission(PermissionResource.Subject, CrudActions.View)]
 		public async Task<IActionResult> Get(int id)
         {
-            var subject = await _applicationContext.Subjects.FindAsync(id);
+			var subject = await _queryRepository.GetByIdAsync<Subject>(id);
 
-            if (subject == null)
+			if (subject == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Subject), id.ToString()].Value);
 
             return Ok(subject);
@@ -46,9 +42,9 @@ namespace UniiaAdmin.WebApi.Controllers
 		[Permission(PermissionResource.Subject, CrudActions.View)]
 		public async Task<IActionResult> GetPaginated([FromQuery] int skip = 0, int take = 10)
         {
-            var subjects = await _paginationService.GetPagedListAsync(_applicationContext.Subjects, skip, take);
+			var subjects = await _queryRepository.GetPagedAsync<Subject>(skip, take);
 
-            return Ok(subjects);
+			return Ok(subjects);
         }
 
         [HttpPost]
@@ -61,9 +57,7 @@ namespace UniiaAdmin.WebApi.Controllers
                 Name = name
             };
 
-            await _applicationContext.Subjects.AddAsync(subject);
-
-            await _applicationContext.SaveChangesAsync();
+			await _genericRepository.CreateAsync(subject);
 
 			HttpContext.Items.Add("id", subject.Id);
 
@@ -75,16 +69,14 @@ namespace UniiaAdmin.WebApi.Controllers
 		[LogAction(nameof(Subject), nameof(Update))]
 		public async Task<IActionResult> Update([FromBody] string name, int id)
         {
-            var subject = await _applicationContext.Subjects.FindAsync(id);
+			var subject = await _queryRepository.GetByIdAsync<Subject>(id);
 
 			if (subject == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Subject), id.ToString()].Value);
 
-            subject.Name = name;
+			await _genericRepository.UpdateAsync(new Subject { Name = name }, subject);
 
-            await _applicationContext.SaveChangesAsync();
-
-            return Ok();
+			return Ok();
         }
 
         [HttpDelete("{id:int}")]
@@ -92,16 +84,14 @@ namespace UniiaAdmin.WebApi.Controllers
 		[LogAction(nameof(Subject), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {
-            var subject = await _applicationContext.Subjects.FindAsync(id);
+			var subject = await _queryRepository.GetByIdAsync<Subject>(id);
 
-            if (subject == null)
+			if (subject == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Subject), id.ToString()].Value);
 
-            _applicationContext.Remove(subject);
+			await _genericRepository.DeleteAsync(subject);
 
-            await _applicationContext.SaveChangesAsync();
-
-            return Ok();
+			return Ok();
         }
     }
 }

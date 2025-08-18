@@ -10,11 +10,19 @@ using UniiaAdmin.Data.Models;
 
 public class EntityQueryService : IEntityQueryService
 {
-	public async Task<List<T>?> GetByIdsAsync<T>(DbSet<T>? dbSet, IEnumerable<int>? ids) where T : class, IEntity
+
+	private readonly ApplicationContext _dbContext;
+
+	public EntityQueryService(ApplicationContext dbContext)
 	{
-		if (dbSet != null && ids != null)
+		_dbContext = dbContext;
+	}
+
+	public async Task<List<T>?> GetByIdsAsync<T>(IEnumerable<int>? ids) where T : class, IEntity
+	{
+		if (ids != null)
 		{
-			return await dbSet.Where(obj => ids.Contains(obj.Id)).ToListAsync();
+			return await _dbContext.Set<T>().Where(obj => ids.Contains(obj.Id)).ToListAsync();
 		}
 		else
 		{

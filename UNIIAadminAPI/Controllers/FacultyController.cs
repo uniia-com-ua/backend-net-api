@@ -1,15 +1,10 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
-using MongoDB.Driver;
 using UniiaAdmin.Data.Constants;
-using UniiaAdmin.Data.Data;
-using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Attributes;
+using UniiaAdmin.WebApi.Interfaces;
 using UniiaAdmin.WebApi.Resources;
-using UniiaAdmin.WebApi.Services;
 
 namespace UNIIAadminAPI.Controllers
 {
@@ -17,28 +12,25 @@ namespace UNIIAadminAPI.Controllers
     [Route("api/v1/faculties")]
     public class FacultyController : ControllerBase
     {
-        private readonly ApplicationContext _applicationContext;
-        private readonly IMapper _mapper;
-        private readonly IPaginationService _paginationService;
+		private readonly IGenericRepository _genericRepository;
+		private readonly IQueryRepository _queryRepository;
 		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public FacultyController(
-            ApplicationContext applicationContext,
-            IMapper mapper,
-            IPaginationService paginationService,
-            IStringLocalizer<ErrorMessages> localizer)
-        {
-            _applicationContext = applicationContext;
-            _mapper = mapper;
-            _paginationService = paginationService;
-            _localizer = localizer;
-        }
+			IGenericRepository genericRepository,
+			IStringLocalizer<ErrorMessages> localizer,
+			IQueryRepository queryRepository)
+		{
+			_localizer = localizer;
+			_genericRepository = genericRepository;
+			_queryRepository = queryRepository;
+		}
 
 		[HttpGet("{id:int}")]
 		[Permission(PermissionResource.Faculty, CrudActions.View)]
         public async Task<IActionResult> Get(int id)
         {
-            var faculty = await _applicationContext.Faculties.FindAsync(id);
+            var faculty = await _queryRepository.GetByIdAsync<Faculty>(id);
 
             if (faculty == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Faculty), id.ToString()].Value);
@@ -50,7 +42,7 @@ namespace UNIIAadminAPI.Controllers
 		[Permission(PermissionResource.Faculty, CrudActions.View)]
         public async Task<IActionResult> GetPaginatedFacultied([FromQuery] int skip = 0, int take = 10)
         {
-            var pagedFaculties = await _paginationService.GetPagedListAsync(_applicationContext.Faculties, skip, take);
+            var pagedFaculties = await _queryRepository.GetPagedAsync<Faculty>(skip, take);
 
             return Ok(pagedFaculties);
         }
@@ -60,14 +52,12 @@ namespace UNIIAadminAPI.Controllers
         [LogAction(nameof(Faculty), nameof(Create))]
         public async Task<IActionResult> Create([FromBody] Faculty faculty)
         {
-            var isUniExist = await _applicationContext.Universities.AnyAsync(u => u.Id == faculty.UniversityId);
+            var isUniExist = await _queryRepository.AnyAsync<University>(faculty.UniversityId);
 
             if (!isUniExist)
                 return NotFound(_localizer["ModelNotFound", nameof(University), faculty.UniversityId.ToString()].Value);
 
-            await _applicationContext.Faculties.AddAsync(faculty);
-
-            await _applicationContext.SaveChangesAsync();
+            await _genericRepository.CreateAsync(faculty);
 
             HttpContext.Items.Add("id", faculty.Id);
 
@@ -79,19 +69,17 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(Faculty), nameof(Update))]
 		public async Task<IActionResult> Update([FromBody] Faculty faculty, int id)
         {
-            var existedFaculty = await _applicationContext.Faculties.FindAsync(id);
+            var existedFaculty = await _queryRepository.GetByIdAsync<Faculty>(id);
 
-            if (faculty == null)
+			if (existedFaculty == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Faculty), id.ToString()].Value);
 
-            _mapper.Map(faculty, existedFaculty);
+			var isUniExist = await _queryRepository.AnyAsync<University>(faculty.UniversityId);
 
-            var isUniExist = await _applicationContext.Universities.AnyAsync(u => u.Id == faculty.UniversityId);
+			if (!isUniExist)
+				return NotFound(_localizer["ModelNotFound", nameof(University), faculty.UniversityId.ToString()].Value);
 
-            if (!isUniExist)
-                return NotFound(_localizer["ModelNotFound", nameof(University), faculty.UniversityId.ToString()].Value);
-
-            await _applicationContext.SaveChangesAsync();
+			await _genericRepository.UpdateAsync(faculty, existedFaculty);
 
             return Ok();
         }
@@ -101,16 +89,14 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(Faculty), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {
-            var faculty = await _applicationContext.Faculties.FindAsync(id);
+			var faculty = await _queryRepository.GetByIdAsync<Faculty>(id);
 
-            if (faculty == null)
+			if (faculty == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Faculty), id.ToString()].Value);
 
-            _applicationContext.Remove(faculty);
+			await _genericRepository.DeleteAsync(faculty);
 
-            await _applicationContext.SaveChangesAsync();
-
-            return Ok();
+			return Ok();
         }
     }
 }

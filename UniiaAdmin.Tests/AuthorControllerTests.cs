@@ -19,7 +19,7 @@ using Xunit;
 
 public class AuthorControllerTests
 {
-	private readonly AuthorControllerWebAppFactory _factory;
+	private readonly ControllerWebAppFactory<AuthorController> _factory;
 
 	public AuthorControllerTests()
 	{
@@ -28,13 +28,14 @@ public class AuthorControllerTests
 		mockProvider.Mock<IPhotoRepository>();
 		mockProvider.Mock<IPhotoProvider>();
 		mockProvider.Mock<IQueryRepository>();
+		mockProvider.Mock<MongoDbContext>();
 
 		var localizer = mockProvider.Mock<IStringLocalizer<ErrorMessages>>();
 
 		localizer.Setup(l => l[It.IsAny<string>(), It.IsAny<object[]>()])
 			.Returns((string key, object[] args) => new LocalizedString(key, $"{key} {string.Join(", ", args)}"));
 
-		_factory = new AuthorControllerWebAppFactory(mockProvider);
+		_factory = new ControllerWebAppFactory<AuthorController>(mockProvider);
 	}
 
 	[Fact]
@@ -159,8 +160,6 @@ public class AuthorControllerTests
 		// Arrange
 		var author = CreateTestAuthor();
 
-		_factory.Mocks.Mock<MongoDbContext>();
-
 		_factory.Mocks.Mock<IPhotoRepository>()
 			.Setup(r => r.CreateAsync<Author, AuthorPhoto>(It.IsAny<Author>(), null))
 			.ReturnsAsync(Result<AuthorPhoto>.SuccessNoContent());
@@ -181,8 +180,6 @@ public class AuthorControllerTests
 	{
 		// Arrange
 		var author = CreateTestAuthor(1, "Old");
-
-		_factory.Mocks.Mock<MongoDbContext>();
 
 		_factory.Mocks.Mock<IPhotoRepository>()
 			.Setup(r => r.CreateAsync<Author, AuthorPhoto>(It.IsAny<Author>(), It.IsAny<IFormFile>()))
@@ -205,8 +202,6 @@ public class AuthorControllerTests
 		const int id = 1;
 		var author = CreateTestAuthor();
 
-		_factory.Mocks.Mock<MongoDbContext>();
-
 		_factory.Mocks.Mock<IQueryRepository>()
 			.Setup(r => r.GetByIdAsync<Author>(id))
 			.ReturnsAsync((Author)null!);
@@ -228,9 +223,7 @@ public class AuthorControllerTests
 		const int id = 1;
 		var newAuthor = CreateTestAuthor(1, "New");
 
-		var author = CreateTestAuthor(1, "Old");
-
-		_factory.Mocks.Mock<MongoDbContext>();
+		var author = CreateTestAuthor(1, "Old");	
 
 		_factory.Mocks.Mock<IQueryRepository>()
 			.Setup(r => r.GetByIdAsync<Author>(id))
@@ -259,8 +252,6 @@ public class AuthorControllerTests
 
 		var author = CreateTestAuthor(1, "Old");
 
-		_factory.Mocks.Mock<MongoDbContext>();
-
 		_factory.Mocks.Mock<IQueryRepository>()
 			.Setup(r => r.GetByIdAsync<Author>(id))
 			.ReturnsAsync(author);
@@ -286,8 +277,6 @@ public class AuthorControllerTests
 		// Arrange
 		const int id = 1;
 
-		_factory.Mocks.Mock<MongoDbContext>();
-
 		_factory.Mocks.Mock<IQueryRepository>()
 			.Setup(r => r.GetByIdAsync<Author>(id))
 			.ReturnsAsync((Author)null!);
@@ -308,8 +297,6 @@ public class AuthorControllerTests
 		const int id = 1;
 
 		var author = CreateTestAuthor();
-
-		_factory.Mocks.Mock<MongoDbContext>();
 
 		_factory.Mocks.Mock<IQueryRepository>()
 			.Setup(r => r.GetByIdAsync<Author>(id))

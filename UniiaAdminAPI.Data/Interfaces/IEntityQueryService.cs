@@ -10,5 +10,5 @@ using UniiaAdmin.Data.Interfaces.FileInterfaces;
 
 public interface IEntityQueryService
 {
-	public Task<List<T>?> GetByIdsAsync<T>(DbSet<T> dbSet, IEnumerable<int>? ids) where T : class, IEntity;
+	public Task<List<T>?> GetByIdsAsync<T>(IEnumerable<int>? ids) where T : class, IEntity;
 }

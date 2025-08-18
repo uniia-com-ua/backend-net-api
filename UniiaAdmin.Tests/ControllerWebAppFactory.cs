@@ -10,11 +10,11 @@ using UNIIAadminAPI.Controllers;
 
 namespace UniiaAdmin.Tests;
 
-public class AuthorControllerWebAppFactory : WebApplicationFactory<AuthorController>
+public class ControllerWebAppFactory<T> : WebApplicationFactory<AuthorController>
 {
 	public readonly MockProvider Mocks;
 
-	public AuthorControllerWebAppFactory(MockProvider mocks)
+	public ControllerWebAppFactory(MockProvider mocks)
 	{
 		Mocks = mocks;
 	}
@@ -27,7 +27,7 @@ public class AuthorControllerWebAppFactory : WebApplicationFactory<AuthorControl
 		{
 			foreach (var mockPair in Mocks)
 			{
-				var descriptor = services.SingleOrDefault(d => d.ServiceType == mockPair.Key);
+				var descriptor = services.FirstOrDefault(d => d.ServiceType == mockPair.Key);
 				if (descriptor != null)
 					services.Remove(descriptor);
 

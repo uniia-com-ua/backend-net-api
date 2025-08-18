@@ -7,8 +7,10 @@ using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Attributes;
+using UniiaAdmin.WebApi.Interfaces;
 using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
+using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
 
 namespace UniiaAdmin.Data.Controllers
 {
@@ -16,27 +18,27 @@ namespace UniiaAdmin.Data.Controllers
     [Route("api/v1/publication-types")]
     public class PublicationTypeController : ControllerBase
     {
-        private readonly ApplicationContext _applicationContext;
-        private readonly IPaginationService _paginationService;
-        private readonly IStringLocalizer<ErrorMessages> _localizer;
+		private readonly IGenericRepository _genericRepository;
+		private readonly IQueryRepository _queryRepository;
+		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public PublicationTypeController(
-            ApplicationContext applicationContext,
-            IPaginationService paginationService,
-			IStringLocalizer<ErrorMessages> localizer)
-        {
-            _applicationContext = applicationContext;
-            _paginationService = paginationService;
-            _localizer = localizer;
-        }
+			IGenericRepository genericRepository,
+			IStringLocalizer<ErrorMessages> localizer,
+			IQueryRepository queryRepository)
+		{
+			_localizer = localizer;
+			_genericRepository = genericRepository;
+			_queryRepository = queryRepository;
+		}
 
-        [HttpGet("{id:int}")]
+		[HttpGet("{id:int}")]
 		[Permission(PermissionResource.PublicationType, CrudActions.View)]
 		public async Task<IActionResult> Get(int id)
         {
-            var publicationType = await _applicationContext.PublicationTypes.FindAsync(id);
+			var publicationType = await _queryRepository.GetByIdAsync<PublicationType>(id);
 
-            if (publicationType == null)
+			if (publicationType == null)
                 return NotFound(_localizer["ModelNotFound", nameof(PublicationType), id.ToString()].Value);
 
             return Ok(publicationType);
@@ -46,9 +48,9 @@ namespace UniiaAdmin.Data.Controllers
 		[Permission(PermissionResource.PublicationType, CrudActions.View)]
 		public async Task<IActionResult> GetPaginated([FromQuery] int skip = 0, int take = 10)
         {
-            var publicationTypes = await _paginationService.GetPagedListAsync(_applicationContext.PublicationTypes, skip, take);
+			var publicationTypes = await _queryRepository.GetPagedAsync<PublicationType>(skip, take);
 
-            return Ok(publicationTypes);
+			return Ok(publicationTypes);
         }
 
         [HttpPost]
@@ -61,11 +63,9 @@ namespace UniiaAdmin.Data.Controllers
                 Name = name
             };
 
-            await _applicationContext.PublicationTypes.AddAsync(publicationType);
+			await _genericRepository.CreateAsync(publicationType);
 
-            await _applicationContext.SaveChangesAsync();
-
-            HttpContext.Items.Add("id", publicationType.Id);
+			HttpContext.Items.Add("id", publicationType.Id);
 
             return Ok();
         }
@@ -75,16 +75,15 @@ namespace UniiaAdmin.Data.Controllers
 		[LogAction(nameof(PublicationType), nameof(Update))]
         public async Task<IActionResult> Update([FromBody] string name, int id)
         {
-            var publicationType = await _applicationContext.PublicationTypes.FindAsync(id);
+			var publicationType = await _queryRepository.GetByIdAsync<PublicationType>(id);
 
-            if (publicationType == null)
+			if (publicationType == null)
                 return NotFound(_localizer["ModelNotFound", nameof(PublicationType), id.ToString()].Value);
 
-            publicationType.Name = name;
+			await _genericRepository.UpdateAsync(new PublicationType { Name = name }, publicationType);
 
-            await _applicationContext.SaveChangesAsync();
 
-            return Ok();
+			return Ok();
         }
 
         [HttpDelete("{id:int}")]
@@ -92,16 +91,14 @@ namespace UniiaAdmin.Data.Controllers
 		[LogAction(nameof(PublicationType), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {
-            var publicationType = await _applicationContext.PublicationTypes.FindAsync(id);
+			var publicationType = await _queryRepository.GetByIdAsync<PublicationType>(id);
 
-            if (publicationType == null)
+			if (publicationType == null)
                 return NotFound(_localizer["ModelNotFound", nameof(PublicationType), id.ToString()].Value);
+			
+			await _genericRepository.DeleteAsync(publicationType);
 
-            _applicationContext.Remove(publicationType);
-
-            await _applicationContext.SaveChangesAsync();
-
-            return Ok();
+			return Ok();
         }
     }
 }

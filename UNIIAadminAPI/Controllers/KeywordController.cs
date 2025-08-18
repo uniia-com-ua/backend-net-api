@@ -7,6 +7,7 @@ using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Attributes;
+using UniiaAdmin.WebApi.Interfaces;
 using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
@@ -16,27 +17,27 @@ namespace UNIIAadminAPI.Controllers
     [Route("api/v1/keywords")]
     public class KeywordController : ControllerBase
     {
-        private readonly ApplicationContext _applicationContext;
-        private readonly IPaginationService _paginationService;
+		private readonly IGenericRepository _genericRepository;
+		private readonly IQueryRepository _queryRepository;
 		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public KeywordController(
-            ApplicationContext applicationContext,
-            IPaginationService paginationService,
-            IStringLocalizer<ErrorMessages> localizer)
-        {
-            _applicationContext = applicationContext;
-            _paginationService = paginationService;
-            _localizer = localizer;
-        }
+			IGenericRepository genericRepository,
+			IStringLocalizer<ErrorMessages> localizer,
+			IQueryRepository queryRepository)
+		{
+			_localizer = localizer;
+			_genericRepository = genericRepository;
+			_queryRepository = queryRepository;
+		}
 
 		[HttpGet("{id:int}")]
 		[Permission(PermissionResource.Keyword, CrudActions.View)]
         public async Task<IActionResult> Get(int id)
         {
-            var keyword = await _applicationContext.Keywords.FindAsync(id);
+            var keyword = await _queryRepository.GetByIdAsync<Keyword>(id);
 
-            if (keyword == null)
+			if (keyword == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Keyword), id.ToString()].Value);
 
             return Ok(keyword);
@@ -46,9 +47,9 @@ namespace UNIIAadminAPI.Controllers
 		[Permission(PermissionResource.Keyword, CrudActions.View)]
         public async Task<IActionResult> GetPaginatedKeywords([FromQuery] int skip = 0, int take = 10)
         {
-            var pagedKeywords = await _paginationService.GetPagedListAsync(_applicationContext.Keywords, skip, take);
+            var pagedKeywords = await _queryRepository.GetPagedAsync<Keyword>(skip, take);
 
-            return Ok(pagedKeywords);
+			return Ok(pagedKeywords);
         }
 
 		[HttpPost]
@@ -61,9 +62,7 @@ namespace UNIIAadminAPI.Controllers
                 Word = word
             };
 
-            await _applicationContext.Keywords.AddAsync(keyword);
-
-            await _applicationContext.SaveChangesAsync();
+			await _genericRepository.CreateAsync(keyword);
 
 			HttpContext.Items.Add("id", keyword.Id);
 
@@ -75,16 +74,14 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(Keyword), nameof(Update))]
 		public async Task<IActionResult> Update([FromBody] string word, int id)
         {
-            var keyword = await _applicationContext.Keywords.FindAsync(id);
+            var keyword = await _queryRepository.GetByIdAsync<Keyword>(id);
 
 			if (keyword == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Keyword), id.ToString()].Value);
 
-            keyword.Word = word;
+			await _genericRepository.UpdateAsync(new Keyword { Word = word }, keyword);
 
-            await _applicationContext.SaveChangesAsync();
-
-            return Ok();
+			return Ok();
         }
 
 		[HttpDelete("{id:int}")]
@@ -92,16 +89,14 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(Keyword), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {
-            var keyword = await _applicationContext.Keywords.FindAsync(id);
+            var keyword = await _queryRepository.GetByIdAsync<Keyword>(id);
 
-            if (keyword == null)
+			if (keyword == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Keyword), id.ToString()].Value);
 
-            _applicationContext.Remove(keyword);
+			await _genericRepository.DeleteAsync(keyword);
 
-            await _applicationContext.SaveChangesAsync();
-
-            return Ok();
+			return Ok();
         }
     }
 }
