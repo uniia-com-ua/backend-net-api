@@ -124,11 +124,6 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(University), nameof(Create))]
         public async Task<IActionResult> Create([FromForm] University university, IFormFile? photoFile, IFormFile? smallPhotoFile)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(_localizer["ModelNotValid"].Value);
-            }
-
             if (photoFile != null)
             {
                 var result = await _fileEntityService.SaveFileAsync(photoFile, _mongoDbContext.UniversityPhotos, MediaTypeNames.Image.Jpeg);
@@ -167,11 +162,6 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(University), nameof(Update))]
         public async Task<IActionResult> Update([FromForm] University university, IFormFile? photoFile, IFormFile? smallPhotoFile, int id)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(_localizer["ModelNotValid"].Value);
-            }
-
             var existedUniversity = await _applicationContext.Universities.FindAsync(id);
 
             if (existedUniversity == null)

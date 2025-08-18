@@ -4,7 +4,7 @@ using System.Security.Claims;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
 
-namespace UniiaAdmin.WebApi.Services
+namespace UniiaAdmin.WebApi.Attributes
 {
 	[AttributeUsage(AttributeTargets.Method)]
 	public class LogActionAttribute : Attribute, IAsyncActionFilter

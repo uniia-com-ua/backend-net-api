@@ -56,9 +56,6 @@ namespace UniiaAdmin.Data.Controllers
 		[LogAction(nameof(PublicationType), nameof(Create))]
         public async Task<IActionResult> Create([FromBody] string name)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(_localizer["ModelNotValid"].Value);
-
             PublicationType publicationType = new()
             {
                 Name = name
@@ -78,9 +75,6 @@ namespace UniiaAdmin.Data.Controllers
 		[LogAction(nameof(PublicationType), nameof(Update))]
         public async Task<IActionResult> Update([FromBody] string name, int id)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(_localizer["ModelNotValid"].Value);
-
             var publicationType = await _applicationContext.PublicationTypes.FindAsync(id);
 
             if (publicationType == null)

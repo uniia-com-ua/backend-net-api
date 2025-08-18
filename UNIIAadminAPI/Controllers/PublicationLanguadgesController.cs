@@ -56,9 +56,6 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(PublicationLanguage), nameof(Create))]
 		public async Task<IActionResult> Create([FromBody] string name)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(_localizer["ModelNotValid"].Value);
-
             PublicationLanguage language = new()
             {
                 Name = name
@@ -78,9 +75,6 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(PublicationLanguage), nameof(Update))]
 		public async Task<IActionResult> Update([FromBody] string name, int id)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(_localizer["ModelNotValid"].Value);
-
             var language = await _applicationContext.PublicationLanguages.FindAsync(id);
 
             if (language == null)

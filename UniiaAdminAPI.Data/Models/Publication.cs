@@ -2,10 +2,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using UniiaAdmin.Data.Enums;
+using UniiaAdmin.Data.Interfaces.FileInterfaces;
 
 namespace UniiaAdmin.Data.Models
 {
-    public class Publication
+    public class Publication : IFileEntity
     {
         public int Id { get; set; }
 

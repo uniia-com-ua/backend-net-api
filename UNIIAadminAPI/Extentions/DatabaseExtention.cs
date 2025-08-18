@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
+using UniiaAdmin.WebApi.Interfaces;
 
 namespace UniiaAdmin.WebApi.Extentions;
 
@@ -12,13 +13,9 @@ public static class DatabaseExtention
 	{
 		using (var scope = services.CreateScope())
 		{
-			var adminContext = scope.ServiceProvider.GetRequiredService<AdminContext>();
+			var databaseInitilizerService = scope.ServiceProvider.GetRequiredService<IDatabaseInitilizerService>();
 
-			var applicationContext = scope.ServiceProvider.GetRequiredService<ApplicationContext>();
-
-			await adminContext.Database.EnsureCreatedAsync();
-
-			await applicationContext.Database.EnsureCreatedAsync();
+			await databaseInitilizerService.InitializeAsync();
 		}
 	}
 }

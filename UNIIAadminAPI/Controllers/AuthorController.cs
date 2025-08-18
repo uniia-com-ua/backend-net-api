@@ -1,15 +1,10 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
-using MongoDB.Driver;
 using System.Net.Mime;
 using UniiaAdmin.Data.Constants;
-using UniiaAdmin.Data.Data;
-using UniiaAdmin.Data.Interfaces;
-using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Attributes;
+using UniiaAdmin.WebApi.Interfaces;
 using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
@@ -19,34 +14,28 @@ namespace UNIIAadminAPI.Controllers
     [Route("api/v1/authors")]
     public class AuthorController : ControllerBase
     {
-        private readonly ApplicationContext _applicationContext;
-        private readonly MongoDbContext _mongoDbContext;
-        private readonly IFileEntityService _fileService;
-		private readonly IPaginationService _paginationService;
-        private readonly IMapper _mapper;
+        private readonly IPhotoRepository _authorRepository;
+        private readonly IPhotoProvider _photoProvider;
+		private readonly IQueryRepository _queryRepository;
 		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public AuthorController(
-            ApplicationContext applicationContext,
-            MongoDbContext mongoDbContext,
-            IMapper mapper,
-            IFileEntityService fileService,
-            IPaginationService paginationService,
-            IStringLocalizer<ErrorMessages> localizer)
+            IPhotoRepository authorRepository,
+            IStringLocalizer<ErrorMessages> localizer,
+            IPhotoProvider photoProvider,
+            IQueryRepository queryRepository)
         {
-            _applicationContext = applicationContext;
-            _mongoDbContext = mongoDbContext;
-            _mapper = mapper;
-            _fileService=fileService;
-            _paginationService=paginationService;
             _localizer = localizer;
-        }
+            _authorRepository = authorRepository;
+            _photoProvider = photoProvider;
+            _queryRepository = queryRepository;
+		}
 
 		[Permission(PermissionResource.Author, CrudActions.View)]
 		[HttpGet("{id:int}")]
         public async Task<IActionResult> Get(int id)
         {
-			var author = await _applicationContext.Authors.FindAsync(id);
+            var author = await _queryRepository.GetByIdAsync<Author>(id);
 
 			if (author == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Author), id.ToString()].Value);
@@ -58,21 +47,15 @@ namespace UNIIAadminAPI.Controllers
 		[HttpGet("{id:int}/photo")]
         public async Task<IActionResult> GetPicture(int id)
         {
-            var photoId = await _applicationContext.Authors
-                                                   .Where(a => a.Id == id)
-                                                   .Select(a => a.PhotoId)
-                                                   .FirstOrDefaultAsync();
+			var result = await _photoProvider.GetPhotoAsync<Author, AuthorPhoto>(id);
 
-            var result = await _fileService.GetFileAsync(photoId, _mongoDbContext.AuthorPhotos);
-
-            if (!result.IsSuccess)
+			if (!result.IsSuccess)
             {
                 if (result.Error is InvalidDataException)
                 {
                     return BadRequest(result.Error?.Message);
-                }
-
-                if (result.Error is ArgumentException || result.Error is KeyNotFoundException)
+                } 
+                else
                 {
                     return NotFound(result.Error?.Message);
                 }
@@ -85,9 +68,9 @@ namespace UNIIAadminAPI.Controllers
 		[HttpGet("page")]
         public async Task<IActionResult> GetPagedAuthors([FromQuery] int skip = 0, int take = 10)
         {
-            var pagedAuthors = await _paginationService.GetPagedListAsync(_applicationContext.Authors, skip, take);
+			var pagedAuthors = await _queryRepository.GetPagedAsync<Author>(skip, take);
 
-            return Ok(pagedAuthors);
+			return Ok(pagedAuthors);
         }
 
 		[Permission(PermissionResource.Author, CrudActions.Create)]
@@ -95,28 +78,12 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(Author), nameof(Create))]
 		public async Task<IActionResult> Create([FromForm] Author author, IFormFile? photoFile)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(_localizer["ModelNotValid"].Value);
-            }
+			var result = await _authorRepository.CreateAsync<Author, AuthorPhoto>(author, photoFile);
 
-            author.Id = 0;
-
-			if (photoFile != null)
-            {
-                var result = await _fileService.SaveFileAsync(photoFile, _mongoDbContext.AuthorPhotos, MediaTypeNames.Image.Jpeg);
-
-                if (!result.IsSuccess)
-                {
-                    return BadRequest(result.Error?.Message);
-                }
-
-                author.PhotoId = result.Value!.Id.ToString();
-            }
-
-            await _applicationContext.Authors.AddAsync(author);
-
-            await _applicationContext.SaveChangesAsync();
+			if (!result.IsSuccess)
+			{
+				return BadRequest(result.Error?.Message);
+			}
 
             HttpContext.Items.Add("id", author.Id);
 
@@ -128,33 +95,19 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(Author), nameof(Update))]
 		public async Task<IActionResult> Update([FromForm] Author author, IFormFile? photoFile, int id)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(_localizer["ModelNotValid"].Value);
-            }
-
-            var existedAuthor = await _applicationContext.Authors.FindAsync(id);
+            var existedAuthor = await _queryRepository.GetByIdAsync<Author>(id);
 
             if (existedAuthor == null)
             {
                 return NotFound(_localizer["ModelNotFound", nameof(Author), id.ToString()].Value);
             }
 
-            _mapper.Map(author, existedAuthor);
+			var result = await _authorRepository.UpdateAsync<Author, AuthorPhoto>(author, existedAuthor, photoFile);
 
-            if (photoFile != null) 
-            {
-                var result = await _fileService.UpdateFileAsync(photoFile, author.PhotoId, _mongoDbContext.AuthorPhotos, MediaTypeNames.Image.Jpeg);
-
-                if (!result.IsSuccess)
-                {
-                    return BadRequest(result.Error?.Message);
-                }
-
-				existedAuthor.PhotoId = result.Value!.Id.ToString();
-            }
-
-            await _applicationContext.SaveChangesAsync();
+			if (!result.IsSuccess)
+			{
+				return BadRequest(result.Error?.Message);
+			}
 
             return Ok();
         }
@@ -164,16 +117,12 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(Author), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {
-            var author = await _applicationContext.Authors.FindAsync(id);
+			var author = await _queryRepository.GetByIdAsync<Author>(id);
 
 			if (author == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Author), id.ToString()].Value);
 
-            await _fileService.DeleteFileAsync(author.PhotoId, _mongoDbContext.AuthorPhotos);
-
-            _applicationContext.Authors.Remove(author);
-
-            await _applicationContext.SaveChangesAsync();
+            await _authorRepository.DeleteAsync<Author, AuthorPhoto>(author);
 
             return Ok();
         }

@@ -105,16 +105,15 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(Publication), nameof(Create))]
 		public async Task<IActionResult> Create([FromForm] Publication publication, PublicationUpdateDto publicationUpdateDto)
         {
-			if (!ModelState.IsValid)
-            {
-                return BadRequest(_localizer["ModelNotValid"].Value);
-            }
-
 			publication.Subjects = await _entityQueryService.GetByIdsAsync(_applicationContext.Subjects, publicationUpdateDto.Subjects);
 
 			publication.Authors = await _entityQueryService.GetByIdsAsync(_applicationContext.Authors, publicationUpdateDto.Authors);
 
 			publication.Keywords = await _entityQueryService.GetByIdsAsync(_applicationContext.Keywords, publicationUpdateDto.Keywords);
+
+			publication.CreatedDate = DateTime.UtcNow;
+
+			publication.LastModifiedDate = DateTime.UtcNow;
 
 			if (publicationUpdateDto.File != null)
             {
@@ -127,10 +126,6 @@ namespace UNIIAadminAPI.Controllers
 
                 publication.FileId = result.Value!.Id.ToString();
             }
-
-            publication.CreatedDate = DateTime.UtcNow;
-
-			publication.LastModifiedDate = DateTime.UtcNow;
 
 			await _applicationContext.Publications.AddAsync(publication);
 
@@ -146,11 +141,6 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(Publication), nameof(Update))]
 		public async Task<IActionResult> Update([FromForm] Publication publication, PublicationUpdateDto publicationUpdateDto, int id)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(_localizer["ModelNotValid"].Value);
-            }
-
             var existedPublication = await _applicationContext.Publications.FindAsync(id);
 
 			if (existedPublication == null)
@@ -158,17 +148,17 @@ namespace UNIIAadminAPI.Controllers
                 return NotFound(_localizer["ModelNotFound", nameof(Publication), id.ToString()].Value);
             }
 
-            _mapper.Map(publication, existedPublication);
-
 			existedPublication.Subjects = await _entityQueryService.GetByIdsAsync(_applicationContext.Subjects, publicationUpdateDto.Subjects) ?? existedPublication.Subjects;
 
-            existedPublication.Authors = await _entityQueryService.GetByIdsAsync(_applicationContext.Authors, publicationUpdateDto.Authors) ?? existedPublication.Authors;
+			existedPublication.Authors = await _entityQueryService.GetByIdsAsync(_applicationContext.Authors, publicationUpdateDto.Authors) ?? existedPublication.Authors;
 
-            existedPublication.Keywords = await _entityQueryService.GetByIdsAsync(_applicationContext.Keywords, publicationUpdateDto.Keywords) ?? existedPublication.Keywords;
+			existedPublication.Keywords = await _entityQueryService.GetByIdsAsync(_applicationContext.Keywords, publicationUpdateDto.Keywords) ?? existedPublication.Keywords;
+
+			_mapper.Map(publication, existedPublication);
 
 			if (publicationUpdateDto.File != null)
             {
-                var result = await _fileService.UpdateFileAsync(publicationUpdateDto.File, publication.FileId, _mongoDbContext.PublicationFiles, MediaTypeNames.Image.Jpeg);
+                var result = await _fileService.UpdateFileAsync(publicationUpdateDto.File, publication.FileId, _mongoDbContext.PublicationFiles, MediaTypeNames.Application.Pdf);
 
                 if (!result.IsSuccess)
                 {

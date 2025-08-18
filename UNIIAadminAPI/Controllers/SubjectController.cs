@@ -56,9 +56,6 @@ namespace UniiaAdmin.WebApi.Controllers
 		[LogAction(nameof(Subject), nameof(Create))]
         public async Task<IActionResult> Create([FromBody] string name)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(_localizer["ModelNotValid"].Value);
-
             Subject subject = new()
             {
                 Name = name
@@ -78,9 +75,6 @@ namespace UniiaAdmin.WebApi.Controllers
 		[LogAction(nameof(Subject), nameof(Update))]
 		public async Task<IActionResult> Update([FromBody] string name, int id)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(_localizer["ModelNotValid"].Value);
-
             var subject = await _applicationContext.Subjects.FindAsync(id);
 
 			if (subject == null)

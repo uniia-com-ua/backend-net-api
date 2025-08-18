@@ -60,11 +60,6 @@ namespace UNIIAadminAPI.Controllers
         [LogAction(nameof(Faculty), nameof(Create))]
         public async Task<IActionResult> Create([FromBody] Faculty faculty)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(_localizer["ModelNotValid"].Value);
-            }
-
             var isUniExist = await _applicationContext.Universities.AnyAsync(u => u.Id == faculty.UniversityId);
 
             if (!isUniExist)
@@ -84,11 +79,6 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(Faculty), nameof(Update))]
 		public async Task<IActionResult> Update([FromBody] Faculty faculty, int id)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(_localizer["ModelNotValid"].Value);
-            }
-
             var existedFaculty = await _applicationContext.Faculties.FindAsync(id);
 
             if (faculty == null)

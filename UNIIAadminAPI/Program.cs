@@ -14,6 +14,8 @@ using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Extentions;
 using UniiaAdmin.WebApi.FileServices;
+using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Repository;
 using UniiaAdmin.WebApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,6 +26,7 @@ var services = builder.Services;
 var configuration = builder.Configuration;
 
 services.AddControllers()
+	.AddCustomModelStateValidation()
 	.AddDataAnnotationsLocalization();
 
 services.AddEndpointsApiExplorer();
@@ -36,40 +39,7 @@ services.AddHttpClient();
 
 services.AddDistributedMemoryCache();
 
-services.AddAutoMapper(_ => { }, AppDomain.CurrentDomain.GetAssemblies());
-
-services.AddDbContext<AdminContext>(options =>
-    options.UseNpgsql(Environment.GetEnvironmentVariable("POSTGRES_ADMIN_CONNECTION")));
-
-services.AddDbContext<ApplicationContext>(options =>
-    options.UseNpgsql(Environment.GetEnvironmentVariable("POSTGRES_APPLICATION_CONNECTION")));
-
-services.AddIdentity<AdminUser, IdentityRole>().AddEntityFrameworkStores<AdminContext>();
-
-services.AddDbContext<MongoDbContext>(options 
-    => options.UseMongoDB(Environment.GetEnvironmentVariable("MONGODB_CONNECTION")!, Environment.GetEnvironmentVariable("MONGODB_NAME")!));
-
-services.AddSingleton<IFileValidatorFactory, FileValidatorFactory>();
-
-services.AddSingleton<IFileValidationService, FileValidationService>();
-
-services.AddSingleton<IFileProcessingService, FileProcessingService>();
-
-services.AddScoped<IFileEntityService, FileEntityService>();
-
-services.AddTransient<IHealthCheckService, HealthCheckService>();
-
-services.AddTransient<IPaginationService, PaginationService>();
-
-services.AddTransient<IEntityQueryService, EntityQueryService>();
-
-services.AddSingleton(provider => 
-{
-    var mongoClient = new MongoClient(Environment.GetEnvironmentVariable("MONGODB_CONNECTION")!);
-    var mongoDatabase = mongoClient.GetDatabase(Environment.GetEnvironmentVariable("MONGODB_NAME")!);
-
-    return new GridFSBucket(mongoDatabase);
-});
+services.AddServices();
 
 services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {

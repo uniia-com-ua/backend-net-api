@@ -56,11 +56,6 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(Keyword), nameof(Create))]
 		public async Task<IActionResult> Create([FromBody] string word)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(_localizer["ModelNotValid"].Value);
-            }
-
             Keyword keyword = new()
             {
                 Word = word
@@ -80,11 +75,6 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(Keyword), nameof(Update))]
 		public async Task<IActionResult> Update([FromBody] string word, int id)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(_localizer["ModelNotValid"].Value);
-            }
-
             var keyword = await _applicationContext.Keywords.FindAsync(id);
 
 			if (keyword == null)

@@ -4,7 +4,7 @@ using UniiaAdmin.Data.Interfaces.FileInterfaces;
 
 namespace UniiaAdmin.Data.Models
 {
-    public class University : IEntity
+    public class University : ISmallPhotoEntity
 	{
         public int Id { get; set; }
 

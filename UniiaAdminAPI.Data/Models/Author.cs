@@ -5,7 +5,7 @@ using UniiaAdmin.Data.Interfaces.FileInterfaces;
 
 namespace UniiaAdmin.Data.Models
 {
-    public class Author : IEntity
+    public class Author : IPhotoEntity
 	{
         public int Id { get; set; }
 
