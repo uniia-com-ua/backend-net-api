@@ -8,6 +8,8 @@ using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.WebApi.FileServices;
 using Xunit;
 
+
+namespace UniiaAdmin.WebApi.Tests.ServiceTests;
 public class FileProcessingServiceTests
 {
 	private readonly Mock<IFileValidationService> _validationMock;

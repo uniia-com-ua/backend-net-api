@@ -1,4 +1,4 @@
-﻿namespace UniiaAdmin.Tests.RepositoryTests;
+﻿namespace UniiaAdmin.WebApi.Tests.RepositoryTests;
 
 using MongoDB.Bson;
 using Moq;

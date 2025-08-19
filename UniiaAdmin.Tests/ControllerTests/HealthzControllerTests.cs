@@ -9,7 +9,7 @@ using UniiaAdmin.Data.Models;
 using UNIIAadminAPI.Controllers;
 using Xunit;
 
-namespace UniiaAdmin.Tests.ControllerTests
+namespace UniiaAdmin.WebApi.Tests.ControllerTests
 {
 	public class HealthzControllerTests : WebApplicationFactory<HealthzController>
 	{

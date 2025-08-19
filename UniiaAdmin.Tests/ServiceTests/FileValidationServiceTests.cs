@@ -6,6 +6,7 @@ using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.WebApi.FileServices;
 using Xunit;
 
+namespace UniiaAdmin.WebApi.Tests.ServiceTests;
 public class FileValidationServiceTests
 {
 	private readonly Mock<IFileValidatorFactory> _factoryMock;

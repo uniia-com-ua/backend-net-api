@@ -13,6 +13,8 @@ using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 using UniiaAdmin.WebApi.Resources;
 using Xunit;
 
+namespace UniiaAdmin.WebApi.Tests.ServiceTests;
+
 public class FileEntityServiceTests
 {
 	private readonly Mock<IMongoUnitOfWork> _mongoMock;

@@ -4,7 +4,7 @@ using System.Text.Json;
 using UniiaAdmin.WebApi.Controllers;
 using Xunit;
 
-namespace UniiaAdmin.Tests.ControllerTests
+namespace UniiaAdmin.WebApi.Tests.ControllerTests
 {
 	public class VersionControllerTests
 	{	

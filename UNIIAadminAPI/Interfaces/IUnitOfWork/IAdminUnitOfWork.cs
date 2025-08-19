@@ -1,4 +1,4 @@
-﻿namespace UniiaAdmin.WebApi.Interfaces;
+﻿namespace UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 
 using Microsoft.AspNetCore.Identity;
 

@@ -3,7 +3,6 @@
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
-using UniiaAdmin.WebApi.Interfaces;
 using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 
 public class HealthCheckService : IHealthCheckService

@@ -1,4 +1,4 @@
-﻿namespace UniiaAdmin.Tests.ControllerTests;
+﻿namespace UniiaAdmin.WebApi.Tests.ControllerTests;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -99,6 +99,24 @@ public class PublicationControllerTests
 	}
 
 	[Fact]
+	public async Task GetPublicationFile_BadRequest_Returns400()
+	{
+		// Arrange
+		const int id = 1;
+		var mockedRepo = _factory.Mocks.Mock<IFileRepository>();
+		mockedRepo.Setup(r => r.GetFileAsync<Publication, PublicationFile>(id))
+			.ReturnsAsync(Result<PublicationFile>.Failure(new InvalidDataException("Not found")));
+
+		var client = _factory.CreateClient();
+
+		// Act
+		var response = await client.GetAsync($"/api/v1/publications/{id}/file");
+
+		// Assert
+		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+	}
+
+	[Fact]
 	public async Task GetPublicationFile_Success_ReturnsPdf()
 	{
 		// Arrange
@@ -140,6 +158,50 @@ public class PublicationControllerTests
 	}
 
 	[Fact]
+	public async Task CreatePublication_TypeNotFound_Returns404()
+	{
+		// Arrange
+		var publication = CreateTestPublication();
+
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.AnyAsync<PublicationType>(It.IsAny<int>()))
+			.ReturnsAsync(false);
+
+		var client = _factory.CreateClient();
+		var content = BuildMultipartContent(publication);
+
+		// Act
+		var response = await client.PostAsync($"/api/v1/publications", content);
+
+		// Assert
+		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+	}
+
+	[Fact]
+	public async Task CreatePublication_LangNotFound_Returns404()
+	{
+		// Arrange
+		var publication = CreateTestPublication();
+
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.AnyAsync<PublicationType>(It.IsAny<int>()))
+			.ReturnsAsync(true);
+
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.AnyAsync<PublicationLanguage>(It.IsAny<int>()))
+			.ReturnsAsync(false);
+
+		var client = _factory.CreateClient();
+		var content = BuildMultipartContent(publication);
+
+		// Act
+		var response = await client.PostAsync($"/api/v1/publications", content);
+
+		// Assert
+		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+	}
+
+	[Fact]
 	public async Task CreatePublication_Success_Returns200()
 	{
 		// Arrange
@@ -165,6 +227,150 @@ public class PublicationControllerTests
 
 		// Assert
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+	}
+
+	[Fact]
+	public async Task UpdatePublication_Success_Returns200()
+	{
+		// Arrange
+		var existedPublication = CreateTestPublication(1);
+		var publication = CreateTestPublication(2, "New");
+
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.AnyAsync<PublicationType>(It.IsAny<int>()))
+			.ReturnsAsync(true);
+
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.AnyAsync<PublicationLanguage>(It.IsAny<int>()))
+			.ReturnsAsync(true);
+
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Publication>(It.IsAny<int>()))
+			.ReturnsAsync(existedPublication);
+
+		_factory.Mocks.Mock<IFileRepository>()
+			.Setup(r => r.UpdateAsync<Publication, PublicationFile>(It.IsAny<Publication>(), It.IsAny<Publication>(), It.IsAny<IFormFile>()))
+			.ReturnsAsync(Result<PublicationFile>.SuccessNoContent());
+
+		var client = _factory.CreateClient();
+		var existedContent = BuildMultipartContent(publication);
+		var content = BuildMultipartContent(existedPublication);
+
+		existedContent.Add(content);
+
+		// Act
+		var response = await client.PatchAsync($"/api/v1/publications/{existedPublication.Id}", existedContent);
+
+		// Assert
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+	}
+
+	[Fact]
+	public async Task UpdatePublication_BadRequest_Returns400()
+	{
+		// Arrange
+		var existedPublication = CreateTestPublication(1);
+		var publication = CreateTestPublication(2, "New");
+
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.AnyAsync<PublicationType>(It.IsAny<int>()))
+			.ReturnsAsync(true);
+
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.AnyAsync<PublicationLanguage>(It.IsAny<int>()))
+			.ReturnsAsync(true);
+
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Publication>(It.IsAny<int>()))
+			.ReturnsAsync(existedPublication);
+
+		_factory.Mocks.Mock<IFileRepository>()
+			.Setup(r => r.UpdateAsync<Publication, PublicationFile>(It.IsAny<Publication>(), It.IsAny<Publication>(), It.IsAny<IFormFile>()))
+			.ReturnsAsync(Result<PublicationFile>.Failure(new ArgumentException()));
+
+		var client = _factory.CreateClient();
+		var existedContent = BuildMultipartContent(publication);
+		var content = BuildMultipartContent(existedPublication);
+
+		existedContent.Add(content);
+
+		// Act
+		var response = await client.PatchAsync($"/api/v1/publications/{existedPublication.Id}", existedContent);
+
+		// Assert
+		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+	}
+
+	[Fact]
+	public async Task UpdatePublication_PublNotFound_Returns404()
+	{
+		// Arrange
+		var publication = CreateTestPublication();
+
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Publication>(It.IsAny<int>()))
+			.ReturnsAsync((Publication)null!);
+
+		var client = _factory.CreateClient();
+		var content = BuildMultipartContent(publication);
+
+		// Act
+		var response = await client.PatchAsync($"/api/v1/publications/{publication.Id}", content);
+
+		// Assert
+		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+	}
+
+	[Fact]
+	public async Task UpdatePublication_TypeNotFound_Returns404()
+	{
+		// Arrange
+		var publication = CreateTestPublication();
+
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Publication>(It.IsAny<int>()))
+			.ReturnsAsync(publication);
+
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.AnyAsync<PublicationType>(It.IsAny<int>()))
+			.ReturnsAsync(false);
+
+		var client = _factory.CreateClient();
+		var content = BuildMultipartContent(publication);
+
+		// Act
+		var response = await client.PatchAsync($"/api/v1/publications/{publication.Id}", content);
+
+		// Assert
+		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+	}
+
+	[Fact]
+	public async Task UpdatePublication_LangNotFound_Returns404()
+	{
+		// Arrange
+		var publication = CreateTestPublication();
+
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Publication>(It.IsAny<int>()))
+			.ReturnsAsync(publication);
+
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.AnyAsync<PublicationType>(It.IsAny<int>()))
+			.ReturnsAsync(true);
+
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.AnyAsync<PublicationLanguage>(It.IsAny<int>()))
+			.ReturnsAsync(false);
+
+		var client = _factory.CreateClient();
+		var content = BuildMultipartContent(publication);
+
+		// Act
+		var response = await client.PatchAsync($"/api/v1/publications/{publication.Id}", content);
+
+		// Assert
+		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
 	}
 
 	[Fact]

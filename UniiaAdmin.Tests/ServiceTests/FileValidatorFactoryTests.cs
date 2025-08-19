@@ -7,7 +7,7 @@ using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.WebApi.Resources;
 using Xunit;
 
-namespace UniiaAdmin.Tests.ServiceTests
+namespace UniiaAdmin.WebApi.Tests.ServiceTests
 {
 	public class FileValidatorFactoryTests
 	{

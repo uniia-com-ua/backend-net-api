@@ -5,6 +5,7 @@ using System.Data;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 
 public class RolePaginationService : IRolePaginationService
 {

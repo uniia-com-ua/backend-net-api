@@ -6,12 +6,12 @@ using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
 using UniiaAdmin.Data.Models;
-using UniiaAdmin.Tests;
+using UniiaAdmin.WebApi.Tests;
 using UniiaAdmin.WebApi.Controllers;
 using UniiaAdmin.WebApi.Interfaces;
 using Xunit;
 
-namespace UniiaAdmin.Tests.ControllerTests;
+namespace UniiaAdmin.WebApi.Tests.ControllerTests;
 
 public class LogActionControllerTests
 {

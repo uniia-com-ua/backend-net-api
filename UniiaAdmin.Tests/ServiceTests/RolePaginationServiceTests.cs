@@ -7,8 +7,9 @@ using UniiaAdmin.WebApi.Services;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.WebApi.Interfaces;
 using Xunit;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 
-namespace UniiaAdmin.Tests.ServiceTests;
+namespace UniiaAdmin.WebApi.Tests.ServiceTests;
 public class RolePaginationServiceTests
 {
 	private readonly Mock<IAdminUnitOfWork> _adminMock;

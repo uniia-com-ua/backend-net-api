@@ -1,4 +1,4 @@
-﻿namespace UniiaAdmin.Tests.ControllerTests;
+﻿namespace UniiaAdmin.WebApi.Tests.ControllerTests;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -118,6 +118,143 @@ public class RolesControllerTests
 		var response = await client.PostAsync("/api/v1/roles/role/claim", null);
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 	}
+
+	[Fact]
+	public async Task RemoveClaimFromRole_RoleNotFound_ReturnsNotFound()
+	{
+		var client = _factory.CreateClient();
+		var roleRepo = _factory.Mocks.Mock<IRoleRepository>();
+		roleRepo.Setup(r => r.FindByNameAsync("unknown")).ReturnsAsync((IdentityRole)null!);
+
+		var response = await client.DeleteAsync("/api/v1/roles/unknown/claim");
+		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+	}
+
+	[Fact]
+	public async Task RemoveClaimFromRole_ClaimNotExist_ReturnsNotFound()
+	{
+		var client = _factory.CreateClient();
+		var roleRepo = _factory.Mocks.Mock<IRoleRepository>();
+		var role = new IdentityRole("role");
+		roleRepo.Setup(r => r.FindByNameAsync("role")).ReturnsAsync(role);
+		roleRepo.Setup(r => r.GetClaimsAsync(role)).ReturnsAsync(new List<Claim>());
+
+		var response = await client.DeleteAsync("/api/v1/roles/role/claim");
+		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+	}
+
+	[Fact]
+	public async Task RemoveClaimFromRole_DeleteFails_ReturnsBadRequest()
+	{
+		var client = _factory.CreateClient();
+		var roleRepo = _factory.Mocks.Mock<IRoleRepository>();
+		var role = new IdentityRole("role");
+		roleRepo.Setup(r => r.FindByNameAsync("role")).ReturnsAsync(role);
+		var claim = new Claim(CustomClaimTypes.Permission, "claim");
+		roleRepo.Setup(r => r.GetClaimsAsync(role)).ReturnsAsync(new List<Claim> { claim });
+		roleRepo.Setup(r => r.RemoveClaimAsync(role, claim)).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "fail" }));
+
+		var response = await client.DeleteAsync("/api/v1/roles/role/claim");
+		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+	}
+
+	[Fact]
+	public async Task CreateRole_FailedResult_ReturnsBadRequest()
+	{
+		var client = _factory.CreateClient();
+		var roleRepo = _factory.Mocks.Mock<IRoleRepository>();
+		roleRepo.Setup(r => r.RoleExistsAsync("newRole")).ReturnsAsync(false);
+		roleRepo.Setup(r => r.CreateAsync(It.IsAny<IdentityRole>()))
+				.ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "fail" }));
+
+		var response = await client.PostAsync("/api/v1/roles?roleName=newRole", null);
+		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+	}
+
+	[Fact]
+	public async Task DeleteRole_RoleNotFound_ReturnsNotFound()
+	{
+		var client = _factory.CreateClient();
+		var roleRepo = _factory.Mocks.Mock<IRoleRepository>();
+		roleRepo.Setup(r => r.FindByNameAsync("someRole")).ReturnsAsync((IdentityRole)null!);
+
+		var response = await client.DeleteAsync("/api/v1/roles?roleName=someRole");
+		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+	}
+
+	[Fact]
+	public async Task DeleteRole_DeleteFails_ReturnsBadRequest()
+	{
+		var client = _factory.CreateClient();
+		var roleRepo = _factory.Mocks.Mock<IRoleRepository>();
+		var role = new IdentityRole("role");
+		roleRepo.Setup(r => r.FindByNameAsync("role")).ReturnsAsync(role);
+		roleRepo.Setup(r => r.DeleteAsync(role)).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "fail" }));
+
+		var response = await client.DeleteAsync("/api/v1/roles?roleName=role");
+		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+	}
+
+	[Fact]
+	public async Task GetAllRoles_ReturnsOkWithRoles()
+	{
+		var client = _factory.CreateClient();
+		var paginationMock = _factory.Mocks.Mock<IRolePaginationService>();
+		paginationMock.Setup(p => p.GetPagedRolesAsync(0, 10))
+					  .ReturnsAsync(new List<IdentityRole> { new IdentityRole("role1") });
+
+		var response = await client.GetAsync("/api/v1/roles/page");
+		var roles = await DeserializeResponse<List<IdentityRole>>(response);
+
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.Single(roles!);
+	}
+
+	[Fact]
+	public async Task GetClaimsByRoleName_RoleNotFound_ReturnsNotFound()
+	{
+		var client = _factory.CreateClient();
+		var roleRepo = _factory.Mocks.Mock<IRoleRepository>();
+		roleRepo.Setup(r => r.FindByNameAsync("unknown")).ReturnsAsync((IdentityRole)null!);
+
+		var response = await client.GetAsync("/api/v1/roles/unknown/claims");
+		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+	}
+
+	[Fact]
+	public async Task GetClaimsByRoleName_RoleFound_ReturnsClaims()
+	{
+		var client = _factory.CreateClient();
+		var roleRepo = _factory.Mocks.Mock<IRoleRepository>();
+		var paginationMock = _factory.Mocks.Mock<IRolePaginationService>();
+		var role = new IdentityRole("role") { Id = "1" };
+		roleRepo.Setup(r => r.FindByNameAsync("role")).ReturnsAsync(role);
+		paginationMock.Setup(p => p.GetPagedClaimsAsync("1", 0, 10))
+					  .ReturnsAsync(new List<string?> { "claim" }!);
+
+		var response = await client.GetAsync("/api/v1/roles/role/claims");
+		var claims = await DeserializeResponse<List<string?>>(response);
+
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.Single(claims!);
+	}
+
+	[Fact]
+	public async Task GetPaginatedClaims_ReturnsClaims()
+	{
+		var client = _factory.CreateClient();
+		var paginationMock = _factory.Mocks.Mock<IRolePaginationService>();
+		
+		paginationMock.Setup(p => p.GetPagedClaimsAsync(0, 10))
+					  .ReturnsAsync(new List<string?> { "claim" }!);
+
+		var response = await client.GetAsync("/api/v1/roles/claims/page");
+		var claims = await DeserializeResponse<List<string?>>(response);
+
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.Single(claims!);
+	}
+
 
 	[Fact]
 	public async Task DeleteRole_AdminRole_ReturnsBadRequest()

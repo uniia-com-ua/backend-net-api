@@ -65,11 +65,10 @@ namespace UNIIAadminAPI.Controllers
                 {
                     return BadRequest(result.Error?.Message);
                 }
-
-                if (result.Error is ArgumentException || result.Error is KeyNotFoundException)
-                {
-                    return NotFound(result.Error?.Message);
-                }
+				else
+				{
+					return NotFound(result.Error?.Message);
+				}
 
             }
 

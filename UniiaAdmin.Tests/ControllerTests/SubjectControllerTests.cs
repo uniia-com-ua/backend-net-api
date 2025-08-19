@@ -1,4 +1,4 @@
-﻿namespace UniiaAdmin.Tests.ControllerTests;
+﻿namespace UniiaAdmin.WebApi.Tests.ControllerTests;
 
 using Microsoft.Extensions.Localization;
 using Moq;

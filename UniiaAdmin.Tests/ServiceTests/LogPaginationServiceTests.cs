@@ -8,7 +8,7 @@ using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 using UniiaAdmin.WebApi.Services;
 using Xunit;
 
-namespace UniiaAdmin.Tests.ServiceTests;
+namespace UniiaAdmin.WebApi.Tests.ServiceTests;
 
 public class LogPaginationServiceTests
 {

@@ -1,7 +1,7 @@
 ﻿using Moq;
 using System.Collections;
 
-namespace UniiaAdmin.Tests;
+namespace UniiaAdmin.WebApi.Tests;
 
 public class MockProvider : IEnumerable<KeyValuePair<Type, Mock>>
 {

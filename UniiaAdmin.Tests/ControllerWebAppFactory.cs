@@ -10,7 +10,7 @@ using UniiaAdmin.WebApi.Interfaces;
 using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 using UNIIAadminAPI.Controllers;
 
-namespace UniiaAdmin.Tests;
+namespace UniiaAdmin.WebApi.Tests;
 
 public class ControllerWebAppFactory<T> : WebApplicationFactory<AuthorController>
 {

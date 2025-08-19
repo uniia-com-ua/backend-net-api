@@ -3,7 +3,7 @@
 using Microsoft.AspNetCore.Identity;
 using System.Linq;
 using UniiaAdmin.Data.Data;
-using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 
 public class AdminUnitOfWork : IAdminUnitOfWork
 {

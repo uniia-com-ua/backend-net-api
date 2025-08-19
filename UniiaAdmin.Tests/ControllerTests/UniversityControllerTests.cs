@@ -1,4 +1,4 @@
-﻿namespace UniiaAdmin.Tests.ControllerTests;
+﻿namespace UniiaAdmin.WebApi.Tests.ControllerTests;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Localization;

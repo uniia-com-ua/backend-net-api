@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 using UniiaAdmin.WebApi.Services;
 using Xunit;
 
-namespace UniiaAdmin.Tests.ServiceTests;
+namespace UniiaAdmin.WebApi.Tests.ServiceTests;
 
 public class PaginationServiceTests
 {

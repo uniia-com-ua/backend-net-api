@@ -12,7 +12,7 @@ using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 using UniiaAdmin.WebApi.Resources;
 using Xunit;
 
-namespace UniiaAdmin.Tests.ControllerTests
+namespace UniiaAdmin.WebApi.Tests.ControllerTests
 {
 	public class FacultyControllerTests
 	{

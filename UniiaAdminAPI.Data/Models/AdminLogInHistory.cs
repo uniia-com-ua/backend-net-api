@@ -1,14 +1,17 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson;
+using System.Text.Json.Serialization;
 
 namespace UniiaAdmin.Data.Models
 {
     public class AdminLogInHistory
     {
         [BsonId]
+        [JsonIgnore]
         public ObjectId Id { get; set; }
 
-        public string? UserId { get; set; }
+		[JsonIgnore]
+		public string? UserId { get; set; }
 
         public string? IpAdress { get; set; }
 
