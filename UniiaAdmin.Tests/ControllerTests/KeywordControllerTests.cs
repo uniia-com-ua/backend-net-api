@@ -28,7 +28,7 @@ public class KeywordControllerTests
 		var mockProvider = new MockProvider();
 
 		mockProvider.Mock<IGenericRepository>();
-		mockProvider.Mock<IQueryRepository>();
+		mockProvider.Mock<IApplicationUnitOfWork>();
 		mockProvider.Mock<MongoDbContext>();
 
 		var localizer = mockProvider.Mock<IStringLocalizer<ErrorMessages>>();
@@ -88,7 +88,7 @@ public class KeywordControllerTests
 			new Keyword { Id = 1, Word = "AI" }
 		};
 
-		_factory.Mocks.Mock<IQueryRepository>()
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
 			.Setup(r => r.GetPagedAsync<Keyword>(0, 10))
 			.ReturnsAsync(keywords);
 

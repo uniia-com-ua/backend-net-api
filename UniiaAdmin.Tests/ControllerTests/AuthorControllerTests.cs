@@ -33,7 +33,7 @@ public class AuthorControllerTests
 
 		mockProvider.Mock<IPhotoRepository>();
 		mockProvider.Mock<IPhotoProvider>();
-		mockProvider.Mock<IQueryRepository>();
+		mockProvider.Mock<IApplicationUnitOfWork>();
 		mockProvider.Mock<MongoDbContext>();
 
 		var localizer = mockProvider.Mock<IStringLocalizer<ErrorMessages>>();
@@ -150,7 +150,7 @@ public class AuthorControllerTests
 			CreateTestAuthor(),
 		};
 
-		_factory.Mocks.Mock<IQueryRepository>()
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
 			.Setup(r => r.GetPagedAsync<Author>(0, 10))
 			.ReturnsAsync(authors);
 		var client = _factory.CreateClient();

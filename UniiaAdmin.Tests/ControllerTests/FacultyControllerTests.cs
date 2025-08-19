@@ -28,7 +28,7 @@ namespace UniiaAdmin.Tests.ControllerTests
 			var mockProvider = new MockProvider();
 
 			mockProvider.Mock<IGenericRepository>();
-			mockProvider.Mock<IQueryRepository>();
+			mockProvider.Mock<IApplicationUnitOfWork>();
 			mockProvider.Mock<MongoDbContext>();
 
 			var localizer = mockProvider.Mock<IStringLocalizer<ErrorMessages>>();
@@ -87,7 +87,7 @@ namespace UniiaAdmin.Tests.ControllerTests
 				new() { Id = 1, FullName = "Math Faculty", UniversityId = 5 }
 			};
 
-			_factory.Mocks.Mock<IQueryRepository>()
+			_factory.Mocks.Mock<IApplicationUnitOfWork>()
 				.Setup(r => r.GetPagedAsync<Faculty>(0, 10))
 				.ReturnsAsync(faculties);
 

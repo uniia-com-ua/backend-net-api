@@ -29,7 +29,7 @@ public class PublicationControllerTests
 		var mockProvider = new MockProvider();
 
 		mockProvider.Mock<IFileRepository>();
-		mockProvider.Mock<IQueryRepository>();
+		mockProvider.Mock<IApplicationUnitOfWork>();
 		mockProvider.Mock<MongoDbContext>();
 
 		var localizer = mockProvider.Mock<IStringLocalizer<ErrorMessages>>();
@@ -60,7 +60,7 @@ public class PublicationControllerTests
 		const int validId = 1;
 		var publication = CreateTestPublication();
 
-		var mockedRepo = _factory.Mocks.Mock<IQueryRepository>();
+		var mockedRepo = _factory.Mocks.Mock<IApplicationUnitOfWork>();
 		mockedRepo.Setup(r => r.GetByIdWithIncludesAsync(
 				It.IsAny<Expression<Func<Publication, bool>>>(),
 				It.IsAny<Expression<Func<Publication, object>>[]>()
@@ -124,7 +124,7 @@ public class PublicationControllerTests
 	{
 		// Arrange
 		var list = new List<Publication> { CreateTestPublication() };
-		_factory.Mocks.Mock<IQueryRepository>()
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
 			.Setup(r => r.GetPagedAsync<Publication>(0, 10))
 			.ReturnsAsync(list);
 

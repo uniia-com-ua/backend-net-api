@@ -23,7 +23,7 @@ public class PublicationLanguageControllerTests
 		var mockProvider = new MockProvider();
 
 		mockProvider.Mock<IGenericRepository>();
-		mockProvider.Mock<IQueryRepository>();
+		mockProvider.Mock<IApplicationUnitOfWork>();
 		mockProvider.Mock<MongoDbContext>();
 
 		var localizer = mockProvider.Mock<IStringLocalizer<ErrorMessages>>();
@@ -76,7 +76,7 @@ public class PublicationLanguageControllerTests
 			new PublicationLanguage { Id = 1, Name = "English" }
 		};
 
-		_factory.Mocks.Mock<IQueryRepository>()
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
 			.Setup(r => r.GetPagedAsync<PublicationLanguage>(0, 10))
 			.ReturnsAsync(languages);
 

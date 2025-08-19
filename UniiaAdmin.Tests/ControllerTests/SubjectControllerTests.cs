@@ -22,7 +22,7 @@ public class SubjectControllerTests
 		var mockProvider = new MockProvider();
 
 		mockProvider.Mock<IGenericRepository>();
-		mockProvider.Mock<IQueryRepository>();
+		mockProvider.Mock<IApplicationUnitOfWork>();
 		mockProvider.Mock<MongoDbContext>();
 
 		var localizer = mockProvider.Mock<IStringLocalizer<ErrorMessages>>();
@@ -75,7 +75,7 @@ public class SubjectControllerTests
 			new Subject { Id = 1, Name = "Math" }
 		};
 
-		_factory.Mocks.Mock<IQueryRepository>()
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
 			.Setup(r => r.GetPagedAsync<Subject>(0, 10))
 			.ReturnsAsync(subjects);
 

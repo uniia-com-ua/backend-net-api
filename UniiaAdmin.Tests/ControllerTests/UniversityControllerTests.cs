@@ -25,7 +25,7 @@ public class UniversityControllerTests
 
 		mockProvider.Mock<ISmallPhotoRepository>();
 		mockProvider.Mock<IPhotoProvider>();
-		mockProvider.Mock<IQueryRepository>();
+		mockProvider.Mock<IApplicationUnitOfWork>();
 		mockProvider.Mock<MongoDbContext>();
 
 		var localizer = mockProvider.Mock<IStringLocalizer<ErrorMessages>>();
@@ -126,7 +126,7 @@ public class UniversityControllerTests
 		// Arrange
 		var universities = new List<University> { CreateTestUniversity() };
 
-		_factory.Mocks.Mock<IQueryRepository>()
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
 			.Setup(r => r.GetPagedAsync<University>(0, 10))
 			.ReturnsAsync(universities);
 

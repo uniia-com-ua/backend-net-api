@@ -22,7 +22,7 @@ public class PublicationTypeControllerTests
 		var mockProvider = new MockProvider();
 
 		mockProvider.Mock<IGenericRepository>();
-		mockProvider.Mock<IQueryRepository>();
+		mockProvider.Mock<IApplicationUnitOfWork>();
 		mockProvider.Mock<MongoDbContext>();
 
 		var localizer = mockProvider.Mock<IStringLocalizer<ErrorMessages>>();
@@ -75,7 +75,7 @@ public class PublicationTypeControllerTests
 			new PublicationType { Id = 1, Name = "Book" }
 		};
 
-		_factory.Mocks.Mock<IQueryRepository>()
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
 			.Setup(r => r.GetPagedAsync<PublicationType>(0, 10))
 			.ReturnsAsync(types);
 
