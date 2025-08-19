@@ -7,25 +7,22 @@ using System.Net.Mime;
 using System.Threading.Tasks;
 using UniiaAdmin.Data.Common;
 using UniiaAdmin.Data.Data;
-using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 
 public class FileRepository : IFileRepository
 {
-	private readonly ApplicationContext _applicationContext;
-	private readonly MongoDbContext _mongoDbContext;
+	private readonly IApplicationUnitOfWork _applicationUnitOfWork;
 	private readonly IFileEntityService _fileService;
 	private readonly IMapper _mapper;
 
 	public FileRepository(
-			ApplicationContext applicationContext,
-			MongoDbContext mongoDbContext,
+			IApplicationUnitOfWork applicationUnitOfWork,
 			IMapper mapper,
 			IFileEntityService fileService)
 	{
-		_applicationContext = applicationContext;
-		_mongoDbContext = mongoDbContext;
+		_applicationUnitOfWork = applicationUnitOfWork;
 		_mapper = mapper;
 		_fileService=fileService;
 	}
@@ -34,11 +31,11 @@ public class FileRepository : IFileRepository
 		where T : class, IFileEntity
 		where K : class, IMongoFileEntity
 	{
-		var fileId = await _applicationContext.Set<T>().Where(a => a.Id == id)
+		var fileId = await _applicationUnitOfWork.Query<T>().Where(a => a.Id == id)
 												  .Select(a => a.FileId)
 												  .FirstOrDefaultAsync();
 
-		var result = await _fileService.GetFileAsync(fileId, _mongoDbContext.Set<K>());
+		var result = await _fileService.GetFileAsync<K>(fileId);
 
 		return result;
 	}
@@ -49,7 +46,7 @@ public class FileRepository : IFileRepository
 	{
 		if (file != null)
 		{
-			var result = await _fileService.SaveFileAsync(file, _mongoDbContext.Set<K>(), MediaTypeNames.Application.Pdf);
+			var result = await _fileService.SaveFileAsync<K>(file, MediaTypeNames.Application.Pdf);
 
 			if (!result.IsSuccess)
 			{
@@ -59,9 +56,9 @@ public class FileRepository : IFileRepository
 			model.FileId = result.Value!.Id.ToString();
 		}
 
-		await _applicationContext.Set<T>().AddAsync(model);
+		await _applicationUnitOfWork.AddAsync(model);
 
-		await _applicationContext.SaveChangesAsync();
+		await _applicationUnitOfWork.SaveChangesAsync();
 
 		return Result<K>.SuccessNoContent();
 	}
@@ -74,7 +71,7 @@ public class FileRepository : IFileRepository
 
 		if (file != null)
 		{
-			var result = await _fileService.UpdateFileAsync(file, model.FileId, _mongoDbContext.Set<K>(), MediaTypeNames.Application.Pdf);
+			var result = await _fileService.UpdateFileAsync<K>(file, model.FileId, MediaTypeNames.Application.Pdf);
 
 			if (!result.IsSuccess)
 			{
@@ -86,7 +83,7 @@ public class FileRepository : IFileRepository
 			return Result<K>.SuccessNoContent();
 		}
 
-		await _applicationContext.SaveChangesAsync();
+		await _applicationUnitOfWork.SaveChangesAsync();
 
 		return Result<K>.SuccessNoContent();
 	}
@@ -95,10 +92,10 @@ public class FileRepository : IFileRepository
 		where T : class, IFileEntity
 		where K : class, IMongoFileEntity
 	{
-		await _fileService.DeleteFileAsync(model.FileId, _mongoDbContext.Set<K>());
+		await _fileService.DeleteFileAsync<K>(model.FileId);
 
-		_applicationContext.Set<T>().Remove(model);
+		_applicationUnitOfWork.Remove(model);
 
-		await _applicationContext.SaveChangesAsync();
+		await _applicationUnitOfWork.SaveChangesAsync();
 	}
 }

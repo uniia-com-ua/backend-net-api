@@ -5,6 +5,7 @@ using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Attributes;
 using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
@@ -16,6 +17,7 @@ namespace UNIIAadminAPI.Controllers
     {
         private readonly IPhotoRepository _authorRepository;
         private readonly IPhotoProvider _photoProvider;
+		private readonly IApplicationUnitOfWork _applicationUnitOfWork;
 		private readonly IQueryRepository _queryRepository;
 		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
@@ -23,11 +25,13 @@ namespace UNIIAadminAPI.Controllers
             IPhotoRepository authorRepository,
             IStringLocalizer<ErrorMessages> localizer,
             IPhotoProvider photoProvider,
+			IApplicationUnitOfWork applicationUnitOfWork,
             IQueryRepository queryRepository)
         {
             _localizer = localizer;
             _authorRepository = authorRepository;
             _photoProvider = photoProvider;
+			_applicationUnitOfWork = applicationUnitOfWork;
             _queryRepository = queryRepository;
 		}
 
@@ -35,7 +39,7 @@ namespace UNIIAadminAPI.Controllers
 		[HttpGet("{id:int}")]
         public async Task<IActionResult> Get(int id)
         {
-            var author = await _queryRepository.GetByIdAsync<Author>(id);
+            var author = await _applicationUnitOfWork.FindAsync<Author>(id);
 
 			if (author == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Author), id.ToString()].Value);
@@ -95,9 +99,9 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(Author), nameof(Update))]
 		public async Task<IActionResult> Update([FromForm] Author author, IFormFile? photoFile, int id)
         {
-            var existedAuthor = await _queryRepository.GetByIdAsync<Author>(id);
+            var existedAuthor = await _applicationUnitOfWork.FindAsync<Author>(id);
 
-            if (existedAuthor == null)
+			if (existedAuthor == null)
             {
                 return NotFound(_localizer["ModelNotFound", nameof(Author), id.ToString()].Value);
             }
@@ -117,7 +121,7 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(Author), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {
-			var author = await _queryRepository.GetByIdAsync<Author>(id);
+			var author = await _applicationUnitOfWork.FindAsync<Author>(id);
 
 			if (author == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Author), id.ToString()].Value);

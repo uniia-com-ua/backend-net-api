@@ -30,5 +30,9 @@ namespace UniiaAdmin.Data.Models
 
         [MaxLength(64)]
         public string? Url { get; set; }
-    }
+
+        [JsonIgnore]
+        [BindNever]
+		public List<Publication>? Publications { get; set; }
+	}
 }

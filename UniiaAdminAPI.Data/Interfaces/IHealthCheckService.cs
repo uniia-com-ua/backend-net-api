@@ -9,4 +9,10 @@ using UniiaAdmin.Data.Models;
 public interface IHealthCheckService
 {
 	public HealthCheckComponent GetHealthStatusAsync(bool isHealthy);
+
+	public Task<bool> CanMongoConnect();
+
+	public Task<bool> CanAdminConnect();
+
+	public Task<bool> CanAppConnect();
 }

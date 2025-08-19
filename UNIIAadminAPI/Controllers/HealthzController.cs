@@ -9,20 +9,10 @@ namespace UNIIAadminAPI.Controllers
     [ApiController]
     public class HealthzController : ControllerBase
     {
-        private readonly AdminContext _adminContext;
-        private readonly ApplicationContext _applicationContext;
-        private readonly MongoDbContext _mongoContext;
         private readonly IHealthCheckService _healthCheckService;
 
-        public HealthzController(
-            AdminContext adminContext, 
-            ApplicationContext applicationContext,
-            MongoDbContext mongoContext,
-            IHealthCheckService healthCheckService)
+        public HealthzController(IHealthCheckService healthCheckService)
         {
-            _adminContext = adminContext;
-            _applicationContext = applicationContext;
-            _mongoContext = mongoContext;
             _healthCheckService = healthCheckService;
         }
 
@@ -41,9 +31,9 @@ namespace UNIIAadminAPI.Controllers
         [HttpGet("ready")]
         public async Task<IActionResult> Ready()
         {
-			var adminDbHealthy = await _adminContext.Database.CanConnectAsync();
-			var appDbHealthy = await _applicationContext.Database.CanConnectAsync();
-			var mongoHealthy = await _mongoContext.Database.CanConnectAsync();
+			var adminDbHealthy = await _healthCheckService.CanAdminConnect();
+			var appDbHealthy = await _healthCheckService.CanAppConnect();
+			var mongoHealthy = await _healthCheckService.CanMongoConnect();
 
 			var allHealthy = adminDbHealthy && appDbHealthy && mongoHealthy;
 
@@ -77,9 +67,9 @@ namespace UNIIAadminAPI.Controllers
         {
             var components = new Dictionary<string, HealthCheckComponent>();
 
-			components["admin_db"] = _healthCheckService.GetHealthStatusAsync(await _adminContext.Database.CanConnectAsync());
-			components["application_db"] = _healthCheckService.GetHealthStatusAsync(await _applicationContext.Database.CanConnectAsync());
-			components["mongodb"] = _healthCheckService.GetHealthStatusAsync(await _mongoContext.Database.CanConnectAsync());
+			components["admin_db"] = _healthCheckService.GetHealthStatusAsync(await _healthCheckService.CanAdminConnect());
+			components["application_db"] = _healthCheckService.GetHealthStatusAsync(await _healthCheckService.CanAppConnect());
+			components["mongodb"] = _healthCheckService.GetHealthStatusAsync(await _healthCheckService.CanMongoConnect());
 
 			return Ok(new
 			{

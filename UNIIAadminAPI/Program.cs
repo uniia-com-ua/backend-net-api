@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using MongoDB.Driver.GridFS;
 using System.Text;
+using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
@@ -65,9 +66,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options => options.DisplayRequestDuration());
 }
 
-await app.Services.ApplyMigrationsAsync();
-
-app.UseHttpsRedirection();
+if (!app.Environment.IsEnvironment(CustomEnviroments.Test))
+{
+	await app.Services.ApplyMigrationsAsync();
+	app.UseHttpsRedirection();
+}
 
 app.AddLocalization();
 

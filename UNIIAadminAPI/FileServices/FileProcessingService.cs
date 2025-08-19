@@ -1,5 +1,4 @@
 ﻿using MongoDB.Bson;
-using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 
 namespace UniiaAdmin.WebApi.FileServices

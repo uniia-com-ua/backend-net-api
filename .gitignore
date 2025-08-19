@@ -401,3 +401,4 @@ FodyWeavers.xsd
 .env
 
 coverage-report/
+generate_test_report.bat

@@ -6,25 +6,22 @@ using System.Net.Mime;
 using System.Threading.Tasks;
 using UniiaAdmin.Data.Common;
 using UniiaAdmin.Data.Data;
-using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 
 public class PhotoRepository : IPhotoRepository
 {
-	private readonly ApplicationContext _applicationContext;
-	private readonly MongoDbContext _mongoDbContext;
+	private readonly IApplicationUnitOfWork _applicationUnitOfWork;
 	private readonly IFileEntityService _fileService;
 	private readonly IMapper _mapper;
 
 	public PhotoRepository(
-			ApplicationContext applicationContext,
-			MongoDbContext mongoDbContext,
+			IApplicationUnitOfWork applicationUnitOfWork,
 			IMapper mapper,
 			IFileEntityService fileService)
 	{
-		_applicationContext = applicationContext;
-		_mongoDbContext = mongoDbContext;
+		_applicationUnitOfWork = applicationUnitOfWork;
 		_mapper = mapper;
 		_fileService=fileService;
 	}
@@ -36,7 +33,7 @@ public class PhotoRepository : IPhotoRepository
 
 		if (photo != null)
 		{
-			var result = await _fileService.SaveFileAsync(photo, _mongoDbContext.Set<K>(), MediaTypeNames.Image.Jpeg);
+			var result = await _fileService.SaveFileAsync<K>(photo, MediaTypeNames.Image.Jpeg);
 
 			if (!result.IsSuccess)
 			{
@@ -46,9 +43,9 @@ public class PhotoRepository : IPhotoRepository
 			model.PhotoId = result.Value!.Id.ToString();
 		}
 
-		await _applicationContext.Set<T>().AddAsync(model);
+		await _applicationUnitOfWork.AddAsync(model);
 
-		await _applicationContext.SaveChangesAsync();
+		await _applicationUnitOfWork.SaveChangesAsync();
 
 		return Result<K>.SuccessNoContent();
 	}
@@ -61,7 +58,7 @@ public class PhotoRepository : IPhotoRepository
 
 		if (photo != null)
 		{
-			var result = await _fileService.UpdateFileAsync(photo, model.PhotoId, _mongoDbContext.Set<K>(), MediaTypeNames.Image.Jpeg);
+			var result = await _fileService.UpdateFileAsync<K>(photo, model.PhotoId, MediaTypeNames.Image.Jpeg);
 
 			if (!result.IsSuccess)
 			{
@@ -71,7 +68,7 @@ public class PhotoRepository : IPhotoRepository
 			existedModel.PhotoId = result.Value!.Id.ToString();
 		}
 
-		await _applicationContext.SaveChangesAsync();
+		await _applicationUnitOfWork.SaveChangesAsync();
 
 		return Result<K>.SuccessNoContent();
 	}
@@ -80,10 +77,10 @@ public class PhotoRepository : IPhotoRepository
 		where T : class, IPhotoEntity
 		where K : class, IMongoFileEntity
 	{
-		await _fileService.DeleteFileAsync(model.PhotoId, _mongoDbContext.Set<K>());
+		await _fileService.DeleteFileAsync<K>(model.PhotoId);
 
-		_applicationContext.Set<T>().Remove(model);
+		_applicationUnitOfWork.Remove(model);
 
-		await _applicationContext.SaveChangesAsync();
+		await _applicationUnitOfWork.SaveChangesAsync();
 	}
 }

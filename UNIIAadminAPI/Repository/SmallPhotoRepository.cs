@@ -5,25 +5,22 @@ using Microsoft.EntityFrameworkCore;
 using System.Net.Mime;
 using UniiaAdmin.Data.Common;
 using UniiaAdmin.Data.Data;
-using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 
 public class SmallPhotoRepository : ISmallPhotoRepository
 {
-	private readonly ApplicationContext _applicationContext;
-	private readonly MongoDbContext _mongoDbContext;
+	private readonly IApplicationUnitOfWork _applicationUnitOfWork;
 	private readonly IFileEntityService _fileService;
 	private readonly IMapper _mapper;
 
 	public SmallPhotoRepository(
-			ApplicationContext applicationContext,
-			MongoDbContext mongoDbContext,
+			IApplicationUnitOfWork applicationUnitOfWork,
 			IMapper mapper,
 			IFileEntityService fileService)
 	{
-		_applicationContext = applicationContext;
-		_mongoDbContext = mongoDbContext;
+		_applicationUnitOfWork = applicationUnitOfWork;
 		_mapper = mapper;
 		_fileService=fileService;
 	}
@@ -31,12 +28,12 @@ public class SmallPhotoRepository : ISmallPhotoRepository
 			where T : class, ISmallPhotoEntity
 			where K : class, IMongoFileEntity
 	{
-		var photoId = await _applicationContext.Set<T>()
+		var photoId = await _applicationUnitOfWork.Query<T>()
 			.Where(a => a.Id == id)
 			.Select(a => a.SmallPhotoId)
 			.FirstOrDefaultAsync();
 
-		return await _fileService.GetFileAsync(photoId, _mongoDbContext.Set<K>());
+		return await _fileService.GetFileAsync<K>(photoId);
 	}
 
 	public async Task<Result<K>> CreateAsync<T, K>(T model, IFormFile? photo, IFormFile? smallPhoto)
@@ -45,7 +42,7 @@ public class SmallPhotoRepository : ISmallPhotoRepository
 	{
 		if (photo != null)
 		{
-			var result = await _fileService.SaveFileAsync(photo, _mongoDbContext.Set<K>(), MediaTypeNames.Image.Jpeg);
+			var result = await _fileService.SaveFileAsync<K>(photo, MediaTypeNames.Image.Jpeg);
 
 			if (!result.IsSuccess)
 			{
@@ -57,7 +54,7 @@ public class SmallPhotoRepository : ISmallPhotoRepository
 
 		if (smallPhoto != null)
 		{
-			var result = await _fileService.SaveFileAsync(smallPhoto, _mongoDbContext.Set<K>(), MediaTypeNames.Image.Jpeg);
+			var result = await _fileService.SaveFileAsync<K>(smallPhoto, MediaTypeNames.Image.Jpeg);
 
 			if (!result.IsSuccess)
 			{
@@ -67,9 +64,9 @@ public class SmallPhotoRepository : ISmallPhotoRepository
 			model.SmallPhotoId = result.Value!.Id.ToString();
 		}
 
-		await _applicationContext.Set<T>().AddAsync(model);
+		await _applicationUnitOfWork.AddAsync(model);
 
-		await _applicationContext.SaveChangesAsync();
+		await _applicationUnitOfWork.SaveChangesAsync();
 
 		return Result<K>.SuccessNoContent();
 	}
@@ -82,7 +79,7 @@ public class SmallPhotoRepository : ISmallPhotoRepository
 
 		if (photo != null)
 		{
-			var result = await _fileService.UpdateFileAsync(photo, model.PhotoId, _mongoDbContext.Set<K>(), MediaTypeNames.Image.Jpeg);
+			var result = await _fileService.UpdateFileAsync<K>(photo, model.PhotoId, MediaTypeNames.Image.Jpeg);
 
 			if (!result.IsSuccess)
 			{
@@ -94,7 +91,7 @@ public class SmallPhotoRepository : ISmallPhotoRepository
 
 		if (smallPhoto != null)
 		{
-			var result = await _fileService.UpdateFileAsync(smallPhoto, model.SmallPhotoId, _mongoDbContext.Set<K>(), MediaTypeNames.Image.Jpeg);
+			var result = await _fileService.UpdateFileAsync<K>(smallPhoto, model.SmallPhotoId, MediaTypeNames.Image.Jpeg);
 
 			if (!result.IsSuccess)
 			{
@@ -104,7 +101,7 @@ public class SmallPhotoRepository : ISmallPhotoRepository
 			model.SmallPhotoId = result.Value!.Id.ToString();
 		}
 
-		await _applicationContext.SaveChangesAsync();
+		await _applicationUnitOfWork.SaveChangesAsync();
 
 		return Result<K>.SuccessNoContent();
 	}
@@ -113,12 +110,12 @@ public class SmallPhotoRepository : ISmallPhotoRepository
 			where T : class, ISmallPhotoEntity
 			where K : class, IMongoFileEntity
 	{
-		await _fileService.DeleteFileAsync(model.PhotoId, _mongoDbContext.Set<K>());
+		await _fileService.DeleteFileAsync<K>(model.PhotoId);
 
-		await _fileService.DeleteFileAsync(model.SmallPhotoId, _mongoDbContext.Set<K>());
+		await _fileService.DeleteFileAsync<K>(model.SmallPhotoId);
 
-		_applicationContext.Set<T>().Remove(model);
+		_applicationUnitOfWork.Remove(model);
 
-		await _applicationContext.SaveChangesAsync();
+		await _applicationUnitOfWork.SaveChangesAsync();
 	}
 }

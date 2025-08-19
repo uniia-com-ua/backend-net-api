@@ -6,28 +6,19 @@ using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 
 public class QueryRepository : IQueryRepository
 {
-	private readonly ApplicationContext _applicationContext;
+	private readonly IApplicationUnitOfWork _applicationUnitOfWork;
 	private readonly IPaginationService _paginationService;
 
 	public QueryRepository(
-		ApplicationContext applicationContext,
+		IApplicationUnitOfWork applicationUnitOfWork,
 		IPaginationService paginationService)
 	{
-		_applicationContext = applicationContext;
+		_applicationUnitOfWork = applicationUnitOfWork;
 		_paginationService = paginationService;
-	}
-
-	public async Task<bool> AnyAsync<T>(int id) where T : class, IEntity
-	{
-		return await _applicationContext.Set<T>().AnyAsync(o => o.Id == id);
-	}
-
-	public async Task<T?> GetByIdAsync<T>(int id) where T : class
-	{
-		return await _applicationContext.Set<T>().FindAsync(id);
 	}
 
 	public async Task<TEntity?> GetByIdWithIncludesAsync<TEntity>(
@@ -35,7 +26,7 @@ public class QueryRepository : IQueryRepository
 		params Expression<Func<TEntity, object>>[] includes) 
 		where TEntity : class
 	{
-		IQueryable<TEntity> query = _applicationContext.Set<TEntity>();
+		IQueryable<TEntity> query = _applicationUnitOfWork.Query<TEntity>();
 
 		foreach (var include in includes)
 		{
@@ -47,6 +38,18 @@ public class QueryRepository : IQueryRepository
 
 	public async Task<List<T>> GetPagedAsync<T>(int skip, int take) where T : class, IEntity
 	{
-		return await _paginationService.GetPagedListAsync(_applicationContext.Set<T>(), skip, take);
+		return await _paginationService.GetPagedListAsync(_applicationUnitOfWork.Query<T>(), skip, take);
+	}
+
+	public async Task<List<T>?> GetByIdsAsync<T>(IEnumerable<int>? ids) where T : class, IEntity
+	{
+		if (ids != null)
+		{
+			return await _applicationUnitOfWork.Query<T>().Where(obj => ids.Contains(obj.Id)).ToListAsync();
+		}
+		else
+		{
+			return null;
+		}
 	}
 }

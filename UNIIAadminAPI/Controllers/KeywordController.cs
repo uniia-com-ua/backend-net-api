@@ -8,6 +8,7 @@ using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Attributes;
 using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
@@ -19,23 +20,26 @@ namespace UNIIAadminAPI.Controllers
     {
 		private readonly IGenericRepository _genericRepository;
 		private readonly IQueryRepository _queryRepository;
+		private readonly IApplicationUnitOfWork _applicationUnitOfWork;
 		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public KeywordController(
 			IGenericRepository genericRepository,
 			IStringLocalizer<ErrorMessages> localizer,
-			IQueryRepository queryRepository)
+			IQueryRepository queryRepository,
+			IApplicationUnitOfWork applicationUnitOfWork)
 		{
 			_localizer = localizer;
 			_genericRepository = genericRepository;
 			_queryRepository = queryRepository;
+			_applicationUnitOfWork = applicationUnitOfWork;
 		}
 
 		[HttpGet("{id:int}")]
 		[Permission(PermissionResource.Keyword, CrudActions.View)]
         public async Task<IActionResult> Get(int id)
         {
-            var keyword = await _queryRepository.GetByIdAsync<Keyword>(id);
+            var keyword = await _applicationUnitOfWork.FindAsync<Keyword>(id);
 
 			if (keyword == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Keyword), id.ToString()].Value);
@@ -74,7 +78,7 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(Keyword), nameof(Update))]
 		public async Task<IActionResult> Update([FromBody] string word, int id)
         {
-            var keyword = await _queryRepository.GetByIdAsync<Keyword>(id);
+            var keyword = await _applicationUnitOfWork.FindAsync<Keyword>(id);
 
 			if (keyword == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Keyword), id.ToString()].Value);
@@ -89,7 +93,7 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(Keyword), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {
-            var keyword = await _queryRepository.GetByIdAsync<Keyword>(id);
+            var keyword = await _applicationUnitOfWork.FindAsync<Keyword>(id);
 
 			if (keyword == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Keyword), id.ToString()].Value);

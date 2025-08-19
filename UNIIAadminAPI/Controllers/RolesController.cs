@@ -3,33 +3,29 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using System.Security.Claims;
 using UniiaAdmin.Data.Constants;
-using UniiaAdmin.Data.Data;
-using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.WebApi.Attributes;
+using UniiaAdmin.WebApi.Interfaces;
 using UniiaAdmin.WebApi.Resources;
 
-namespace UNIIAadminAPI.Controllers
+namespace UniiaAdmin.WebApi.Controllers
 {
     [ApiController]
     [Route("api/v1/roles")]
     public class RolesController : ControllerBase
     {
-        private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly AdminContext _adminContext;
-        private readonly IPaginationService _paginationService;
+        private readonly IRoleRepository _roleManager;
         private readonly IStringLocalizer<ErrorMessages> _localizer;
+		private readonly IRolePaginationService _rolePaginationService;
 
-        public RolesController
-            (AdminContext adminContext,
-            RoleManager<IdentityRole> signInManager,
-            IPaginationService paginationService,
-            IStringLocalizer<ErrorMessages> stringLocalizer)
+		public RolesController(
+			IRoleRepository roleManager,
+            IStringLocalizer<ErrorMessages> stringLocalizer,
+            IRolePaginationService rolePaginationService)
         {
-            _roleManager = signInManager;
-			_adminContext = adminContext;
-            _paginationService = paginationService;
+            _roleManager = roleManager;
             _localizer = stringLocalizer;
-        }
+            _rolePaginationService = rolePaginationService;
+		}
 
 		[HttpPost("{roleName}/{claim}")]
 		[Permission(PermissionResource.Role, CrudActions.Update)]
@@ -114,14 +110,14 @@ namespace UNIIAadminAPI.Controllers
         [Permission(PermissionResource.Role, CrudActions.Delete)]
         public async Task<IActionResult> DeleteRole(string roleName)
         {
-            var role = await _roleManager.FindByNameAsync(roleName);
-
             if (roleName == CustomRoles.AdminRole || roleName == CustomRoles.GuestRole)
             {
                 return BadRequest(_localizer["RoleCannotBeDeleted"].Value);
             }
 
-            if (role == null)
+			var role = await _roleManager.FindByNameAsync(roleName);
+
+			if (role == null)
                 return NotFound(_localizer["RoleNotFound", roleName].Value);
 
             var result = await _roleManager.DeleteAsync(role);
@@ -136,7 +132,7 @@ namespace UNIIAadminAPI.Controllers
         [Permission(PermissionResource.Role, CrudActions.View)]
         public async Task<IActionResult> GetAllRoles(int skip = 0, int take = 10)
         {
-            var roles = await _paginationService.GetPagedListAsync(_roleManager.Roles, skip, take);
+            var roles = await _rolePaginationService.GetPagedRolesAsync(skip, take);
 
             return Ok(roles);
         }
@@ -162,13 +158,7 @@ namespace UNIIAadminAPI.Controllers
             if (role == null)
                 return NotFound($"Role with name {roleName} not found");
 
-            var roleClaims = await _roleManager.GetClaimsAsync(role);
-
-			var claims = await _paginationService.GetPagedListAsync(_adminContext.RoleClaims
-                .Where(r => r.RoleId == role.Id)
-				.Select(rc => rc.ClaimValue!)
-	            .Distinct()
-	            .OrderBy(o => o), skip, take);
+			var claims = await _rolePaginationService.GetPagedClaimsAsync(role.Id, skip, take);
 
 			return Ok(claims);
         }
@@ -177,12 +167,9 @@ namespace UNIIAadminAPI.Controllers
 		[Permission(PermissionResource.Role, CrudActions.View)]
 		public async Task<IActionResult> GetPaginatedClaims(int skip = 0, int take = 10)
         {
-            var claims = await _paginationService.GetPagedListAsync(_adminContext.RoleClaims
-                .Select(rc => rc.ClaimValue!)
-				.Distinct()
-                .OrderBy(o => o), skip, take);
+            var claims = await _rolePaginationService.GetPagedClaimsAsync(skip, take);
 
-            return Ok(claims);
+			return Ok(claims);
         }
     }
 }

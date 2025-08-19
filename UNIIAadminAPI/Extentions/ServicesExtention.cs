@@ -13,7 +13,9 @@ using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.FileServices;
 using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 using UniiaAdmin.WebApi.Repository;
+using UniiaAdmin.WebApi.Repository.UnitOfWork;
 using UniiaAdmin.WebApi.Services;
 
 public static class ServicesExtention
@@ -57,11 +59,19 @@ public static class ServicesExtention
 
 		services.AddTransient<IPaginationService, PaginationService>();
 
-		services.AddTransient<IEntityQueryService, EntityQueryService>();
-
 		services.AddScoped<IGenericRepository, GenericRepository>();
 
-		services.AddTransient<IDatabaseInitilizerService, DatabaseInitializerService>();
+		services.AddScoped<IRolePaginationService, RolePaginationService>();
+
+		services.AddScoped<IRoleRepository, RoleRepository>();
+
+		services.AddScoped<ILogPaginationService, LogPaginationService>();
+
+		services.AddScoped<IApplicationUnitOfWork, ApplicationUnitOfWork>();
+
+		services.AddScoped<IMongoUnitOfWork, MongoUnitOfWork>();
+
+		services.AddScoped<IAdminUnitOfWork, AdminUnitOfWork>();
 
 		services.AddSingleton(provider =>
 		{

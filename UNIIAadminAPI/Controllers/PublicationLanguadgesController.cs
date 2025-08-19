@@ -8,6 +8,7 @@ using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Attributes;
 using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
@@ -20,23 +21,26 @@ namespace UNIIAadminAPI.Controllers
     {
 		private readonly IGenericRepository _genericRepository;
 		private readonly IQueryRepository _queryRepository;
+		private readonly IApplicationUnitOfWork _applicationUnitOfWork;
 		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public PublicationLanguageController(
 			IGenericRepository genericRepository,
 			IStringLocalizer<ErrorMessages> localizer,
-			IQueryRepository queryRepository)
+			IQueryRepository queryRepository,
+			IApplicationUnitOfWork applicationUnitOfWork)
 		{
 			_localizer = localizer;
 			_genericRepository = genericRepository;
 			_queryRepository = queryRepository;
+			_applicationUnitOfWork = applicationUnitOfWork;
 		}
 
 		[HttpGet("{id:int}")]
 		[Permission(PermissionResource.PublicationLanguadge, CrudActions.View)]
 		public async Task<IActionResult> Get(int id)
         {
-			var language = await _queryRepository.GetByIdAsync<PublicationLanguage>(id);
+			var language = await _applicationUnitOfWork.FindAsync<PublicationLanguage>(id);
 
 			if (language == null)
                 return NotFound(_localizer["ModelNotFound", nameof(PublicationLanguage), id.ToString()].Value);
@@ -75,7 +79,7 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(PublicationLanguage), nameof(Update))]
 		public async Task<IActionResult> Update([FromBody] string name, int id)
         {
-			var language = await _queryRepository.GetByIdAsync<PublicationLanguage>(id);
+			var language = await _applicationUnitOfWork.FindAsync<PublicationLanguage>(id);
 
 			if (language == null)
                 return NotFound(_localizer["ModelNotFound", nameof(PublicationLanguage), id.ToString()].Value);
@@ -90,7 +94,7 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(PublicationLanguage), nameof(Delete))]
 		public async Task<IActionResult> Delete(int id)
         {
-			var language = await _queryRepository.GetByIdAsync<PublicationLanguage>(id);
+			var language = await _applicationUnitOfWork.FindAsync<PublicationLanguage>(id);
 
 			if (language == null)
                 return NotFound(_localizer["ModelNotFound", nameof(PublicationLanguage), id.ToString()].Value);

@@ -4,6 +4,7 @@ using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.WebApi.Attributes;
+using UniiaAdmin.WebApi.Interfaces;
 
 namespace UniiaAdmin.WebApi.Controllers
 {
@@ -11,15 +12,9 @@ namespace UniiaAdmin.WebApi.Controllers
     [ApiController]
     public class LogActionController : ControllerBase
     {
-        private readonly MongoDbContext _mongoDbContext;
-        private readonly IMapper _mapper;
-        private readonly IPaginationService _paginationService;
-        public LogActionController(MongoDbContext mongoDbContext,
-            IMapper mapper,
-            IPaginationService paginationService) 
+        private readonly ILogPaginationService _paginationService;
+        public LogActionController(ILogPaginationService paginationService) 
         {
-            _mongoDbContext = mongoDbContext;
-            _mapper = mapper;
             _paginationService = paginationService;
         }
 
@@ -27,7 +22,7 @@ namespace UniiaAdmin.WebApi.Controllers
 		[Permission(PermissionResource.Logs, CrudActions.View)]
         public async Task<IActionResult> GetPagedLogs([FromQuery] int skip = 0, int take = 10)
         {
-			var logActionModels = await _paginationService.GetPagedListAsync(_mongoDbContext.LogActionModels, skip, take);
+			var logActionModels = await _paginationService.GetPagedListAsync(skip, take);
                                                   
             return Ok(logActionModels);
         }
@@ -36,11 +31,7 @@ namespace UniiaAdmin.WebApi.Controllers
 		[Permission(PermissionResource.Logs, CrudActions.View)]
         public async Task<IActionResult> GetLogByModelId(int id, [FromQuery] string modelName, int skip = 0, int take = 10)
         {
-            var logActionModels = await _paginationService.GetPagedListAsync(
-                                                        _mongoDbContext.LogActionModels
-                                                        .Where(lam => lam.ModelId == id && lam.ModelName == modelName), 
-                                                        skip, 
-                                                        take);
+            var logActionModels = await _paginationService.GetPagedListAsync(id, modelName, skip, take);
 
             return Ok(logActionModels);
         }
@@ -49,13 +40,9 @@ namespace UniiaAdmin.WebApi.Controllers
 		[Permission(PermissionResource.Logs, CrudActions.View)]
         public async Task<IActionResult> GetByUserId(string id, [FromQuery] int skip = 0, int take = 10)
         {
-            var logActionModels = await _paginationService.GetPagedListAsync(
-                                                        _mongoDbContext.LogActionModels
-                                                        .Where(lam => lam.UserId == id),
-                                                        skip,
-                                                        take);
+            var logActionModels = await _paginationService.GetPagedListAsync(id, skip, take);
 
-            return Ok(logActionModels);
+			return Ok(logActionModels);
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using UniiaAdmin.Data.Interfaces;
+using UniiaAdmin.Data.Interfaces.FileInterfaces;
 
 namespace UniiaAdmin.Data.Models
 {

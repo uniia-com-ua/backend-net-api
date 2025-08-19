@@ -3,6 +3,7 @@ using MongoDB.Bson;
 using System.Security.Claims;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 
 namespace UniiaAdmin.WebApi.Attributes
 {
@@ -22,7 +23,7 @@ namespace UniiaAdmin.WebApi.Attributes
 		{
 			await next();
 
-			var dbContext = context.HttpContext.RequestServices.GetService<MongoDbContext>();
+			var dbContext = context.HttpContext.RequestServices.GetService<IMongoUnitOfWork>();
 
 			var httpContext = context.HttpContext;
 
@@ -42,7 +43,7 @@ namespace UniiaAdmin.WebApi.Attributes
 				return;
 			}
 
-			await dbContext.LogActionModels.AddAsync(new()
+			await dbContext.AddAsync<LogActionModel>(new()
 			{
 				Id = ObjectId.GenerateNewId(),
 				UserId = userIdClaim.Value,

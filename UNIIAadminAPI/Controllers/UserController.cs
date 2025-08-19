@@ -13,16 +13,13 @@ namespace UNIIAadminAPI.Controllers
     public class UserController : ControllerBase
     {
         private readonly ApplicationContext _applicationContext;
-        private readonly MongoDbContext _mongoDbContext;
         private readonly IPaginationService _paginationService;
 		private readonly IMapper _mapper;
 		public UserController(
             ApplicationContext applicationContext,
-            MongoDbContext mongoDbContext,
             IPaginationService paginationService,
             IMapper mapper) 
         {
-            _mongoDbContext = mongoDbContext;
             _applicationContext = applicationContext;
             _paginationService = paginationService;
             _mapper = mapper;

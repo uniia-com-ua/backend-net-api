@@ -13,6 +13,7 @@ using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Attributes;
 using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 using UniiaAdmin.WebApi.Resources;
 using UniiaAdmin.WebApi.Services;
 
@@ -24,12 +25,14 @@ namespace UNIIAadminAPI.Controllers
     {
 		private readonly ISmallPhotoRepository _smallPhotoRepository;
 		private readonly IPhotoProvider _photoProvider;
+		private readonly IApplicationUnitOfWork _applicationUnitOfWork;
 		private readonly IQueryRepository _queryRepository;
 		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public UniversityController(
 			ISmallPhotoRepository smallPhotoRepository,
 			IStringLocalizer<ErrorMessages> localizer,
+            IApplicationUnitOfWork applicationUnitOfWork,
 			IPhotoProvider photoProvider,
 			IQueryRepository queryRepository)
 		{
@@ -37,13 +40,14 @@ namespace UNIIAadminAPI.Controllers
             _smallPhotoRepository = smallPhotoRepository;
 			_photoProvider = photoProvider;
 			_queryRepository = queryRepository;
+            _applicationUnitOfWork = applicationUnitOfWork;
 		}
 
 		[HttpGet("{id:int}")]
 		[Permission(PermissionResource.University, CrudActions.View)]
 		public async Task<IActionResult> Get(int id)
         {
-            var university = await _queryRepository.GetByIdAsync<University>(id);
+            var university = await _applicationUnitOfWork.FindAsync<University>(id);
 
             if (university == null)
                 return NotFound(_localizer["ModelNotFound", nameof(University), id.ToString()].Value);
@@ -125,7 +129,7 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(University), nameof(Update))]
         public async Task<IActionResult> Update([FromForm] University university, IFormFile? photoFile, IFormFile? smallPhotoFile, int id)
         {
-            var existedUniversity = await _queryRepository.GetByIdAsync<University>(id);
+            var existedUniversity = await _applicationUnitOfWork.FindAsync<University>(id);
 
             if (existedUniversity == null)
             {
@@ -147,7 +151,7 @@ namespace UNIIAadminAPI.Controllers
 		[LogAction(nameof(University), nameof(Delete))]
         public async Task<IActionResult> Delete(int id)
         {
-            var university = await _queryRepository.GetByIdAsync<University>(id);
+            var university = await _applicationUnitOfWork.FindAsync<University>(id);
 
 			if (university == null)
             {
