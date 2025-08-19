@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using UniiaAdmin.Data.Constants;
+using UniiaAdmin.Data.Data;
 using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 using UNIIAadminAPI.Controllers;
 
 namespace UniiaAdmin.Tests;
@@ -33,15 +35,6 @@ public class ControllerWebAppFactory<T> : WebApplicationFactory<AuthorController
 
 				services.AddSingleton(mockPair.Key, mockPair.Value.Object);
 			}
-
-			var dbInitializerMock = new Moq.Mock<IDatabaseInitilizerService>();
-			dbInitializerMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-
-			var existingDbInit = services.SingleOrDefault(d => d.ServiceType == typeof(IDatabaseInitilizerService));
-			if (existingDbInit != null)
-				services.Remove(existingDbInit);
-
-			services.AddSingleton(dbInitializerMock.Object);
 
 			services.AddAuthorization(options =>
 			{
@@ -82,6 +75,8 @@ public class ControllerWebAppFactory<T> : WebApplicationFactory<AuthorController
 			};
 
 			config.AddInMemoryCollection(dict);
+
+			context.HostingEnvironment.EnvironmentName = CustomEnviroments.Test;
 		});
 
 		Environment.SetEnvironmentVariable("JWT_TOKEN_KEY", "TestSecretKey123456");

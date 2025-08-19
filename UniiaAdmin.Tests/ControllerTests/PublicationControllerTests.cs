@@ -1,4 +1,4 @@
-﻿namespace UniiaAdmin.Tests;
+﻿namespace UniiaAdmin.Tests.ControllerTests;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -15,6 +15,7 @@ using UniiaAdmin.Data.Enums;
 using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 using UniiaAdmin.WebApi.Resources;
 using UNIIAadminAPI.Controllers;
 using Xunit;
@@ -29,7 +30,6 @@ public class PublicationControllerTests
 
 		mockProvider.Mock<IFileRepository>();
 		mockProvider.Mock<IQueryRepository>();
-		mockProvider.Mock<IEntityQueryService>();
 		mockProvider.Mock<MongoDbContext>();
 
 		var localizer = mockProvider.Mock<IStringLocalizer<ErrorMessages>>();
@@ -145,6 +145,14 @@ public class PublicationControllerTests
 		// Arrange
 		var publication = CreateTestPublication();
 
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.AnyAsync<PublicationType>(It.IsAny<int>()))
+			.ReturnsAsync(true);
+
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.AnyAsync<PublicationLanguage>(It.IsAny<int>()))
+			.ReturnsAsync(true);
+
 		_factory.Mocks.Mock<IFileRepository>()
 			.Setup(r => r.CreateAsync<Publication, PublicationFile>(It.IsAny<Publication>(), It.IsAny<IFormFile>()))
 			.ReturnsAsync(Result<PublicationFile>.SuccessNoContent());
@@ -164,8 +172,8 @@ public class PublicationControllerTests
 	{
 		// Arrange
 		const int id = 1;
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Publication>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Publication>(id))
 			.ReturnsAsync((Publication)null!);
 
 		var client = _factory.CreateClient();
@@ -184,8 +192,8 @@ public class PublicationControllerTests
 		const int id = 1;
 		var publication = CreateTestPublication();
 
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Publication>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Publication>(id))
 			.ReturnsAsync(publication);
 
 		_factory.Mocks.Mock<IFileRepository>()

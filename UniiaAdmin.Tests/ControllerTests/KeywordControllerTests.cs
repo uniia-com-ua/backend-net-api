@@ -1,4 +1,4 @@
-﻿namespace UniiaAdmin.Tests;
+﻿namespace UniiaAdmin.Tests.ControllerTests;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,6 +14,7 @@ using UniiaAdmin.Data.Common;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 using UniiaAdmin.WebApi.Resources;
 using UNIIAadminAPI.Controllers;
 using Xunit;
@@ -43,8 +44,8 @@ public class KeywordControllerTests
 	{
 		// Arrange
 		const int invalidId = 999;
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Keyword>(invalidId))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Keyword>(invalidId))
 			.ReturnsAsync((Keyword)null!);
 
 		var client = _factory.CreateClient();
@@ -63,8 +64,8 @@ public class KeywordControllerTests
 		const int validId = 1;
 		var keyword = new Keyword { Id = validId, Word = "AI" };
 
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Keyword>(validId))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Keyword>(validId))
 			.ReturnsAsync(keyword);
 
 		var client = _factory.CreateClient();
@@ -125,8 +126,8 @@ public class KeywordControllerTests
 	{
 		// Arrange
 		const int id = 1;
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Keyword>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Keyword>(id))
 			.ReturnsAsync((Keyword)null!);
 
 		var client = _factory.CreateClient();
@@ -146,8 +147,8 @@ public class KeywordControllerTests
 		const int id = 1;
 		var oldKeyword = new Keyword { Id = id, Word = "OldWord" };
 
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Keyword>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Keyword>(id))
 			.ReturnsAsync(oldKeyword);
 
 		_factory.Mocks.Mock<IGenericRepository>()
@@ -169,8 +170,8 @@ public class KeywordControllerTests
 	{
 		// Arrange
 		const int id = 1;
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Keyword>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Keyword>(id))
 			.ReturnsAsync((Keyword)null!);
 
 		var client = _factory.CreateClient();
@@ -189,8 +190,8 @@ public class KeywordControllerTests
 		const int id = 1;
 		var keyword = new Keyword { Id = id, Word = "AI" };
 
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Keyword>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Keyword>(id))
 			.ReturnsAsync(keyword);
 
 		_factory.Mocks.Mock<IGenericRepository>()

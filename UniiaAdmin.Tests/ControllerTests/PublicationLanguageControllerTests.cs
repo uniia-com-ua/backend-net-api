@@ -1,4 +1,4 @@
-﻿namespace UniiaAdmin.Tests;
+﻿namespace UniiaAdmin.Tests.ControllerTests;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
@@ -9,6 +9,7 @@ using System.Text.Json;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 using UniiaAdmin.WebApi.Resources;
 using UNIIAadminAPI.Controllers;
 using Xunit;
@@ -37,8 +38,8 @@ public class PublicationLanguageControllerTests
 	public async Task Get_InvalidId_Returns404()
 	{
 		const int invalidId = 999;
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<PublicationLanguage>(invalidId))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<PublicationLanguage>(invalidId))
 			.ReturnsAsync((PublicationLanguage)null!);
 
 		var client = _factory.CreateClient();
@@ -54,8 +55,8 @@ public class PublicationLanguageControllerTests
 		const int validId = 1;
 		var language = new PublicationLanguage { Id = validId, Name = "English" };
 
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<PublicationLanguage>(validId))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<PublicationLanguage>(validId))
 			.ReturnsAsync(language);
 
 		var client = _factory.CreateClient();
@@ -107,8 +108,8 @@ public class PublicationLanguageControllerTests
 	public async Task UpdateLanguage_NotFound_Returns404()
 	{
 		const int id = 1;
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<PublicationLanguage>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<PublicationLanguage>(id))
 			.ReturnsAsync((PublicationLanguage)null!);
 
 		var client = _factory.CreateClient();
@@ -125,8 +126,8 @@ public class PublicationLanguageControllerTests
 		const int id = 1;
 		var oldLanguage = new PublicationLanguage { Id = id, Name = "OldLang" };
 
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<PublicationLanguage>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<PublicationLanguage>(id))
 			.ReturnsAsync(oldLanguage);
 
 		_factory.Mocks.Mock<IGenericRepository>()
@@ -145,8 +146,8 @@ public class PublicationLanguageControllerTests
 	public async Task DeleteLanguage_NotFound_Returns404()
 	{
 		const int id = 1;
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<PublicationLanguage>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<PublicationLanguage>(id))
 			.ReturnsAsync((PublicationLanguage)null!);
 
 		var client = _factory.CreateClient();
@@ -162,8 +163,8 @@ public class PublicationLanguageControllerTests
 		const int id = 1;
 		var language = new PublicationLanguage { Id = id, Name = "English" };
 
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<PublicationLanguage>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<PublicationLanguage>(id))
 			.ReturnsAsync(language);
 
 		_factory.Mocks.Mock<IGenericRepository>()

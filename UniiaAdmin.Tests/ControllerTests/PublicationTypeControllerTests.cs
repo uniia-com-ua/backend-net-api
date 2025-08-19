@@ -1,15 +1,16 @@
-﻿namespace UniiaAdmin.Tests;
+﻿namespace UniiaAdmin.Tests.ControllerTests;
 
 using Microsoft.Extensions.Localization;
 using Moq;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using UniiaAdmin.Data.Controllers;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 using UniiaAdmin.WebApi.Resources;
-using UniiaAdmin.Data.Controllers;
 using Xunit;
 
 public class PublicationTypeControllerTests
@@ -36,8 +37,8 @@ public class PublicationTypeControllerTests
 	public async Task GetPublicationType_InvalidId_Returns404()
 	{
 		const int invalidId = 999;
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<PublicationType>(invalidId))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<PublicationType>(invalidId))
 			.ReturnsAsync((PublicationType)null!);
 
 		var client = _factory.CreateClient();
@@ -53,8 +54,8 @@ public class PublicationTypeControllerTests
 		const int validId = 1;
 		var publicationType = new PublicationType { Id = validId, Name = "Journal" };
 
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<PublicationType>(validId))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<PublicationType>(validId))
 			.ReturnsAsync(publicationType);
 
 		var client = _factory.CreateClient();
@@ -106,8 +107,8 @@ public class PublicationTypeControllerTests
 	public async Task UpdatePublicationType_NotFound_Returns404()
 	{
 		const int id = 1;
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<PublicationType>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<PublicationType>(id))
 			.ReturnsAsync((PublicationType)null!);
 
 		var client = _factory.CreateClient();
@@ -124,8 +125,8 @@ public class PublicationTypeControllerTests
 		const int id = 1;
 		var oldType = new PublicationType { Id = id, Name = "OldName" };
 
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<PublicationType>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<PublicationType>(id))
 			.ReturnsAsync(oldType);
 
 		_factory.Mocks.Mock<IGenericRepository>()
@@ -144,8 +145,8 @@ public class PublicationTypeControllerTests
 	public async Task DeletePublicationType_NotFound_Returns404()
 	{
 		const int id = 1;
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<PublicationType>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<PublicationType>(id))
 			.ReturnsAsync((PublicationType)null!);
 
 		var client = _factory.CreateClient();
@@ -161,8 +162,8 @@ public class PublicationTypeControllerTests
 		const int id = 1;
 		var type = new PublicationType { Id = id, Name = "Conference" };
 
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<PublicationType>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<PublicationType>(id))
 			.ReturnsAsync(type);
 
 		_factory.Mocks.Mock<IGenericRepository>()

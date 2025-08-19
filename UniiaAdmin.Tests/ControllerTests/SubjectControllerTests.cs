@@ -1,4 +1,4 @@
-﻿namespace UniiaAdmin.Tests;
+﻿namespace UniiaAdmin.Tests.ControllerTests;
 
 using Microsoft.Extensions.Localization;
 using Moq;
@@ -9,6 +9,7 @@ using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Controllers;
 using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 using UniiaAdmin.WebApi.Resources;
 using Xunit;
 
@@ -36,8 +37,8 @@ public class SubjectControllerTests
 	public async Task GetSubject_InvalidId_Returns404()
 	{
 		const int invalidId = 999;
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Subject>(invalidId))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Subject>(invalidId))
 			.ReturnsAsync((Subject)null!);
 
 		var client = _factory.CreateClient();
@@ -53,8 +54,8 @@ public class SubjectControllerTests
 		const int validId = 1;
 		var subject = new Subject { Id = validId, Name = "Math" };
 
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Subject>(validId))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Subject>(validId))
 			.ReturnsAsync(subject);
 
 		var client = _factory.CreateClient();
@@ -106,8 +107,8 @@ public class SubjectControllerTests
 	public async Task UpdateSubject_NotFound_Returns404()
 	{
 		const int id = 1;
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Subject>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Subject>(id))
 			.ReturnsAsync((Subject)null!);
 
 		var client = _factory.CreateClient();
@@ -124,8 +125,8 @@ public class SubjectControllerTests
 		const int id = 1;
 		var oldSubject = new Subject { Id = id, Name = "OldName" };
 
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Subject>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Subject>(id))
 			.ReturnsAsync(oldSubject);
 
 		_factory.Mocks.Mock<IGenericRepository>()
@@ -144,8 +145,8 @@ public class SubjectControllerTests
 	public async Task DeleteSubject_NotFound_Returns404()
 	{
 		const int id = 1;
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Subject>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Subject>(id))
 			.ReturnsAsync((Subject)null!);
 
 		var client = _factory.CreateClient();
@@ -161,8 +162,8 @@ public class SubjectControllerTests
 		const int id = 1;
 		var subject = new Subject { Id = id, Name = "Math" };
 
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Subject>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Subject>(id))
 			.ReturnsAsync(subject);
 
 		_factory.Mocks.Mock<IGenericRepository>()

@@ -1,4 +1,4 @@
-﻿namespace UniiaAdmin.Tests;
+﻿namespace UniiaAdmin.Tests.ControllerTests;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +13,7 @@ using UniiaAdmin.Data.Common;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 using UniiaAdmin.WebApi.Resources;
 using UNIIAadminAPI.Controllers;
 using Xunit;
@@ -20,6 +21,11 @@ using Xunit;
 public class AuthorControllerTests
 {
 	private readonly ControllerWebAppFactory<AuthorController> _factory;
+	private readonly JsonSerializerOptions _jsonOptions = new()
+	{
+		PropertyNameCaseInsensitive = true,
+		PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+	};
 
 	public AuthorControllerTests()
 	{
@@ -42,8 +48,12 @@ public class AuthorControllerTests
 	public async Task GetAuthor_InvalidId_Returns404()
 	{
 		// Arrange
-		var client = _factory.CreateClient();
 		const int invalidId = 9999;
+
+		var mockedService = _factory.Mocks.Mock<IApplicationUnitOfWork>();
+		mockedService.Setup(r => r.FindAsync<Author>(invalidId)).ReturnsAsync((Author)null!);
+
+		var client = _factory.CreateClient();
 
 		// Act
 		var response = await client.GetAsync($"/api/v1/authors/{invalidId}");
@@ -56,13 +66,14 @@ public class AuthorControllerTests
 	public async Task GetAuthor_ValidId_Returns200AndAuthor()
 	{
 		// Arrange
-		var client = _factory.CreateClient();
 		const int validId = 1;
 
 		var author = CreateTestAuthor();
 		
-		var mockedService = _factory.Mocks.Mock<IQueryRepository>();
-		mockedService.Setup(r => r.GetByIdAsync<Author>(validId)).ReturnsAsync(author);
+		var mockedService = _factory.Mocks.Mock<IApplicationUnitOfWork>();
+		mockedService.Setup(r => r.FindAsync<Author>(validId)).ReturnsAsync(author);
+
+		var client = _factory.CreateClient();
 
 		// Act
 		var response = await client.GetAsync($"/api/v1/authors/{validId}");
@@ -71,8 +82,8 @@ public class AuthorControllerTests
 		// Assert
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 		Assert.Equal(
-			JsonSerializer.Serialize(author, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }),
-			JsonSerializer.Serialize(returnedAuthor, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+			JsonSerializer.Serialize(author, _jsonOptions),
+			JsonSerializer.Serialize(returnedAuthor, _jsonOptions)
 		);
 	}
 
@@ -202,8 +213,8 @@ public class AuthorControllerTests
 		const int id = 1;
 		var author = CreateTestAuthor();
 
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Author>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Author>(id))
 			.ReturnsAsync((Author)null!);
 
 		var client = _factory.CreateClient();
@@ -225,8 +236,8 @@ public class AuthorControllerTests
 
 		var author = CreateTestAuthor(1, "Old");	
 
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Author>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Author>(id))
 			.ReturnsAsync(author);
 
 		_factory.Mocks.Mock<IPhotoRepository>()
@@ -252,8 +263,8 @@ public class AuthorControllerTests
 
 		var author = CreateTestAuthor(1, "Old");
 
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Author>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Author>(id))
 			.ReturnsAsync(author);
 
 		_factory.Mocks.Mock<IPhotoRepository>()
@@ -277,8 +288,8 @@ public class AuthorControllerTests
 		// Arrange
 		const int id = 1;
 
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Author>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Author>(id))
 			.ReturnsAsync((Author)null!);
 
 		var client = _factory.CreateClient();
@@ -298,8 +309,8 @@ public class AuthorControllerTests
 
 		var author = CreateTestAuthor();
 
-		_factory.Mocks.Mock<IQueryRepository>()
-			.Setup(r => r.GetByIdAsync<Author>(id))
+		_factory.Mocks.Mock<IApplicationUnitOfWork>()
+			.Setup(r => r.FindAsync<Author>(id))
 			.ReturnsAsync(author);
 
 		_factory.Mocks.Mock<IPhotoRepository>()
@@ -341,14 +352,10 @@ public class AuthorControllerTests
 		{ new StringContent(author.Url!), nameof(Author.Url) },
 	};
 	}
-	private static async Task<T?> DeserializeResponse<T>(HttpResponseMessage response)
+	private async Task<T?> DeserializeResponse<T>(HttpResponseMessage response)
 	{
 		var json = await response.Content.ReadAsStringAsync();
-		return JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions
-		{
-			PropertyNameCaseInsensitive = true,
-			PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-		});
+		return JsonSerializer.Deserialize<T>(json, _jsonOptions);
 	}
 
 }
