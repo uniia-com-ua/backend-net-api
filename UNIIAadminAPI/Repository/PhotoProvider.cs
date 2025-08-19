@@ -25,10 +25,10 @@ public class PhotoProvider : IPhotoProvider
 		where T : class, IPhotoEntity
 		where K : class, IMongoFileEntity
 	{
-		var photoId = await _applicationUnitOfWork.Query<T>()
-			.Where(a => a.Id == id)
-			.Select(a => a.PhotoId)
-			.FirstOrDefaultAsync();
+		var photoId = await _applicationUnitOfWork.FindPhotoIdAsync<T>(id);
+
+		if (photoId == null)
+			return Result<K>.Failure(new KeyNotFoundException());
 
 		return await _fileService.GetFileAsync<K>(photoId);
 	}

@@ -26,20 +26,17 @@ namespace UNIIAadminAPI.Controllers
 		private readonly ISmallPhotoRepository _smallPhotoRepository;
 		private readonly IPhotoProvider _photoProvider;
 		private readonly IApplicationUnitOfWork _applicationUnitOfWork;
-		private readonly IQueryRepository _queryRepository;
 		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public UniversityController(
 			ISmallPhotoRepository smallPhotoRepository,
 			IStringLocalizer<ErrorMessages> localizer,
             IApplicationUnitOfWork applicationUnitOfWork,
-			IPhotoProvider photoProvider,
-			IQueryRepository queryRepository)
+			IPhotoProvider photoProvider)
 		{
 			_localizer = localizer;
             _smallPhotoRepository = smallPhotoRepository;
 			_photoProvider = photoProvider;
-			_queryRepository = queryRepository;
             _applicationUnitOfWork = applicationUnitOfWork;
 		}
 
@@ -102,7 +99,7 @@ namespace UNIIAadminAPI.Controllers
 		[Permission(PermissionResource.University, CrudActions.View)]
 		public async Task<IActionResult> GetPagedUniversities(int skip = 0, int take = 10)
         {
-            var universitiesList = await _queryRepository.GetPagedAsync<University>(skip, take);
+            var universitiesList = await _applicationUnitOfWork.GetPagedAsync<University>(skip, take);
 
             return Ok(universitiesList);
         }

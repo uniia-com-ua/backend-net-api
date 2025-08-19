@@ -28,10 +28,7 @@ public class SmallPhotoRepository : ISmallPhotoRepository
 			where T : class, ISmallPhotoEntity
 			where K : class, IMongoFileEntity
 	{
-		var photoId = await _applicationUnitOfWork.Query<T>()
-			.Where(a => a.Id == id)
-			.Select(a => a.SmallPhotoId)
-			.FirstOrDefaultAsync();
+		var photoId = await _applicationUnitOfWork.FindSmallPhotoIdAsync<T>(id);
 
 		return await _fileService.GetFileAsync<K>(photoId);
 	}

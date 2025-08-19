@@ -14,19 +14,16 @@ namespace UniiaAdmin.WebApi.Controllers
     public class SubjectController : ControllerBase
     {
 		private readonly IGenericRepository _genericRepository;
-		private readonly IQueryRepository _queryRepository;
 		private readonly IApplicationUnitOfWork _applicationUnitOfWork;
 		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public SubjectController(
 			IGenericRepository genericRepository,
 			IStringLocalizer<ErrorMessages> localizer,
-			IQueryRepository queryRepository,
 			IApplicationUnitOfWork applicationUnitOfWork)
 		{
 			_localizer = localizer;
 			_genericRepository = genericRepository;
-			_queryRepository = queryRepository;
 			_applicationUnitOfWork = applicationUnitOfWork;
 		}
 
@@ -46,7 +43,7 @@ namespace UniiaAdmin.WebApi.Controllers
 		[Permission(PermissionResource.Subject, CrudActions.View)]
 		public async Task<IActionResult> GetPaginated([FromQuery] int skip = 0, int take = 10)
         {
-			var subjects = await _queryRepository.GetPagedAsync<Subject>(skip, take);
+			var subjects = await _applicationUnitOfWork.GetPagedAsync<Subject>(skip, take);
 
 			return Ok(subjects);
         }

@@ -3,15 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using UniiaAdmin.Data.Constants;
-using UniiaAdmin.Data.Data;
-using UniiaAdmin.Data.Interfaces;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Attributes;
 using UniiaAdmin.WebApi.Interfaces;
 using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 using UniiaAdmin.WebApi.Resources;
-using UniiaAdmin.WebApi.Services;
-using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
 
 namespace UniiaAdmin.Data.Controllers
 {
@@ -20,19 +16,16 @@ namespace UniiaAdmin.Data.Controllers
     public class PublicationTypeController : ControllerBase
     {
 		private readonly IGenericRepository _genericRepository;
-		private readonly IQueryRepository _queryRepository;
 		private readonly IApplicationUnitOfWork _applicationUnitOfWork;
 		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public PublicationTypeController(
 			IGenericRepository genericRepository,
 			IStringLocalizer<ErrorMessages> localizer,
-			IQueryRepository queryRepository,
 			IApplicationUnitOfWork applicationUnitOfWork)
 		{
 			_localizer = localizer;
 			_genericRepository = genericRepository;
-			_queryRepository = queryRepository;
 			_applicationUnitOfWork = applicationUnitOfWork;
 		}
 
@@ -52,7 +45,7 @@ namespace UniiaAdmin.Data.Controllers
 		[Permission(PermissionResource.PublicationType, CrudActions.View)]
 		public async Task<IActionResult> GetPaginated([FromQuery] int skip = 0, int take = 10)
         {
-			var publicationTypes = await _queryRepository.GetPagedAsync<PublicationType>(skip, take);
+			var publicationTypes = await _applicationUnitOfWork.GetPagedAsync<PublicationType>(skip, take);
 
 			return Ok(publicationTypes);
         }

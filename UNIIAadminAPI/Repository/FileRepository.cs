@@ -31,9 +31,7 @@ public class FileRepository : IFileRepository
 		where T : class, IFileEntity
 		where K : class, IMongoFileEntity
 	{
-		var fileId = await _applicationUnitOfWork.Query<T>().Where(a => a.Id == id)
-												  .Select(a => a.FileId)
-												  .FirstOrDefaultAsync();
+		var fileId = await _applicationUnitOfWork.FindFileIdAsync<T>(id);
 
 		var result = await _fileService.GetFileAsync<K>(fileId);
 

@@ -23,18 +23,15 @@ namespace UNIIAadminAPI.Controllers
     public class PublicationController : ControllerBase
     {
 		private readonly IFileRepository _fileRepository;
-		private readonly IQueryRepository _queryRepository;
 		private readonly IApplicationUnitOfWork _applicationUnitOfWork;
 		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public PublicationController(
 			IFileRepository fileRepository,
 			IStringLocalizer<ErrorMessages> localizer,
-			IQueryRepository queryRepository,
 			IApplicationUnitOfWork applicationUnitOfWork)
 		{
 			_localizer = localizer;
-			_queryRepository = queryRepository;
             _fileRepository = fileRepository;
 			_applicationUnitOfWork = applicationUnitOfWork;
 		}
@@ -43,7 +40,7 @@ namespace UNIIAadminAPI.Controllers
 		[Permission(PermissionResource.Publication, CrudActions.View)]
 		public async Task<IActionResult> Get(int id)
         {
-            var publication = await _queryRepository.GetByIdWithIncludesAsync<Publication>(p => p.Id == id,
+            var publication = await _applicationUnitOfWork.GetByIdWithIncludesAsync<Publication>(p => p.Id == id,
                 p => p.Keywords!,
                 p => p.Authors!,
                 p => p.Subjects!,
@@ -83,7 +80,7 @@ namespace UNIIAadminAPI.Controllers
 		[Permission(PermissionResource.Publication, CrudActions.View)]
 		public async Task<IActionResult> GetPagedPublications([FromQuery] int skip = 0, int take = 10)
         {
-            var publications = await _queryRepository.GetPagedAsync<Publication>(skip, take);
+            var publications = await _applicationUnitOfWork.GetPagedAsync<Publication>(skip, take);
 
             return Ok(publications);
         }
@@ -103,11 +100,11 @@ namespace UNIIAadminAPI.Controllers
 			if (!isLangExist)
 				return NotFound(_localizer["ModelNotFound", nameof(PublicationLanguage), publication.PublicationLanguageId.ToString()].Value);
 
-			publication.Subjects = await _queryRepository.GetByIdsAsync<Subject>(publicationUpdateDto.Subjects);
+			publication.Subjects = await _applicationUnitOfWork.GetByIdsAsync<Subject>(publicationUpdateDto.Subjects);
 
-			publication.Authors = await _queryRepository.GetByIdsAsync<Author>(publicationUpdateDto.Authors);
+			publication.Authors = await _applicationUnitOfWork.GetByIdsAsync<Author>(publicationUpdateDto.Authors);
 
-			publication.Keywords = await _queryRepository.GetByIdsAsync<Keyword>(publicationUpdateDto.Keywords);
+			publication.Keywords = await _applicationUnitOfWork.GetByIdsAsync<Keyword>(publicationUpdateDto.Keywords);
 
 			publication.CreatedDate = DateTime.UtcNow;
 
@@ -142,11 +139,11 @@ namespace UNIIAadminAPI.Controllers
 			if (!isLangExist)
 				return NotFound(_localizer["ModelNotFound", nameof(PublicationLanguage), publication.PublicationLanguageId.ToString()].Value);
 
-			existedPublication.Subjects = await _queryRepository.GetByIdsAsync<Subject>(publicationUpdateDto.Subjects) ?? existedPublication.Subjects;
+			existedPublication.Subjects = await _applicationUnitOfWork.GetByIdsAsync<Subject>(publicationUpdateDto.Subjects) ?? existedPublication.Subjects;
 
-			existedPublication.Authors = await _queryRepository.GetByIdsAsync<Author>(publicationUpdateDto.Authors) ?? existedPublication.Authors;
+			existedPublication.Authors = await _applicationUnitOfWork.GetByIdsAsync<Author>(publicationUpdateDto.Authors) ?? existedPublication.Authors;
 
-			existedPublication.Keywords = await _queryRepository.GetByIdsAsync<Keyword>(publicationUpdateDto.Keywords) ?? existedPublication.Keywords;
+			existedPublication.Keywords = await _applicationUnitOfWork.GetByIdsAsync<Keyword>(publicationUpdateDto.Keywords) ?? existedPublication.Keywords;
 
 			existedPublication.LastModifiedDate = DateTime.UtcNow;
 

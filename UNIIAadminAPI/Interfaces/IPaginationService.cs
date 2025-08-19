@@ -7,5 +7,5 @@ using System.Threading.Tasks;
 
 public interface IPaginationService
 {
-	public Task<List<T>> GetPagedListAsync<T>(IQueryable<T>? query, int skip, int take) where T : class;
+	public Task<List<T>> GetPagedListAsync<T>(IQueryable<T>? query, int skip, int take);
 }

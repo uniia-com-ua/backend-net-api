@@ -51,8 +51,6 @@ public static class ServicesExtention
 
 		services.AddScoped<IPhotoRepository, PhotoRepository>();
 
-		services.AddScoped<IQueryRepository, QueryRepository>();
-
 		services.AddScoped<ISmallPhotoRepository, SmallPhotoRepository>();
 
 		services.AddTransient<IHealthCheckService, HealthCheckService>();

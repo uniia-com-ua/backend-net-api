@@ -20,19 +20,16 @@ namespace UNIIAadminAPI.Controllers
     public class PublicationLanguageController : ControllerBase
     {
 		private readonly IGenericRepository _genericRepository;
-		private readonly IQueryRepository _queryRepository;
 		private readonly IApplicationUnitOfWork _applicationUnitOfWork;
 		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public PublicationLanguageController(
 			IGenericRepository genericRepository,
 			IStringLocalizer<ErrorMessages> localizer,
-			IQueryRepository queryRepository,
 			IApplicationUnitOfWork applicationUnitOfWork)
 		{
 			_localizer = localizer;
 			_genericRepository = genericRepository;
-			_queryRepository = queryRepository;
 			_applicationUnitOfWork = applicationUnitOfWork;
 		}
 
@@ -52,7 +49,7 @@ namespace UNIIAadminAPI.Controllers
 		[Permission(PermissionResource.PublicationLanguadge, CrudActions.View)]
 		public async Task<IActionResult> GetPaginated([FromQuery] int skip = 0, int take = 10)
         {
-			var languages = await _queryRepository.GetPagedAsync<PublicationLanguage>(skip, take);
+			var languages = await _applicationUnitOfWork.GetPagedAsync<PublicationLanguage>(skip, take);
 
 			return Ok(languages);
         }

@@ -14,19 +14,16 @@ namespace UniiaAdmin.WebApi.Controllers
     public class FacultyController : ControllerBase
     {
 		private readonly IGenericRepository _genericRepository;
-		private readonly IQueryRepository _queryRepository;
 		private readonly IApplicationUnitOfWork _applicationUnitOfWork;
 		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public FacultyController(
 			IGenericRepository genericRepository,
 			IStringLocalizer<ErrorMessages> localizer,
-			IQueryRepository queryRepository,
 			IApplicationUnitOfWork applicationUnitOfWork)
 		{
 			_localizer = localizer;
 			_genericRepository = genericRepository;
-			_queryRepository = queryRepository;
 			_applicationUnitOfWork = applicationUnitOfWork;
 		}
 
@@ -46,7 +43,7 @@ namespace UniiaAdmin.WebApi.Controllers
 		[Permission(PermissionResource.Faculty, CrudActions.View)]
         public async Task<IActionResult> GetPaginatedFacultied([FromQuery] int skip = 0, int take = 10)
         {
-            var pagedFaculties = await _queryRepository.GetPagedAsync<Faculty>(skip, take);
+            var pagedFaculties = await _applicationUnitOfWork.GetPagedAsync<Faculty>(skip, take);
 
             return Ok(pagedFaculties);
         }

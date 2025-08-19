@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 using UniiaAdmin.Data.Interfaces;
 
 namespace UniiaAdmin.WebApi.Services;
@@ -13,7 +14,6 @@ public class PaginationService : IPaginationService
 	}
 
 	public async Task<List<T>> GetPagedListAsync<T>(IQueryable<T>? query, int skip, int take)
-			where T : class
 	{
 		if (take <= 0 || query == null)
 		{
@@ -25,8 +25,9 @@ public class PaginationService : IPaginationService
 			take = _maxPageSize;
 		}
 
-		var result = await query.Skip(skip).Take(take).ToListAsync();
+		if (query.Provider is IAsyncQueryProvider)
+			return await query.Skip(skip).Take(take).ToListAsync();
 
-		return result;
+		return query.Skip(skip).Take(take).ToList();
 	}
 }

@@ -19,19 +19,16 @@ namespace UNIIAadminAPI.Controllers
     public class KeywordController : ControllerBase
     {
 		private readonly IGenericRepository _genericRepository;
-		private readonly IQueryRepository _queryRepository;
 		private readonly IApplicationUnitOfWork _applicationUnitOfWork;
 		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public KeywordController(
 			IGenericRepository genericRepository,
 			IStringLocalizer<ErrorMessages> localizer,
-			IQueryRepository queryRepository,
 			IApplicationUnitOfWork applicationUnitOfWork)
 		{
 			_localizer = localizer;
 			_genericRepository = genericRepository;
-			_queryRepository = queryRepository;
 			_applicationUnitOfWork = applicationUnitOfWork;
 		}
 
@@ -51,7 +48,7 @@ namespace UNIIAadminAPI.Controllers
 		[Permission(PermissionResource.Keyword, CrudActions.View)]
         public async Task<IActionResult> GetPaginatedKeywords([FromQuery] int skip = 0, int take = 10)
         {
-            var pagedKeywords = await _queryRepository.GetPagedAsync<Keyword>(skip, take);
+            var pagedKeywords = await _applicationUnitOfWork.GetPagedAsync<Keyword>(skip, take);
 
 			return Ok(pagedKeywords);
         }

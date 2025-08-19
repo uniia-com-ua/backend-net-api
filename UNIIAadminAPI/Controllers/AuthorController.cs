@@ -18,21 +18,18 @@ namespace UNIIAadminAPI.Controllers
         private readonly IPhotoRepository _authorRepository;
         private readonly IPhotoProvider _photoProvider;
 		private readonly IApplicationUnitOfWork _applicationUnitOfWork;
-		private readonly IQueryRepository _queryRepository;
 		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public AuthorController(
             IPhotoRepository authorRepository,
             IStringLocalizer<ErrorMessages> localizer,
             IPhotoProvider photoProvider,
-			IApplicationUnitOfWork applicationUnitOfWork,
-            IQueryRepository queryRepository)
+			IApplicationUnitOfWork applicationUnitOfWork)
         {
             _localizer = localizer;
             _authorRepository = authorRepository;
             _photoProvider = photoProvider;
 			_applicationUnitOfWork = applicationUnitOfWork;
-            _queryRepository = queryRepository;
 		}
 
 		[Permission(PermissionResource.Author, CrudActions.View)]
@@ -72,7 +69,7 @@ namespace UNIIAadminAPI.Controllers
 		[HttpGet("page")]
         public async Task<IActionResult> GetPagedAuthors([FromQuery] int skip = 0, int take = 10)
         {
-			var pagedAuthors = await _queryRepository.GetPagedAsync<Author>(skip, take);
+			var pagedAuthors = await _applicationUnitOfWork.GetPagedAsync<Author>(skip, take);
 
 			return Ok(pagedAuthors);
         }
