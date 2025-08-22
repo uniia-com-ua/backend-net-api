@@ -1,10 +1,12 @@
 using DotNetEnv;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.HttpOverrides;
 using UniiaAdmin.Auth.Extentions;
 using UniiaAdmin.Auth.Interfaces;
+using UniiaAdmin.Auth.Repos;
 using UniiaAdmin.Auth.Services;
+using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
 using UNIIAadmin.Auth.Services;
@@ -60,6 +62,12 @@ builder.Services.AddTransient<IJwtAuthenticator, JwtValidationService>();
 builder.Services.AddTransient<IClaimUserService, ClaimUserService>();
 builder.Services.AddTransient<ITokenCreationService, TokenCreationService>();
 builder.Services.AddTransient<IAuthService, AuthService>();
+builder.Services.AddScoped<IMongoUnitOfWork, MongoUnitOfWork>();
+builder.Services.AddScoped<IAdminUserRepository, AdminUserRepository>();
+builder.Services.AddScoped<IAdminUnitOfWork, AdminUnitOfWork>();
+builder.Services.AddScoped<IHealthCheckService, HealthCheckService>();
+
+
 builder.Services.AddAutoMapper(_ => { }, AppDomain.CurrentDomain.GetAssemblies());
 
 builder.Services.AddDbContext<AdminContext>(options =>
@@ -80,24 +88,29 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI(options => options.DisplayRequestDuration());
 }
 
-using (var scope = app.Services.CreateScope())
+if (!app.Environment.IsEnvironment(CustomEnviroments.Test))
 {
-	var adminContext = scope.ServiceProvider.GetRequiredService<AdminContext>();
+	using (var scope = app.Services.CreateScope())
+	{
+		var adminContext = scope.ServiceProvider.GetRequiredService<IAdminUnitOfWork>();
+		var mongoUnitOfWork = scope.ServiceProvider.GetRequiredService<IMongoUnitOfWork>();
 
-	await adminContext.Database.EnsureCreatedAsync();
+		await adminContext.CreateAsync();
+		await mongoUnitOfWork.CreateAsync();
+	}
+
+	app.UseHttpsRedirection();
+
+	await app.Services.SeedRoleClaimsAsync();
+
+	await app.Services.SeedUsersAsync();
 }
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseHttpsRedirection();
-
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.MapControllers();
-
-await app.Services.SeedRoleClaimsAsync();
-
-await app.Services.SeedUsersAsync();
 
 await app.RunAsync();

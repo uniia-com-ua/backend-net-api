@@ -18,14 +18,14 @@ namespace UniiaAdmin.Auth.Services
 		private readonly IAuthService _authService;
 		private readonly IHttpClientFactory _httpClientFactory;
 		private readonly IClaimUserService _claimUserService;
-		private readonly MongoDbContext _mongoDbContext;	
+		private readonly IMongoUnitOfWork _mongoUnitOfWork;	
 
 		public TokenCreationService(
 			IJwtAuthenticator jwtAuthenticator,
 			UserManager<AdminUser> userManager,
 			IHttpClientFactory httpClientFactory,
 			IClaimUserService claimUserService,
-			MongoDbContext mongoDbContext,
+			IMongoUnitOfWork mongoUnitOfWork,
 			RoleManager<IdentityRole> roleManager,
 			IAuthService authService)
 		{
@@ -33,7 +33,7 @@ namespace UniiaAdmin.Auth.Services
 			_userManager = userManager;
 			_httpClientFactory = httpClientFactory;
 			_claimUserService = claimUserService;
-			_mongoDbContext = mongoDbContext;
+			_mongoUnitOfWork = mongoUnitOfWork;
 			_roleManager = roleManager;
 			_authService=authService;
 		}
@@ -67,9 +67,9 @@ namespace UniiaAdmin.Auth.Services
 
 				user.ProfilePictureId = photo.Id.ToString();
 
-				await _mongoDbContext.UserPhotos.AddAsync(photo);
+				await _mongoUnitOfWork.AddAsync(photo);
 
-				await _mongoDbContext.SaveChangesAsync();
+				await _mongoUnitOfWork.SaveChangesAsync();
 
 				await _userManager.CreateAsync(user);
 
