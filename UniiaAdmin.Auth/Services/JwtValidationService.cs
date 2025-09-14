@@ -6,6 +6,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using UniiaAdmin.Auth.Interfaces;
+using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
 
@@ -14,13 +15,14 @@ namespace UniiaAdmin.Auth.Services
 	public class JwtValidationService : IJwtAuthenticator
 	{
 		private readonly IConfiguration _configuration;
-		private readonly UserManager<AdminUser> _userManager;
+		private readonly IAdminUserRepository _adminUserRepository;
 
-		public JwtValidationService(IConfiguration configuration,
-			UserManager<AdminUser> adminContext)
+		public JwtValidationService(
+			IConfiguration configuration,
+			IAdminUserRepository adminUserRepository)
 		{
 			_configuration = configuration;
-			_userManager = adminContext;
+			_adminUserRepository = adminUserRepository;
 		}
 
 		public string GenerateAccessToken(IEnumerable<Claim>? claims)
@@ -32,7 +34,11 @@ namespace UniiaAdmin.Auth.Services
 
 			var filteredClaims = claims.Where(c => c.Type != JwtRegisteredClaimNames.Aud);
 
-			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWT_TOKEN_KEY")!));
+			var envKey = _configuration["JWT_TOKEN_KEY"];
+
+			var keyBytes = Encoding.UTF8.GetBytes(envKey!);
+			var key = new SymmetricSecurityKey(keyBytes);
+
 			var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
 			var token = new JwtSecurityToken(
@@ -62,14 +68,14 @@ namespace UniiaAdmin.Auth.Services
 				ValidateIssuer = false,
 				ValidateIssuerSigningKey = true,
 				IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT_TOKEN_KEY"]!)),
-				ValidateLifetime = false
+				ValidateLifetime = false,
 			};
 
 			var tokenHandler = new JwtSecurityTokenHandler();
 
 			var principal = await tokenHandler.ValidateTokenAsync(token, tokenValidationParameters);
 
-			if (principal.SecurityToken is not JwtSecurityToken jwtToken 
+			if (principal.SecurityToken is not JwtSecurityToken jwtToken
 				|| jwtToken.Header.Alg != SecurityAlgorithms.HmacSha256
 				|| principal.Exception != null)
 				return null;
@@ -83,21 +89,21 @@ namespace UniiaAdmin.Auth.Services
 													.AddDays(double.Parse(_configuration["JWT:RefreshTokenValidityInDays"]!))
 													.ToString();
 
-			await _userManager.UpdateAsync(user);
+			await _adminUserRepository.UpdateAsync(user);
 
-			await _userManager.SetAuthenticationTokenAsync(user!, _configuration["JWT:ValidIssuer"]!, "refresh_token", refreshToken);
+			await _adminUserRepository.SetAuthenticationTokenAsync(user!, _configuration["JWT:ValidIssuer"]!, "refresh_token", refreshToken);
 		}
 
 		public async Task<bool> IsRefreshTokenValidAsync(string id, string? refreshToken)
 		{
-			var user = await _userManager.FindByIdAsync(id);
+			var user = await _adminUserRepository.FindByIdAsync(id);
 
 			if (user == null)
 			{
 				return await Task.FromResult<bool>(false);
 			}
 
-			var userToken = await _userManager.GetAuthenticationTokenAsync(user, _configuration["JWT:ValidIssuer"]!, "refresh_token");
+			var userToken = await _adminUserRepository.GetAuthenticationTokenAsync(user, _configuration["JWT:ValidIssuer"]!, "refresh_token");
 
 			if (string.IsNullOrEmpty(userToken))
 			{

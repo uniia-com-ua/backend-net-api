@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
+using UniiaAdmin.Auth.Interfaces;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.Data.Models.AuthModels;
@@ -11,15 +12,11 @@ namespace UniiaAdmin.Auth.Controllers;
 [Route("healthz")]
 public class HealthzController : ControllerBase
 {
-	private readonly AdminContext _adminContext;
-	private readonly MongoDbContext _mongoContext;
+	private readonly IHealthCheckService _healthCheckService;
 
-	public HealthzController
-		(AdminContext adminContext,
-		MongoDbContext mongoContext)
+	public HealthzController(IHealthCheckService healthCheckService)
 	{
-		_adminContext = adminContext;
-		_mongoContext = mongoContext;
+		_healthCheckService = healthCheckService;
 	}
 
 	/// <summary>
@@ -39,9 +36,9 @@ public class HealthzController : ControllerBase
 	[ProducesResponseType(StatusCodes.Status200OK)]
 	public async Task<IActionResult> Ready()
 	{
-		var postgresCanConnect = await _adminContext.Database.CanConnectAsync();
+		var postgresCanConnect = await _healthCheckService.CanAdminConnectAsync();
 
-		var mongoCanConnect = await _mongoContext.Database.CanConnectAsync();
+		var mongoCanConnect = await _healthCheckService.CanMongoConnectAsync();
 
 		return Ok(new
 		{

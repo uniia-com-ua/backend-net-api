@@ -7,11 +7,11 @@ namespace UNIIAadmin.Auth.Services
 {
     public class AuthService : IAuthService
     {
-        private readonly MongoDbContext _db;
+        private readonly IMongoUnitOfWork _mongoUnitOfWork;
 
-        public AuthService(MongoDbContext mongoDatabase) 
+        public AuthService(IMongoUnitOfWork mongoDatabase) 
         {
-            _db = mongoDatabase;
+			_mongoUnitOfWork = mongoDatabase;
         }
 
         public async Task AddLoginInfoToHistory(AdminUser adminUser, HttpContext httpContext)
@@ -30,9 +30,9 @@ namespace UNIIAadmin.Auth.Services
                 UserAgent = httpContext.Request.Headers.UserAgent
             };
 
-            await _db.AdminLogInHistories.AddAsync(logInHistoryItem);
+            await _mongoUnitOfWork.AddAsync(logInHistoryItem);
 
-            await _db.SaveChangesAsync();
+            await _mongoUnitOfWork.SaveChangesAsync();
         }
     }
 }

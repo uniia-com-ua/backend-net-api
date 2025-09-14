@@ -399,3 +399,6 @@ FodyWeavers.xsd
 /UNIIAadminAPI/.env
 /UniiaAdmin.Auth/.env
 .env
+
+coverage-report/
+generate_test_report.bat
