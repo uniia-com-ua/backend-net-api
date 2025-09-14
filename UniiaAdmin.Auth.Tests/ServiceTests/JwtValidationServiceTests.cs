@@ -30,8 +30,9 @@ namespace UniiaAdmin.Auth.Tests.ServiceTests
 			_mockConfig.Setup(c => c["JWT:ValidAudience"]).Returns("TestAudience");
 			_mockConfig.Setup(c => c["JWT:TokenValidityInMinutes"]).Returns("60");
 			_mockConfig.Setup(c => c["JWT:RefreshTokenValidityInDays"]).Returns("30");
+			_mockConfig.Setup(c => c["JWT_TOKEN_KEY"]).Returns("Xf9hLx9j5U5lq2vXo9J8nA2w0mJv6aWqJ6c2Zk5V7zA=");
 
-			Environment.SetEnvironmentVariable("JWT_TOKEN_KEY", "TestSecretKey1234567891011121314");
+			//Environment.SetEnvironmentVariable("JWT_TOKEN_KEY", "Xf9hLx9j5U5lq2vXo9J8nA2w0mJv6aWqJ6c2Zk5V7zA=");
 
 			_service = new JwtValidationService(_mockConfig.Object, _mockRepo.Object);
 		}

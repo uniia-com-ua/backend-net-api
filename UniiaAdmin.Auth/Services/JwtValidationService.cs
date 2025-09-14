@@ -6,6 +6,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using UniiaAdmin.Auth.Interfaces;
+using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
 using UniiaAdmin.Data.Models;
 
@@ -33,7 +34,11 @@ namespace UniiaAdmin.Auth.Services
 
 			var filteredClaims = claims.Where(c => c.Type != JwtRegisteredClaimNames.Aud);
 
-			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWT_TOKEN_KEY")!));
+			var envKey = _configuration["JWT_TOKEN_KEY"];
+
+			var keyBytes = Encoding.UTF8.GetBytes(envKey!);
+			var key = new SymmetricSecurityKey(keyBytes);
+
 			var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
 			var token = new JwtSecurityToken(
@@ -62,7 +67,7 @@ namespace UniiaAdmin.Auth.Services
 				ValidateAudience = false,
 				ValidateIssuer = false,
 				ValidateIssuerSigningKey = true,
-				IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWT_TOKEN_KEY")!)),
+				IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT_TOKEN_KEY"]!)),
 				ValidateLifetime = false,
 			};
 
