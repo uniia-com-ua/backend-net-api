@@ -10,6 +10,7 @@ public enum PermissionResource
 	PublicationType,
 	Subject,
 	University,
+	Speciality,
 	User,
 	Logs,
 	Role

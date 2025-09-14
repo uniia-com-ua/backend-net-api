@@ -32,7 +32,9 @@ namespace UniiaAdmin.Data.Data
 
         public DbSet<PublicationRoleClaim> PublicationRoleClaims { get; set; }
 
-        public ApplicationContext(DbContextOptions<ApplicationContext> dbContextOptions) : base(dbContextOptions) { }
+		public DbSet<Specialty> Specialties { get; set; }
+
+		public ApplicationContext(DbContextOptions<ApplicationContext> dbContextOptions) : base(dbContextOptions) { }
 
         public ApplicationContext() : base() { }
 

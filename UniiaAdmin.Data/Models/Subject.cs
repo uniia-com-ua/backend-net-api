@@ -16,5 +16,9 @@ namespace UniiaAdmin.Data.Models
 		[JsonIgnore]
 		[BindNever]
 		public List<Publication>? Publications { get; set; }
+
+		[JsonIgnore]
+		[BindNever]
+		public List<Specialty>? Specialties { get; set; }
 	}
 }

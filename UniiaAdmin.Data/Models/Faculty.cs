@@ -22,5 +22,9 @@ namespace UniiaAdmin.Data.Models
 		[BindNever]
 		[JsonIgnore]
         public University? University { get; set; }
-    }
+
+		[BindNever]
+		[JsonIgnore]
+		public virtual ICollection<Specialty>? Specialties { get; set; }
+	}
 }
