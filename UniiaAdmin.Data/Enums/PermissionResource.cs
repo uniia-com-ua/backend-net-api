@@ -13,5 +13,6 @@ public enum PermissionResource
 	Speciality,
 	User,
 	Logs,
-	Role
+	Role,
+	AdminUser
 }
