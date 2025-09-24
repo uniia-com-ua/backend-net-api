@@ -76,7 +76,7 @@ namespace UniiaAdmin.WebApi.Controllers
 					return Ok();
 				}*/
 
-		[HttpGet]
+		[HttpGet("page")]
 		[Permission(PermissionResource.User, CrudActions.View)]
 		public async Task<IActionResult> GetAllUsers([FromQuery] int skip = 0, int take = 10)
         {
