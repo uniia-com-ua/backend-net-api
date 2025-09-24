@@ -52,7 +52,7 @@ namespace UniiaAdmin.WebApi.Controllers
 		[Permission(PermissionResource.Speciality, CrudActions.Create)]
 		[HttpPost]
 		[LogAction(nameof(Specialty), nameof(Create))]
-		public async Task<IActionResult> Create([FromForm] Specialty specialty)
+		public async Task<IActionResult> Create([FromBody] Specialty specialty)
         {
 			await _genericRepository.CreateAsync(specialty);
 
@@ -64,7 +64,7 @@ namespace UniiaAdmin.WebApi.Controllers
 		[Permission(PermissionResource.Speciality, CrudActions.Update)]
 		[HttpPatch("{id}")]
 		[LogAction(nameof(Specialty), nameof(Update))]
-		public async Task<IActionResult> Update([FromForm] Specialty specialty, int id)
+		public async Task<IActionResult> Update([FromBody] Specialty specialty, int id)
         {
             var existedSpecialty = await _applicationUnitOfWork.FindAsync<Specialty>(id);
 
