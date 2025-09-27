@@ -91,12 +91,12 @@ namespace UniiaAdmin.WebApi.Controllers
 		{
 			if (string.IsNullOrEmpty(userDto.Email))
 			{
-				return NotFound(_localizer["EmailRequired"].Value);
+				return BadRequest(_localizer["EmailRequired"].Value);
 			}
 
 			if (await _userRepository.IsEmailExistAsync(userDto.Email))
 			{
-				return NotFound(_localizer["EmailExist", userDto.Email].Value);
+				return BadRequest(_localizer["EmailExist", userDto.Email].Value);
 			}
 
 			var id = await _userRepository.CreateAsync(userDto);
@@ -106,7 +106,7 @@ namespace UniiaAdmin.WebApi.Controllers
 			return Ok();
 		}
 
-		[HttpPost("{id}")]
+		[HttpPatch("{id}")]
 		[Permission(PermissionResource.User, CrudActions.Update)]
 		public async Task<IActionResult> Update([FromBody] UserDto userDto, string id)
 		{
