@@ -1,4 +1,4 @@
-﻿namespace UniiaAdmin.Data.Dtos
+﻿namespace UniiaAdmin.Data.Dtos.UserDtos
 {
     public class AdminUserDto
     {

@@ -1,7 +1,7 @@
 ﻿namespace UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 
 using Microsoft.AspNetCore.Identity;
-using UniiaAdmin.Data.Dtos;
+using UniiaAdmin.Data.Dtos.UserDtos;
 
 public interface IAdminUnitOfWork
 {

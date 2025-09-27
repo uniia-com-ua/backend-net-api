@@ -1,11 +1,15 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations.Schema;
 using UniiaAdmin.Data.Enums;
 
 namespace UniiaAdmin.Data.Models
 {
     public class User : IdentityUser
     {
-        public string? FirstName { get; set; }
+		[NotMapped]
+		public override string? UserName { get; set; } = null!;
+
+		public string? FirstName { get; set; }
 
         public string? LastName { get; set; }
 

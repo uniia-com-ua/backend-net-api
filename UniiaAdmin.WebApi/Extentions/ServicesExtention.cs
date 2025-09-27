@@ -56,6 +56,8 @@ public static class ServicesExtention
 
 		services.AddTransient<IPaginationService, PaginationService>();
 
+		services.AddScoped<IUserRepository, UserRepository>();
+
 		services.AddScoped<IGenericRepository, GenericRepository>();
 
 		services.AddScoped<IRolePaginationService, RolePaginationService>();

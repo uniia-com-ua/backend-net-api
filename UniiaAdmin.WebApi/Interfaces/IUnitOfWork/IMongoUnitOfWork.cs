@@ -25,7 +25,7 @@ public interface IMongoUnitOfWork
 
 	public void Update<T>(T model) where T : class;
 
-	public Task CreateAsync();
+	public Task CreateDatabaseAsync();
 
 	public Task<bool> CanConnectAsync();
 

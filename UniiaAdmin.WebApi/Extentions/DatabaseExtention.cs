@@ -17,8 +17,8 @@ public static class DatabaseExtention
 		var applicationUnitOfWork = scope.ServiceProvider.GetRequiredService<IApplicationUnitOfWork>();
 		var mongoUnitOfWork = scope.ServiceProvider.GetRequiredService<IMongoUnitOfWork>();
 
-		await applicationUnitOfWork.CreateAsync();
-		await mongoUnitOfWork.CreateAsync();
+		await applicationUnitOfWork.CreateDatabaseAsync();
+		await mongoUnitOfWork.CreateDatabaseAsync();
 	}
 }
 

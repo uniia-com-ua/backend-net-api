@@ -5,7 +5,9 @@ using UniiaAdmin.Data.Interfaces.FileInterfaces;
 
 public interface IApplicationUnitOfWork
 {
-	public Task<T?> FindAsync<T>(int id) where T : class, IEntity;
+	public IQueryable<T> GetQueryable<T>() where T : class;
+
+	public Task<T?> FindAsync<T>(object id) where T : class;
 
 	public Task<string?> FindPhotoIdAsync<T>(int id) where T : class, IPhotoEntity;
 
@@ -23,9 +25,11 @@ public interface IApplicationUnitOfWork
 
 	public void Update<T>(T model) where T : class;
 
-	public Task CreateAsync();
+	public void Create<T>(T model) where T : class;
 
-	public Task<List<T>> GetPagedAsync<T>(int skip, int take) where T : class, IEntity;
+	public Task CreateDatabaseAsync();
+
+	public Task<List<T>> GetPagedAsync<T>(int skip, int take) where T : class;
 
 	public Task<TEntity?> GetByIdWithIncludesAsync<TEntity>(
 		Expression<Func<TEntity, bool>> predicate,

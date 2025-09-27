@@ -22,11 +22,13 @@ public class ApplicationUnitOfWork : IApplicationUnitOfWork
 
 	public async Task AddAsync<T>(T model) where T : class => await _applicationContext.Set<T>().AddAsync(model);
 
-	public async Task<T?> FindAsync<T>(int id) where T : class, IEntity => await _applicationContext.Set<T>().FindAsync(id);
+	public async Task<T?> FindAsync<T>(object id) where T : class => await _applicationContext.Set<T>().FindAsync(id);
 
 	public async Task SaveChangesAsync() => await _applicationContext.SaveChangesAsync();
 
 	public async Task<bool> AnyAsync<T>(int id) where T : class, IEntity => await _applicationContext.Set<T>().AnyAsync(e => e.Id == id);
+
+	public IQueryable<T> GetQueryable<T>() where T : class => _applicationContext.Set<T>();
 
 	public void Attach<T>(T model) where T : class => _applicationContext.Set<T>().Attach(model);
 
@@ -36,7 +38,9 @@ public class ApplicationUnitOfWork : IApplicationUnitOfWork
 
 	public async Task<bool> CanConnectAsync() => await _applicationContext.Database.CanConnectAsync();
 
-	public async Task CreateAsync() => await _applicationContext.Database.EnsureCreatedAsync();
+	public void Create<T>(T model) where T : class => _applicationContext.Set<T>().Add(model);
+
+	public async Task CreateDatabaseAsync() => await _applicationContext.Database.EnsureCreatedAsync();
 
 	public async Task<string?> FindPhotoIdAsync<T>(int id) where T : class, IPhotoEntity 
 		=> await _applicationContext.Set<T>()
@@ -55,7 +59,7 @@ public class ApplicationUnitOfWork : IApplicationUnitOfWork
 			.Select(a => a.FileId)
 			.FirstOrDefaultAsync();
 
-	public async Task<List<T>> GetPagedAsync<T>(int skip, int take) where T : class, IEntity
+	public async Task<List<T>> GetPagedAsync<T>(int skip, int take) where T : class
 		=> await _paginationService.GetPagedListAsync(_applicationContext.Set<T>(), skip, take);
 
 	public async Task<TEntity?> GetByIdWithIncludesAsync<TEntity>(

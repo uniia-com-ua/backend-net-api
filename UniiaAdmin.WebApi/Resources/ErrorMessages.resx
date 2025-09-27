@@ -159,4 +159,10 @@
   <data name="RoleCannotBeDeleted" xml:space="preserve">
     <value>This role cannot be deleted</value>
   </data>
+  <data name="EmailRequired" xml:space="preserve">
+    <value>Email is required</value>
+  </data>
+  <data name="EmailExist" xml:space="preserve">
+    <value>User with email address '{0}' already exists</value>
+  </data>
 </root>

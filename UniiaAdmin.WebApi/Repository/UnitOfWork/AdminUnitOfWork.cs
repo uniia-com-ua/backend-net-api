@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using UniiaAdmin.Data.Data;
-using UniiaAdmin.Data.Dtos;
+using UniiaAdmin.Data.Dtos.UserDtos;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 

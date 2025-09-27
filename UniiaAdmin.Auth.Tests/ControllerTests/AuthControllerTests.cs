@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using UniiaAdmin.Auth.Controllers;
 using UniiaAdmin.Auth.Interfaces;
 using UniiaAdmin.Auth.Tests;
-using UniiaAdmin.Data.Dtos;
+using UniiaAdmin.Data.Dtos.User;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.Data.Models.AuthModels;
 using Xunit;
