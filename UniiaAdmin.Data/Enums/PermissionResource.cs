@@ -14,5 +14,5 @@ public enum PermissionResource
 	User,
 	Logs,
 	Role,
-	AdminUser
+	AdminUsers
 }

@@ -38,5 +38,5 @@ public class MongoUnitOfWork : IMongoUnitOfWork
 
 	public async Task<bool> CanConnectAsync() => await _mongoDbContext.Database.CanConnectAsync();
 
-	public async Task CreateAsync() => await _mongoDbContext.Database.EnsureCreatedAsync();
+	public async Task CreateDatabaseAsync() => await _mongoDbContext.Database.EnsureCreatedAsync();
 }

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using System.Security.Claims;
 using UniiaAdmin.Auth.Interfaces;
-using UniiaAdmin.Data.Dtos;
+using UniiaAdmin.Data.Dtos.UserDtos;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.Data.Models.AuthModels;
 

@@ -1,10 +1,16 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
+using System.ComponentModel.DataAnnotations;
 using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
-using UniiaAdmin.Data.Dtos;
+using UniiaAdmin.Data.Dtos.UserDtos;
+using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Attributes;
 using UniiaAdmin.WebApi.Interfaces;
+using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
+using UniiaAdmin.WebApi.Repository;
+using UniiaAdmin.WebApi.Resources;
 
 namespace UniiaAdmin.WebApi.Controllers
 {
@@ -12,17 +18,20 @@ namespace UniiaAdmin.WebApi.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        private readonly ApplicationContext _applicationContext;
-        private readonly IPaginationService _paginationService;
+        private readonly IUserRepository _userRepository;
+		private readonly IApplicationUnitOfWork _applicationUnitOfWork;
+		private readonly IStringLocalizer<ErrorMessages> _localizer;
 		private readonly IMapper _mapper;
 		public UserController(
-            ApplicationContext applicationContext,
-            IPaginationService paginationService,
-            IMapper mapper) 
+			IUserRepository userRepository,
+			IStringLocalizer<ErrorMessages> localizer,
+			IApplicationUnitOfWork applicationUnitOfWork,
+			IMapper mapper) 
         {
-            _applicationContext = applicationContext;
-            _paginationService = paginationService;
-            _mapper = mapper;
+			_userRepository = userRepository;
+			_applicationUnitOfWork = applicationUnitOfWork;
+			_localizer = localizer;
+			_mapper = mapper;
         }
 
 		/*        [HttpPatch]
@@ -76,11 +85,43 @@ namespace UniiaAdmin.WebApi.Controllers
 					return Ok();
 				}*/
 
+		[HttpPost]
+		[Permission(PermissionResource.User, CrudActions.Create)]
+		public async Task<IActionResult> Create([FromBody] UserDto userDto)
+		{
+			if (string.IsNullOrEmpty(userDto.Email))
+			{
+				return NotFound(_localizer["EmailRequired"].Value);
+			}
+
+			if (await _userRepository.IsEmailExistAsync(userDto.Email))
+			{
+				return NotFound(_localizer["EmailExist", userDto.Email].Value);
+			}
+
+			var id = await _userRepository.CreateAsync(userDto);
+
+			HttpContext.Items.Add("id", id);
+
+			return Ok();
+		}
+
+		[HttpPost("{id}")]
+		[Permission(PermissionResource.User, CrudActions.Update)]
+		public async Task<IActionResult> Update([FromBody] UserDto userDto, string id)
+		{
+			await _userRepository.UpdateAsync(id, userDto);
+
+			HttpContext.Items.Add("id", id);
+
+			return Ok();
+		}
+
 		[HttpGet("page")]
 		[Permission(PermissionResource.User, CrudActions.View)]
 		public async Task<IActionResult> GetAllUsers([FromQuery] int skip = 0, int take = 10)
         {
-            var users = await _paginationService.GetPagedListAsync(_applicationContext.Users, skip, take);
+            var users = await _applicationUnitOfWork.GetPagedAsync<User>(skip, take);
 
 			var result = users.Select(u => _mapper.Map<UserDto>(u));
 
@@ -91,10 +132,10 @@ namespace UniiaAdmin.WebApi.Controllers
 		[Permission(PermissionResource.User, CrudActions.View)]
 		public async Task<IActionResult> GetUserById(string id)
         {
-            var user = await _applicationContext.Users.FindAsync(id);
+            var user = await _applicationUnitOfWork.FindAsync<User>(id);
 
             if (user == null)
-                return NotFound();
+                return NotFound(_localizer["ModelNotFound", nameof(Data.Models.User), id.ToString()].Value);
 
 			var result = _mapper.Map<UserDto>(user);
 

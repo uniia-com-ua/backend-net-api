@@ -1,5 +1,6 @@
-﻿using UniiaAdmin.Data.Models;
-using AutoMapper;
+﻿using AutoMapper;
+using UniiaAdmin.Data.Dtos.UserDtos;
+using UniiaAdmin.Data.Models;
 
 namespace UniiaAdmin.Data.Dtos
 {
@@ -9,6 +10,8 @@ namespace UniiaAdmin.Data.Dtos
 		{
 			CreateMap<AdminUser, AdminUserDto>();
 			CreateMap<User, UserDto>();
+
+			CreateMap<UserDto, User>();
 
 			CreateMap<Author, Author>()
 					   .ForMember(dest => dest.Id, opt => opt.Ignore())

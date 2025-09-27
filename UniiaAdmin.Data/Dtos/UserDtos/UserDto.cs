@@ -1,6 +1,7 @@
-﻿namespace UniiaAdmin.Data.Dtos;
+﻿namespace UniiaAdmin.Data.Dtos.UserDtos;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ public class UserDto
 {
 	public string? Id { get; set; }
 
+	[EmailAddress]
 	public string? Email { get; set; }
 
 	public string? FirstName { get; set; }
@@ -28,6 +30,4 @@ public class UserDto
 	public string? PreferredLanguage { get; set; }
 
 	public AccountStatus AccountStatus { get; set; }
-
-	public List<Favorite>? Favorites { get; set; }
 }

@@ -1,8 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using UniiaAdmin.Data.Constants;
-using UniiaAdmin.Data.Data;
-using UniiaAdmin.Data.Dtos;
+using UniiaAdmin.Data.Dtos.UserDtos;
 using UniiaAdmin.WebApi.Attributes;
 using UniiaAdmin.WebApi.Interfaces;
 using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
@@ -71,7 +70,7 @@ namespace UniiaAdmin.WebApi.Controllers
 				}*/
 
 		[HttpGet("page")]
-		[Permission(PermissionResource.AdminUser, CrudActions.View)]
+		[Permission(PermissionResource.AdminUsers, CrudActions.View)]
 		public async Task<IActionResult> GetAllUsers()
         {
 			var users = await _adminUnitOfWork.GetListAsync();
@@ -80,10 +79,10 @@ namespace UniiaAdmin.WebApi.Controllers
         }
 
         [HttpGet("{id}")]
-		[Permission(PermissionResource.AdminUser, CrudActions.View)]
+		[Permission(PermissionResource.AdminUsers, CrudActions.View)]
 		public async Task<IActionResult> GetUserById(string id)
         {
-            var user = await _adminUnitOfWork.GetAsync(id);
+            AdminUserDto user = await _adminUnitOfWork.GetAsync(id);
 
             if (user == null)
                 return NotFound();
