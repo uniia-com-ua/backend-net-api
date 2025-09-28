@@ -110,6 +110,11 @@ namespace UniiaAdmin.WebApi.Controllers
 		[Permission(PermissionResource.User, CrudActions.Update)]
 		public async Task<IActionResult> Update([FromBody] UserDto userDto, string id)
 		{
+			if (!string.IsNullOrEmpty(userDto.Email) && await _userRepository.IsEmailExistAsync(userDto.Email))
+			{
+				return BadRequest(_localizer["EmailExist", userDto.Email].Value);
+			}
+
 			await _userRepository.UpdateAsync(id, userDto);
 
 			HttpContext.Items.Add("id", id);
