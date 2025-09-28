@@ -36,6 +36,12 @@ public interface IApplicationUnitOfWork
 		params Expression<Func<TEntity, object>>[] includes)
 		where TEntity : class;
 
+	public Task<List<TEntity>> GetPagedWithIncludesAsync<TEntity>(
+		int skip,
+		int take,
+		params Expression<Func<TEntity, object>>[] includes)
+		where TEntity : class;
+
 	public Task<List<T>?> GetByIdsAsync<T>(IEnumerable<int>? ids) where T : class, IEntity;
 
 	public Task<bool> CanConnectAsync();
