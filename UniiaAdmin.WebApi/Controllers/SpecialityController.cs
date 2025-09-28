@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using System.Net.Mime;
 using UniiaAdmin.Data.Constants;
+using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Attributes;
 using UniiaAdmin.WebApi.Interfaces;
@@ -17,34 +19,38 @@ namespace UniiaAdmin.WebApi.Controllers
     {
 		private readonly IApplicationUnitOfWork _applicationUnitOfWork;
 		private readonly IGenericRepository _genericRepository;
+		private readonly IMapper _mapper;
 		private readonly IStringLocalizer<ErrorMessages> _localizer;
 
 		public SpecialityController(IStringLocalizer<ErrorMessages> localizer,
+			IMapper mapper,
 			IApplicationUnitOfWork applicationUnitOfWork,
 			IGenericRepository genericRepository)
 		{
 			_localizer = localizer;
 			_applicationUnitOfWork = applicationUnitOfWork;
 			_genericRepository = genericRepository;
+			_mapper = mapper;
 		}
 
 		[Permission(PermissionResource.Speciality, CrudActions.View)]
 		[HttpGet("{id:int}")]
         public async Task<IActionResult> Get(int id)
         {
-            var speciality = await _applicationUnitOfWork.FindAsync<Specialty>(id);
+            var speciality = await _applicationUnitOfWork.GetByIdWithIncludesAsync<Specialty>(x => x.Id == id, x => x.Subjects!);
 
 			if (speciality == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Specialty), id.ToString()].Value);
 
-            return Ok(speciality);
+            return Ok(_mapper.Map<SpecialityDto>(speciality));
         }
 
 		[Permission(PermissionResource.Speciality, CrudActions.View)]
 		[HttpGet("page")]
-        public async Task<IActionResult> GetPagedAuthors([FromQuery] int skip = 0, int take = 10)
+        public async Task<IActionResult> GetPaged([FromQuery] int skip = 0, int take = 10)
         {
-			var pagedSpecialties = await _applicationUnitOfWork.GetPagedAsync<Specialty>(skip, take);
+			var pagedSpecialties = (await _applicationUnitOfWork.GetPagedWithIncludesAsync<Specialty>(skip, take, x => x.Subjects!))
+				.Select(x => _mapper.Map<SpecialityDto>(x));
 
 			return Ok(pagedSpecialties);
         }
@@ -62,7 +68,7 @@ namespace UniiaAdmin.WebApi.Controllers
         }
 
 		[Permission(PermissionResource.Speciality, CrudActions.Update)]
-		[HttpPatch("{id}")]
+		[HttpPatch("{id:int}")]
 		[LogAction(nameof(Specialty), nameof(Update))]
 		public async Task<IActionResult> Update([FromBody] Specialty specialty, int id)
         {

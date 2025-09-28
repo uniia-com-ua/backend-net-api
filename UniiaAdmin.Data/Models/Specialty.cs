@@ -18,7 +18,9 @@ public class Specialty : IEntity
 	[MaxLength(50)]
 	public string? Name { get; set; }
 
-	public int? SubjectId { get; set; }
+	[BindNever]
+	[JsonIgnore]
+	public virtual ICollection<Subject>? Subjects { get; set; }
 
 	[BindNever]
 	[JsonIgnore]
