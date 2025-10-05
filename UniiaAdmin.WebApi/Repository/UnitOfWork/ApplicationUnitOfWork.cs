@@ -21,6 +21,8 @@ public class ApplicationUnitOfWork : IApplicationUnitOfWork
 		_paginationService = paginationService;
 	}
 
+	public IQueryable<T> Query<T>(Expression<Func<T, bool>> predicate) where T : class => _applicationContext.Set<T>().Where(predicate);
+
 	public async Task AddAsync<T>(T model) where T : class => await _applicationContext.Set<T>().AddAsync(model);
 
 	public async Task<T?> FindAsync<T>(int id) where T : class, IEntity => await _applicationContext.Set<T>().FindAsync(id);

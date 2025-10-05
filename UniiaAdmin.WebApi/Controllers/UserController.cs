@@ -4,7 +4,9 @@ using Microsoft.Extensions.Localization;
 using System.ComponentModel.DataAnnotations;
 using UniiaAdmin.Data.Constants;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Dtos.UserDtos;
+using UniiaAdmin.Data.Enums;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Attributes;
 using UniiaAdmin.WebApi.Interfaces;
@@ -110,6 +112,11 @@ namespace UniiaAdmin.WebApi.Controllers
 		[Permission(PermissionResource.User, CrudActions.Update)]
 		public async Task<IActionResult> Update([FromBody] UserDto userDto, string id)
 		{
+			if (await _userRepository.IsEmailExistAsync(userDto.Email))
+			{
+				return BadRequest(_localizer["ModelNotFound", nameof(Data.Models.User), id.ToString()].Value);
+			}
+
 			if (!string.IsNullOrEmpty(userDto.Email) && await _userRepository.IsEmailExistAsync(userDto.Email))
 			{
 				return BadRequest(_localizer["EmailExist", userDto.Email].Value);
@@ -124,13 +131,14 @@ namespace UniiaAdmin.WebApi.Controllers
 
 		[HttpGet("page")]
 		[Permission(PermissionResource.User, CrudActions.View)]
-		public async Task<IActionResult> GetAllUsers([FromQuery] int skip = 0, int take = 10)
+		public async Task<IActionResult> GetAllUsers([FromQuery] AccountStatus? accountStatus = null,
+			int skip = 0,
+			int take = 10,
+			string? sort = null)
         {
-            var users = await _applicationUnitOfWork.GetPagedAsync<User>(skip, take);
+            var users = await _userRepository.GetPagedAsync(accountStatus, skip, take, sort);
 
-			var result = users.Select(u => _mapper.Map<UserDto>(u));
-
-            return Ok(result);
+			return Ok(users);
         }
 
         [HttpGet("{id}")]

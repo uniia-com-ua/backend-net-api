@@ -11,6 +11,7 @@ public interface IApplicationUnitOfWork
 
 	public Task<T?> FindAsync<T>(string id) where T : class, IStringEntity;
 
+	public IQueryable<T> Query<T>(Expression<Func<T, bool>> predicate) where T : class;
 
 	public Task<string?> FindPhotoIdAsync<T>(int id) where T : class, IPhotoEntity;
 
