@@ -13,12 +13,10 @@ namespace UniiaAdmin.Data.Models
         [MaxLength(64)]
         public string? Name { get; set; }
 
-		[JsonIgnore]
-		[BindNever]
-		public List<Publication>? Publications { get; set; }
+		public int? SpecialtyId { get; set; }
 
 		[JsonIgnore]
 		[BindNever]
-		public List<Specialty>? Specialties { get; set; }
+		public List<Publication>? Publications { get; set; }
 	}
 }

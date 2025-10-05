@@ -51,12 +51,15 @@ namespace UniiaAdmin.WebApi.Controllers
         [HttpPost]
 		[Permission(PermissionResource.Subject, CrudActions.Create)]
 		[LogAction(nameof(Subject), nameof(Create))]
-        public async Task<IActionResult> Create([FromBody] string name)
+        public async Task<IActionResult> Create([FromBody] Subject subject)
         {
-            Subject subject = new()
-            {
-                Name = name
-            };
+			if (subject.SpecialtyId != null)
+			{
+				var isSpecialityExist = await _applicationUnitOfWork.AnyAsync<Specialty>((int)subject.SpecialtyId);
+
+				if (!isSpecialityExist)
+					return NotFound(_localizer["ModelNotFound", nameof(Specialty), ((int)subject.SpecialtyId).ToString()].Value);
+			}
 
 			await _genericRepository.CreateAsync(subject);
 
@@ -68,14 +71,22 @@ namespace UniiaAdmin.WebApi.Controllers
         [HttpPatch("{id:int}")]
 		[Permission(PermissionResource.Subject, CrudActions.Update)]
 		[LogAction(nameof(Subject), nameof(Update))]
-		public async Task<IActionResult> Update([FromBody] string name, int id)
+		public async Task<IActionResult> Update([FromBody] Subject subject, int id)
         {
-			var subject = await _applicationUnitOfWork.FindAsync<Subject>(id);
+			var existedSubject = await _applicationUnitOfWork.FindAsync<Subject>(id);
 
-			if (subject == null)
+			if (existedSubject == null)
                 return NotFound(_localizer["ModelNotFound", nameof(Subject), id.ToString()].Value);
 
-			await _genericRepository.UpdateAsync(new Subject { Name = name }, subject);
+			if(subject.SpecialtyId != null)
+			{
+				var isSpecialityExist = await _applicationUnitOfWork.AnyAsync<Specialty>((int)subject.SpecialtyId);
+
+				if (!isSpecialityExist)
+					return NotFound(_localizer["ModelNotFound", nameof(Specialty), ((int)subject.SpecialtyId).ToString()].Value);
+			}
+
+			await _genericRepository.UpdateAsync(subject, existedSubject);
 
 			return Ok();
         }

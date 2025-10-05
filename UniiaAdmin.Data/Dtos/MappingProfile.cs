@@ -11,6 +11,25 @@ namespace UniiaAdmin.Data.Dtos
 			CreateMap<AdminUser, AdminUserDto>();
 			CreateMap<User, UserDto>();
 
+			CreateMap<Subject, Subject>()
+				.ForMember(dest => dest.Id, opt => opt.Ignore());
+
+			CreateMap<PublicationType, PublicationType>()
+				.ForMember(dest => dest.Id, opt => opt.Ignore());
+
+			CreateMap<PublicationLanguage, PublicationLanguage>()
+				.ForMember(dest => dest.Id, opt => opt.Ignore());
+
+			CreateMap<Keyword, Keyword>()
+				.ForMember(dest => dest.Id, opt => opt.Ignore());
+
+			CreateMap<Specialty, Specialty>()
+				.ForMember(dest => dest.Id, opt => opt.Ignore());
+
+			CreateMap<Specialty, SpecialityDto>()
+				.ForMember(dest => dest.SubjectCount,
+					opt => opt.MapFrom(src => src.Subjects != null ? src.Subjects.Count : 0));
+
 			CreateMap<UserDto, User>();
 
 			CreateMap<Author, Author>()

@@ -78,6 +78,22 @@ public class ApplicationUnitOfWork : IApplicationUnitOfWork
 		return await query.FirstOrDefaultAsync(predicate);
 	}
 
+	public async Task<List<TEntity>> GetPagedWithIncludesAsync<TEntity>(
+	int skip, 
+	int take,
+	params Expression<Func<TEntity, object>>[] includes)
+	where TEntity : class
+	{
+		IQueryable<TEntity> query = _applicationContext.Set<TEntity>();
+
+		foreach (var include in includes)
+		{
+			query = query.Include(include);
+		}
+
+		return await _paginationService.GetPagedListAsync(query, skip, take);
+	}
+
 	public async Task<List<T>?> GetByIdsAsync<T>(IEnumerable<int>? ids) where T : class, IEntity
 	{
 		if (ids == null)
