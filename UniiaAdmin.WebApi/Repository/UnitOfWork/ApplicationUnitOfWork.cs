@@ -35,7 +35,7 @@ public class ApplicationUnitOfWork : IApplicationUnitOfWork
 
 	public async Task<bool> AnyAsync<T>(string id) where T : class, IStringEntity => await _applicationContext.Set<T>().AnyAsync(e => e.Id == id);
 
-	public async Task<bool> AnyEmailAsync<T>(string email) where T : class, IEmailEntity => await _applicationContext.Set<T>().AnyAsync(e => e.Email == email);
+	public async Task<bool> AnyEmailAsync<T>(string? email) where T : class, IEmailEntity => await _applicationContext.Set<T>().AnyAsync(e => e.Email == email);
 
 	public void Remove<T>(T model) where T : class => _applicationContext.Set<T>().Remove(model);
 
@@ -78,7 +78,7 @@ public class ApplicationUnitOfWork : IApplicationUnitOfWork
 		return await query.FirstOrDefaultAsync(predicate);
 	}
 
-	public async Task<List<TEntity>> GetPagedWithIncludesAsync<TEntity>(
+	public async Task<PageData<TEntity>> GetPagedWithIncludesAsync<TEntity>(
 	int skip, 
 	int take,
 	params Expression<Func<TEntity, object>>[] includes)

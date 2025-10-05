@@ -13,7 +13,7 @@ public interface IUserRepository
 
 	public Task<PageData<UserDto>?> GetPagedAsync(AccountStatus? accountStatus, int skip, int take, string? sort = null);
 
-	public Task<bool> IsEmailExistAsync(string email);
+	public Task<bool> IsEmailExistAsync(string? email);
 
 	public Task UpdateAsync(string id, UserDto userCreationDto);
 }

@@ -25,7 +25,7 @@ public interface IApplicationUnitOfWork
 
 	public Task<bool> AnyAsync<T>(string id) where T : class, IStringEntity;
 
-	public Task<bool> AnyEmailAsync<T>(string email) where T : class, IEmailEntity;
+	public Task<bool> AnyEmailAsync<T>(string? email) where T : class, IEmailEntity;
 
 	public void Remove<T>(T model) where T : class;
 
@@ -38,7 +38,7 @@ public interface IApplicationUnitOfWork
 		params Expression<Func<T, object>>[] includes)
 		where T : class;
 
-	public Task<List<TEntity>> GetPagedWithIncludesAsync<TEntity>(
+	public Task<PageData<TEntity>> GetPagedWithIncludesAsync<TEntity>(
 		int skip,
 		int take,
 		params Expression<Func<TEntity, object>>[] includes)

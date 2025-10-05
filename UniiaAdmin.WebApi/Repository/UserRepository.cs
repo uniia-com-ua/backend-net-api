@@ -65,7 +65,7 @@ public class UserRepository : IUserRepository
 		};
 	}
 
-	public async Task<bool> IsEmailExistAsync(string email)
+	public async Task<bool> IsEmailExistAsync(string? email)
 	{
 		return await _applicationUnitOfWork.AnyEmailAsync<User>(email);
 	}
