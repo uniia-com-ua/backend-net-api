@@ -141,20 +141,20 @@ public class PublicationControllerTests
 	public async Task GetPagedPublications_Returns200WithList()
 	{
 		// Arrange
-		var list = new List<Publication> { CreateTestPublication() };
+		var list = new PageData<Publication> { Items = new() { CreateTestPublication() }, TotalCount = 1 };
 		_factory.Mocks.Mock<IApplicationUnitOfWork>()
-			.Setup(r => r.GetPagedAsync<Publication>(0, 10))
+			.Setup(r => r.GetPagedAsync<Publication>(0, 10, null))
 			.ReturnsAsync(list);
 
 		var client = _factory.CreateClient();
 
 		// Act
 		var response = await client.GetAsync("/api/v1/publications/page");
-		var returned = await DeserializeResponse<List<Publication>>(response);
+		var returned = await DeserializeResponse<PageData<Publication>>(response);
 
 		// Assert
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-		Assert.Single(returned!);
+		Assert.Single(returned!.Items);
 	}
 
 	[Fact]

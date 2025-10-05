@@ -130,9 +130,9 @@ namespace UniiaAdmin.WebApi.Controllers
 
         [HttpGet("page")]
         [Permission(PermissionResource.Role, CrudActions.View)]
-        public async Task<IActionResult> GetAllRoles(int skip = 0, int take = 10)
+        public async Task<IActionResult> GetAllRoles([FromQuery] string? sort = null, int skip = 0, int take = 10)
         {
-            var roles = await _rolePaginationService.GetPagedRolesAsync(skip, take);
+            var roles = await _rolePaginationService.GetPagedRolesAsync(skip, take, sort);
 
             return Ok(roles);
         }
@@ -151,23 +151,23 @@ namespace UniiaAdmin.WebApi.Controllers
 
         [HttpGet("{roleName}/claims")]
 		[Permission(PermissionResource.Role, CrudActions.View)]
-		public async Task<IActionResult> GetClaimsByRoleName(string roleName, int skip = 0, int take = 10)
+		public async Task<IActionResult> GetClaimsByRoleName(string roleName, [FromQuery] int skip = 0, int take = 10, string? sort = null)
         {
             var role = await _roleManager.FindByNameAsync(roleName);
 
             if (role == null)
                 return NotFound($"Role with name {roleName} not found");
 
-			var claims = await _rolePaginationService.GetPagedClaimsAsync(role.Id, skip, take);
+			var claims = await _rolePaginationService.GetPagedClaimsAsync(role.Id, skip, take, sort);
 
 			return Ok(claims);
         }
 
         [HttpGet("claims/page")]
 		[Permission(PermissionResource.Role, CrudActions.View)]
-		public async Task<IActionResult> GetPaginatedClaims(int skip = 0, int take = 10)
+		public async Task<IActionResult> GetPaginatedClaims([FromQuery] int skip = 0, int take = 10, string? sort = null)
         {
-            var claims = await _rolePaginationService.GetPagedClaimsAsync(skip, take);
+            var claims = await _rolePaginationService.GetPagedClaimsAsync(skip, take, sort);
 
 			return Ok(claims);
         }

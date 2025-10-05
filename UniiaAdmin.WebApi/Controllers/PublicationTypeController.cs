@@ -43,9 +43,9 @@ namespace UniiaAdmin.WebApi.Controllers
 
         [HttpGet("page")]
 		[Permission(PermissionResource.PublicationType, CrudActions.View)]
-		public async Task<IActionResult> GetPaginated([FromQuery] int skip = 0, int take = 10)
+		public async Task<IActionResult> GetPaginated([FromQuery] string? sort = null, int skip = 0, int take = 10)
         {
-			var publicationTypes = await _applicationUnitOfWork.GetPagedAsync<PublicationType>(skip, take);
+			var publicationTypes = await _applicationUnitOfWork.GetPagedAsync<PublicationType>(skip, take, sort);
 
 			return Ok(publicationTypes);
         }

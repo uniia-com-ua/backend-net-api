@@ -20,27 +20,27 @@ namespace UniiaAdmin.WebApi.Controllers
 
 		[HttpGet("page")]
 		[Permission(PermissionResource.Logs, CrudActions.View)]
-        public async Task<IActionResult> GetPagedLogs([FromQuery] int skip = 0, int take = 10)
+        public async Task<IActionResult> GetPagedLogs([FromQuery] string? sort = null, int skip = 0, int take = 10)
         {
-			var logActionModels = await _paginationService.GetPagedListAsync(skip, take);
+			var logActionModels = await _paginationService.GetPagedListAsync(skip, take, sort);
                                                   
             return Ok(logActionModels);
         }
 
 		[HttpGet("model/{id:int}")]
 		[Permission(PermissionResource.Logs, CrudActions.View)]
-        public async Task<IActionResult> GetLogByModelId(int id, [FromQuery] string modelName, int skip = 0, int take = 10)
+        public async Task<IActionResult> GetLogByModelId(int id, [FromQuery] string modelName, string? sort = null, int skip = 0, int take = 10)
         {
-            var logActionModels = await _paginationService.GetPagedListAsync(id, modelName, skip, take);
+            var logActionModels = await _paginationService.GetPagedListAsync(id, modelName, skip, take, sort);
 
             return Ok(logActionModels);
         }
 
 		[HttpGet("user/{id}")]
 		[Permission(PermissionResource.Logs, CrudActions.View)]
-        public async Task<IActionResult> GetByUserId(string id, [FromQuery] int skip = 0, int take = 10)
+        public async Task<IActionResult> GetByUserId(string id, [FromQuery] string? sort = null, int skip = 0, int take = 10)
         {
-            var logActionModels = await _paginationService.GetPagedListAsync(id, skip, take);
+            var logActionModels = await _paginationService.GetPagedListAsync(id, skip, take, sort);
 
 			return Ok(logActionModels);
         }

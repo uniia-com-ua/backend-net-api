@@ -3,6 +3,7 @@
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.WebApi.Interfaces;
 using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
@@ -22,23 +23,21 @@ public class ApplicationUnitOfWork : IApplicationUnitOfWork
 
 	public async Task AddAsync<T>(T model) where T : class => await _applicationContext.Set<T>().AddAsync(model);
 
-	public async Task<T?> FindAsync<T>(object id) where T : class => await _applicationContext.Set<T>().FindAsync(id);
+	public async Task<T?> FindAsync<T>(int id) where T : class, IEntity => await _applicationContext.Set<T>().FindAsync(id);
+
+	public async Task<T?> FindAsync<T>(string id) where T : class, IStringEntity => await _applicationContext.Set<T>().FindAsync(id);
 
 	public async Task SaveChangesAsync() => await _applicationContext.SaveChangesAsync();
 
 	public async Task<bool> AnyAsync<T>(int id) where T : class, IEntity => await _applicationContext.Set<T>().AnyAsync(e => e.Id == id);
 
-	public IQueryable<T> GetQueryable<T>() where T : class => _applicationContext.Set<T>();
+	public async Task<bool> AnyAsync<T>(string id) where T : class, IStringEntity => await _applicationContext.Set<T>().AnyAsync(e => e.Id == id);
 
-	public void Attach<T>(T model) where T : class => _applicationContext.Set<T>().Attach(model);
+	public async Task<bool> AnyEmailAsync<T>(string email) where T : class, IEmailEntity => await _applicationContext.Set<T>().AnyAsync(e => e.Email == email);
 
 	public void Remove<T>(T model) where T : class => _applicationContext.Set<T>().Remove(model);
 
-	public void Update<T>(T model) where T : class => _applicationContext.Set<T>().Update(model);
-
 	public async Task<bool> CanConnectAsync() => await _applicationContext.Database.CanConnectAsync();
-
-	public void Create<T>(T model) where T : class => _applicationContext.Set<T>().Add(model);
 
 	public async Task CreateDatabaseAsync() => await _applicationContext.Database.EnsureCreatedAsync();
 
@@ -59,15 +58,15 @@ public class ApplicationUnitOfWork : IApplicationUnitOfWork
 			.Select(a => a.FileId)
 			.FirstOrDefaultAsync();
 
-	public async Task<List<T>> GetPagedAsync<T>(int skip, int take) where T : class
-		=> await _paginationService.GetPagedListAsync(_applicationContext.Set<T>(), skip, take);
+	public async Task<PageData<T>> GetPagedAsync<T>(int skip, int take, string? sortQuery = null) where T : class
+		=> await _paginationService.GetPagedListAsync(_applicationContext.Set<T>(), skip, take, sortQuery);
 
-	public async Task<TEntity?> GetByIdWithIncludesAsync<TEntity>(
-		Expression<Func<TEntity, bool>> predicate,
-		params Expression<Func<TEntity, object>>[] includes)
-		where TEntity : class
+	public async Task<T?> GetByIdWithIncludesAsync<T>(
+		Expression<Func<T, bool>> predicate,
+		params Expression<Func<T, object>>[] includes)
+		where T : class
 	{
-		IQueryable<TEntity> query = _applicationContext.Set<TEntity>();
+		IQueryable<T> query = _applicationContext.Set<T>();
 
 		foreach (var include in includes)
 		{
@@ -86,5 +85,4 @@ public class ApplicationUnitOfWork : IApplicationUnitOfWork
 			.Where(obj => ids.Contains(obj.Id))
 			.ToListAsync();
 	}
-
 }

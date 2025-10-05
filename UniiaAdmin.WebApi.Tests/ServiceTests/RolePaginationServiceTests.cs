@@ -7,6 +7,7 @@ using UniiaAdmin.WebApi.Services;
 using UniiaAdmin.WebApi.Interfaces;
 using Xunit;
 using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
+using UniiaAdmin.Data.Dtos;
 
 namespace UniiaAdmin.WebApi.Tests.ServiceTests;
 public class RolePaginationServiceTests
@@ -32,24 +33,32 @@ public class RolePaginationServiceTests
 		const int skip = 0;
 		const int take = 10;
 
-		var roleClaims = new List<IdentityRoleClaim<string>>
+		var roleClaims = new PageData<IdentityRoleClaim<string>>
 		{
-			new() { RoleId = "1", ClaimValue = "ClaimA" },
-			new() { RoleId = "2", ClaimValue = "ClaimB" },
-		}.AsQueryable();
+			Items = new List<IdentityRoleClaim<string>>() 
+			{
+				new() { RoleId = "1", ClaimValue = "ClaimA" },
+				new() { RoleId = "2", ClaimValue = "ClaimB" } 
+			},
+			TotalCount = 2
+		};
 
-		_adminMock.Setup(a => a.RoleClaims()).Returns(roleClaims);
-		_paginationMock.Setup(p => p.GetPagedListAsync(It.IsAny<IQueryable<string>>(), skip, take))
-					   .ReturnsAsync(roleClaims.Select(rc => rc.ClaimValue!).Distinct().OrderBy(c => c).ToList());
+		_adminMock.Setup(a => a.RoleClaims()).Returns(roleClaims.Items.AsQueryable());
+		_paginationMock.Setup(p => p.GetPagedListAsync(It.IsAny<IQueryable<string>>(), skip, take, null))
+			   .ReturnsAsync(() =>
+			   {
+				   var claims = roleClaims.Items.Select(rc => rc.ClaimValue!).Distinct().OrderBy(c => c).ToList();
+				   return new PageData<string> { Items = claims, TotalCount = claims.Count };
+			   });
 
 		// Act
 		var result = await _service.GetPagedClaimsAsync(skip, take);
 
 		// Assert
-		Assert.Equal(2, result!.Count);
-		Assert.Contains("ClaimA", result);
-		Assert.Contains("ClaimB", result);
-		_paginationMock.Verify(p => p.GetPagedListAsync(It.IsAny<IQueryable<string>>(), skip, take), Times.Once);
+		Assert.Equal(2, result!.Items.Count);
+		Assert.Contains("ClaimA", result.Items);
+		Assert.Contains("ClaimB", result.Items);
+		_paginationMock.Verify(p => p.GetPagedListAsync(It.IsAny<IQueryable<string>>(), skip, take, null), Times.Once);
 	}
 
 	[Fact]
@@ -67,16 +76,21 @@ public class RolePaginationServiceTests
 		}.AsQueryable();
 
 		_adminMock.Setup(a => a.RoleClaims()).Returns(roleClaims);
-		_paginationMock.Setup(p => p.GetPagedListAsync(It.IsAny<IQueryable<string>>(), skip, take))
-					   .ReturnsAsync(roleClaims.Where(rc => rc.RoleId == roleId).Select(rc => rc.ClaimValue!).Distinct().OrderBy(c => c).ToList());
+		_paginationMock.Setup(p => p.GetPagedListAsync(It.IsAny<IQueryable<string>>(), skip, take, null))
+					   .ReturnsAsync(() =>
+					   {
+							var claims = roleClaims.Where(rc => rc.RoleId == roleId).Select(rc => rc.ClaimValue!).Distinct().OrderBy(c => c).ToList();
+							return new PageData<string> { Items = claims, TotalCount = claims.Count };
+				       });
+
 
 		// Act
 		var result = await _service.GetPagedClaimsAsync(roleId, skip, take);
 
 		// Assert
-		Assert.Single(result!);
-		Assert.Equal("ClaimA", result![0]);
-		_paginationMock.Verify(p => p.GetPagedListAsync(It.IsAny<IQueryable<string>>(), skip, take), Times.Once);
+		Assert.Single(result!.Items);
+		Assert.Equal("ClaimA", result!.Items[0]);
+		_paginationMock.Verify(p => p.GetPagedListAsync(It.IsAny<IQueryable<string>>(), skip, take, null), Times.Once);
 	}
 
 	[Fact]
@@ -86,23 +100,23 @@ public class RolePaginationServiceTests
 		const int skip = 0;
 		const int take = 5;
 
-		var roles = new List<IdentityRole>
+		var roles = new PageData<IdentityRole>
 		{
-			new() { Name = "Admin" },
-			new() { Name = "User" }
-		}.AsQueryable();
+			Items = new() { new() { Name = "Admin" }, new() { Name = "User" } },
+			TotalCount = 2
+		};
 
-		_roleRepoMock.Setup(r => r.Roles()).Returns(roles);
-		_paginationMock.Setup(p => p.GetPagedListAsync(roles, skip, take))
-					   .ReturnsAsync(roles.ToList());
+		_roleRepoMock.Setup(r => r.Roles()).Returns(roles.Items.AsQueryable());
+		_paginationMock.Setup(p => p.GetPagedListAsync(roles.Items.AsQueryable(), skip, take, null))
+					   .ReturnsAsync(roles);
 
 		// Act
 		var result = await _service.GetPagedRolesAsync(skip, take);
 
 		// Assert
-		Assert.Equal(2, result!.Count);
-		Assert.Contains(result, r => r.Name == "Admin");
-		Assert.Contains(result, r => r.Name == "User");
-		_paginationMock.Verify(p => p.GetPagedListAsync(roles, skip, take), Times.Once);
+		Assert.Equal(2, result!.Items.Count);
+		Assert.Contains(result.Items, r => r.Name == "Admin");
+		Assert.Contains(result.Items, r => r.Name == "User");
+		_paginationMock.Verify(p => p.GetPagedListAsync(roles.Items.AsQueryable(), skip, take, null), Times.Once);
 	}
 }

@@ -12,6 +12,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using UniiaAdmin.Data.Common;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Controllers;
 using UniiaAdmin.WebApi.Interfaces;
@@ -83,24 +84,21 @@ public class KeywordControllerTests
 	public async Task GetPagedKeywords_Returns200WithList()
 	{
 		// Arrange
-		var keywords = new List<Keyword>
-		{
-			new Keyword { Id = 1, Word = "AI" }
-		};
+		var keywords = new PageData<Keyword> { Items = new() { new() { Id = 1, Word = "AI" } }, TotalCount = 1 };
 
 		_factory.Mocks.Mock<IApplicationUnitOfWork>()
-			.Setup(r => r.GetPagedAsync<Keyword>(0, 10))
+			.Setup(r => r.GetPagedAsync<Keyword>(0, 10, null))
 			.ReturnsAsync(keywords);
 
 		var client = _factory.CreateClient();
 
 		// Act
 		var response = await client.GetAsync("/api/v1/keywords/page");
-		var returned = await DeserializeResponse<List<Keyword>>(response);
+		var returned = await DeserializeResponse<PageData<Keyword>>(response);
 
 		// Assert
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-		Assert.Single(returned!);
+		Assert.Single(returned!.Items);
 	}
 
 	[Fact]

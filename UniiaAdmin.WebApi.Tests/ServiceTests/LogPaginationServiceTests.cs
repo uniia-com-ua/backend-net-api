@@ -1,7 +1,9 @@
-﻿using Moq;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Moq;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Interfaces;
 using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
@@ -35,16 +37,16 @@ public class LogPaginationServiceTests
 		var queryable = new List<LogActionModel>().AsQueryable();
 		_mongoMock.Setup(m => m.Query<LogActionModel>(It.IsAny<System.Linq.Expressions.Expression<System.Func<LogActionModel, bool>>>()))
 				  .Returns(queryable);
-		_paginationMock.Setup(p => p.GetPagedListAsync(queryable, skip, take))
-					   .ReturnsAsync(new List<LogActionModel> { new LogActionModel { UserId = userId } });
+		_paginationMock.Setup(p => p.GetPagedListAsync(queryable, skip, take, null))
+					   .ReturnsAsync(new PageData<LogActionModel> { Items = { new LogActionModel { UserId = userId } }, TotalCount = 1 });
 
 		// Act
 		var result = await _service.GetPagedListAsync(userId, skip, take);
 
 		// Assert
-		Assert.Single(result);
-		Assert.Equal(userId, result[0].UserId);
-		_paginationMock.Verify(p => p.GetPagedListAsync(queryable, skip, take), Times.Once);
+		Assert.Single(result.Items);
+		Assert.Equal(userId, result.Items[0].UserId);
+		_paginationMock.Verify(p => p.GetPagedListAsync(queryable, skip, take, null), Times.Once);
 	}
 
 	[Fact]
@@ -59,17 +61,17 @@ public class LogPaginationServiceTests
 		var queryable = new List<LogActionModel>().AsQueryable();
 		_mongoMock.Setup(m => m.Query<LogActionModel>(It.IsAny<System.Linq.Expressions.Expression<System.Func<LogActionModel, bool>>>()))
 				  .Returns(queryable);
-		_paginationMock.Setup(p => p.GetPagedListAsync(queryable, skip, take))
-					   .ReturnsAsync(new List<LogActionModel> { new LogActionModel { ModelId = modelId, ModelName = modelName } });
+		_paginationMock.Setup(p => p.GetPagedListAsync(queryable, skip, take, null))
+					   .ReturnsAsync(new PageData<LogActionModel> { Items = { new LogActionModel { ModelId = modelId, ModelName = modelName } }, TotalCount = 1 });
 
 		// Act
 		var result = await _service.GetPagedListAsync(modelId, modelName, skip, take);
 
 		// Assert
-		Assert.Single(result);
-		Assert.Equal(modelId, result[0].ModelId);
-		Assert.Equal(modelName, result[0].ModelName);
-		_paginationMock.Verify(p => p.GetPagedListAsync(queryable, skip, take), Times.Once);
+		Assert.Single(result.Items);
+		Assert.Equal(modelId, result.Items[0].ModelId);
+		Assert.Equal(modelName, result.Items[0].ModelName);
+		_paginationMock.Verify(p => p.GetPagedListAsync(queryable, skip, take, null), Times.Once);
 	}
 
 	[Fact]
@@ -79,17 +81,17 @@ public class LogPaginationServiceTests
 		const int skip = 0;
 		const int take = 20;
 
-		var queryable = new List<LogActionModel>().AsQueryable();
+		var queryable = new PageData<LogActionModel>().Items.AsQueryable();
 		_mongoMock.Setup(m => m.Query<LogActionModel>())
 				  .Returns(queryable);
-		_paginationMock.Setup(p => p.GetPagedListAsync(queryable, skip, take))
-					   .ReturnsAsync(new List<LogActionModel> { new LogActionModel() });
+		_paginationMock.Setup(p => p.GetPagedListAsync(queryable, skip, take, null))
+					   .ReturnsAsync(new PageData<LogActionModel> { Items = new() { new LogActionModel() }, TotalCount = 1 });
 
 		// Act
 		var result = await _service.GetPagedListAsync(skip, take);
 
 		// Assert
-		Assert.Single(result);
-		_paginationMock.Verify(p => p.GetPagedListAsync(queryable, skip, take), Times.Once);
+		Assert.Single(result.Items);
+		_paginationMock.Verify(p => p.GetPagedListAsync(queryable, skip, take, null), Times.Once);
 	}
 }

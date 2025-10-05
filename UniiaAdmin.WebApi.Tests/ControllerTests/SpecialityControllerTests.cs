@@ -12,6 +12,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using UniiaAdmin.Data.Common;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Controllers;
 using UniiaAdmin.WebApi.Interfaces;
@@ -89,24 +90,21 @@ public class SpecialityControllerTests
 	public async Task GetPagedSpecialities_Returns200WithList()
 	{
 		// Arrange
-		var specialities = new List<Specialty>
-		{
-			new Specialty { Id = 1, Name = "Psychology" }
-		};
+		var specialities = new PageData<Specialty> { Items = new() { new() { Id = 1, Name = "Book" } }, TotalCount = 1 };
 
 		_factory.Mocks.Mock<IApplicationUnitOfWork>()
-			.Setup(r => r.GetPagedAsync<Specialty>(0, 10))
+			.Setup(r => r.GetPagedAsync<Specialty>(0, 10, null))
 			.ReturnsAsync(specialities);
 
 		var client = _factory.CreateClient();
 
 		// Act
 		var response = await client.GetAsync("/api/v1/specialities/page");
-		var returned = await DeserializeResponse<List<Specialty>>(response);
+		var returned = await DeserializeResponse<PageData<Specialty>>(response);
 
 		// Assert
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-		Assert.Single(returned!);
+		Assert.Single(returned!.Items);
 	}
 
 	[Fact]
@@ -115,7 +113,8 @@ public class SpecialityControllerTests
 		// Arrange
 		var client = _factory.CreateClient();
 		var speciality = new Specialty { Id = 1, Name = "Psychology" };
-		var content = new MultipartFormDataContent { { new StringContent(speciality.Name), "Name" } };
+
+		var content = new StringContent(JsonSerializer.Serialize(speciality), Encoding.UTF8, "application/json");
 
 		_factory.Mocks.Mock<IGenericRepository>()
 			.Setup(r => r.CreateAsync(It.IsAny<Specialty>()))
@@ -138,7 +137,9 @@ public class SpecialityControllerTests
 			.ReturnsAsync((Specialty)null!);
 
 		var client = _factory.CreateClient();
-		var content = new MultipartFormDataContent { { new StringContent("NewName"), "Name" } };
+
+		var speciality = new Specialty { Id = 1, Name = "Psychology" };
+		var content = new StringContent(JsonSerializer.Serialize(speciality), Encoding.UTF8, "application/json");
 
 		// Act
 		var response = await client.PatchAsync($"/api/v1/specialities/{id}", content);
@@ -163,7 +164,9 @@ public class SpecialityControllerTests
 			.Returns(Task.CompletedTask);
 
 		var client = _factory.CreateClient();
-		var content = new MultipartFormDataContent { { new StringContent("NewName"), "Name" } };
+
+		var speciality = new Specialty { Id = 1, Name = "NewName" };
+		var content = new StringContent(JsonSerializer.Serialize(speciality), Encoding.UTF8, "application/json");
 
 		// Act
 		var response = await client.PatchAsync($"/api/v1/specialities/{id}", content);

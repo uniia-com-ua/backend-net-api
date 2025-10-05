@@ -7,6 +7,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Controllers;
 using UniiaAdmin.WebApi.Interfaces;
@@ -71,22 +72,19 @@ public class PublicationLanguageControllerTests
 	[Fact]
 	public async Task GetPaginated_Returns200WithList()
 	{
-		var languages = new List<PublicationLanguage>
-		{
-			new PublicationLanguage { Id = 1, Name = "English" }
-		};
+		var languages = new PageData<PublicationLanguage> { Items = new() { new() { Id = 1, Name = "English" } }, TotalCount = 1 };
 
 		_factory.Mocks.Mock<IApplicationUnitOfWork>()
-			.Setup(r => r.GetPagedAsync<PublicationLanguage>(0, 10))
+			.Setup(r => r.GetPagedAsync<PublicationLanguage>(0, 10, null))
 			.ReturnsAsync(languages);
 
 		var client = _factory.CreateClient();
 
 		var response = await client.GetAsync("/api/v1/publication-languages/page");
-		var returned = await DeserializeResponse<List<PublicationLanguage>>(response);
+		var returned = await DeserializeResponse<PageData<PublicationLanguage>>(response);
 
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-		Assert.Single(returned!);
+		Assert.Single(returned!.Items);
 	}
 
 	[Fact]

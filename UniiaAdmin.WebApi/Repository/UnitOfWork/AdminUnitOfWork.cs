@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Dtos.UserDtos;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
@@ -32,9 +33,9 @@ public class AdminUnitOfWork : IAdminUnitOfWork
 	public async Task<bool> CanConnectAsync()
 		=> await _adminContext.Database.CanConnectAsync();
 
-	public async Task<List<AdminUserDto>> GetListAsync()
+	public async Task<PageData<AdminUserDto>> GetListAsync()
 	{
-		var result = new List<AdminUserDto>();
+		var result = new PageData<AdminUserDto>();
 
 		var users = await _userManager.Users.ToListAsync();
 
@@ -46,8 +47,10 @@ public class AdminUnitOfWork : IAdminUnitOfWork
 
 			mappedUser.Roles = roles.ToList();
 
-			result.Add(mappedUser);
+			result.Items.Add(mappedUser);
 		}
+
+		result.TotalCount = result.Items.Count;
 
 		return result;
 	}

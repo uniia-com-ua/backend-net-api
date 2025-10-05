@@ -77,9 +77,9 @@ namespace UniiaAdmin.WebApi.Controllers
 
         [HttpGet("page")]
 		[Permission(PermissionResource.Publication, CrudActions.View)]
-		public async Task<IActionResult> GetPagedPublications([FromQuery] int skip = 0, int take = 10)
+		public async Task<IActionResult> GetPagedPublications([FromQuery] string? sort = null, int skip = 0, int take = 10)
         {
-            var publications = await _applicationUnitOfWork.GetPagedAsync<Publication>(skip, take);
+            var publications = await _applicationUnitOfWork.GetPagedAsync<Publication>(skip, take, sort);
 
             return Ok(publications);
         }

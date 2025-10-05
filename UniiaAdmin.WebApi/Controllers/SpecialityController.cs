@@ -42,9 +42,9 @@ namespace UniiaAdmin.WebApi.Controllers
 
 		[Permission(PermissionResource.Speciality, CrudActions.View)]
 		[HttpGet("page")]
-        public async Task<IActionResult> GetPagedAuthors([FromQuery] int skip = 0, int take = 10)
+        public async Task<IActionResult> GetPagedAuthors([FromQuery] string? sort = null, int skip = 0, int take = 10)
         {
-			var pagedSpecialties = await _applicationUnitOfWork.GetPagedAsync<Specialty>(skip, take);
+			var pagedSpecialties = await _applicationUnitOfWork.GetPagedAsync<Specialty>(skip, take, sort);
 
 			return Ok(pagedSpecialties);
         }

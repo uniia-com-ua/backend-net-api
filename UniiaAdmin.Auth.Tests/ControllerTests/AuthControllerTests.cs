@@ -13,7 +13,8 @@ using System.Threading.Tasks;
 using UniiaAdmin.Auth.Controllers;
 using UniiaAdmin.Auth.Interfaces;
 using UniiaAdmin.Auth.Tests;
-using UniiaAdmin.Data.Dtos.User;
+using UniiaAdmin.Data.Dtos;
+using UniiaAdmin.Data.Dtos.UserDtos;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.Data.Models.AuthModels;
 using Xunit;
@@ -252,25 +253,27 @@ public class AuthControllerTests
 		var mockedMongo = _factory.Mocks.Mock<IMongoUnitOfWork>();
 		mockedMongo.Setup(m => m.GetLogInHistory(It.IsAny<string?>(), 0, 10))
 				   .ReturnsAsync(
-				   [
-					   new() {
+				   new PageData<AdminLogInHistory> {
+					   Items = new() {
+						   new AdminLogInHistory {
 						   UserId = "user1",
 						   LogInTime = DateTime.UtcNow,
 						   IpAdress = "",
 						   LogInType = "",
 						   UserAgent = "test-agent",
+						   }
 					   }
-				   ]);
+				   });
 
 		var client = _factory.CreateClient();
 
 		// Act
 		var response = await client.GetAsync("/api/v1/log-history");
-		var returned = await DeserializeResponse<List<AdminLogInHistory>>(response);
+		var returned = await DeserializeResponse<PageData<AdminLogInHistory>>(response);
 
 		// Assert
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-		Assert.Single(returned!);
+		Assert.Single(returned!.Items);
 	}
 
 	private async Task<T?> DeserializeResponse<T>(HttpResponseMessage response)

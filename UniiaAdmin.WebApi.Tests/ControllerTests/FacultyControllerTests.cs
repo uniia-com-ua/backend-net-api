@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Controllers;
 using UniiaAdmin.WebApi.Interfaces;
@@ -82,24 +83,25 @@ namespace UniiaAdmin.WebApi.Tests.ControllerTests
 		public async Task GetPagedFaculties_Returns200WithList()
 		{
 			// Arrange
-			var faculties = new List<Faculty>
+			var faculties = new PageData<Faculty>
 			{
-				new() { Id = 1, FullName = "Math Faculty", UniversityId = 5 }
+				Items = new() { new Faculty { Id = 1, FullName = "Math Faculty", UniversityId = 5 } },
+				TotalCount = 1
 			};
 
 			_factory.Mocks.Mock<IApplicationUnitOfWork>()
-				.Setup(r => r.GetPagedAsync<Faculty>(0, 10))
+				.Setup(r => r.GetPagedAsync<Faculty>(0, 10, null))
 				.ReturnsAsync(faculties);
 
 			var client = _factory.CreateClient();
 
 			// Act
 			var response = await client.GetAsync("/api/v1/faculties/page");
-			var returned = await DeserializeResponse<List<Faculty>>(response);
+			var returned = await DeserializeResponse<PageData<Faculty>>(response);
 
 			// Assert
 			Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-			Assert.Single(returned!);
+			Assert.Single(returned!.Items);
 		}
 
 		[Fact]

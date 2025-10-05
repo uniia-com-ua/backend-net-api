@@ -8,6 +8,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using UniiaAdmin.Auth.Interfaces;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 using UniiaAdmin.Data.Models;
 
@@ -30,11 +31,14 @@ public class MongoUnitOfWork : IMongoUnitOfWork
 
 	public async Task CreateAsync() => await _mongoDbContext.Database.EnsureCreatedAsync();
 
-	public async Task<List<AdminLogInHistory>?> GetLogInHistory(string? userId, int skip, int take)
-		=> await _mongoDbContext.AdminLogInHistories
+	public async Task<PageData<AdminLogInHistory>?> GetLogInHistory(string? userId, int skip, int take)
+		=> new PageData<AdminLogInHistory> { 
+			Items = await _mongoDbContext.AdminLogInHistories
 			.Where(li => li.UserId == userId)
 			.OrderByDescending(li => li.LogInTime)
 			.Skip(skip)
 			.Take(take)
-			.ToListAsync();
+			.ToListAsync(),
+			TotalCount = await _mongoDbContext.AdminLogInHistories.Where(li => li.UserId == userId).CountAsync()
+		};
 }

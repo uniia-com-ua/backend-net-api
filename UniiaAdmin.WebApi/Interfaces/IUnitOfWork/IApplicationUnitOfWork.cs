@@ -1,13 +1,16 @@
 ﻿namespace UniiaAdmin.WebApi.Interfaces.IUnitOfWork;
 
 using System.Linq.Expressions;
+using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Interfaces.FileInterfaces;
 
 public interface IApplicationUnitOfWork
 {
-	public IQueryable<T> GetQueryable<T>() where T : class;
+	public Task<T?> FindAsync<T>(int id) where T : class, IEntity;
 
-	public Task<T?> FindAsync<T>(object id) where T : class;
+	public Task<T?> FindAsync<T>(string id) where T : class, IStringEntity;
+
 
 	public Task<string?> FindPhotoIdAsync<T>(int id) where T : class, IPhotoEntity;
 
@@ -19,22 +22,20 @@ public interface IApplicationUnitOfWork
 
 	public Task<bool> AnyAsync<T>(int id) where T : class, IEntity;
 
-	public void Attach<T>(T model) where T : class;
+	public Task<bool> AnyAsync<T>(string id) where T : class, IStringEntity;
+
+	public Task<bool> AnyEmailAsync<T>(string email) where T : class, IEmailEntity;
 
 	public void Remove<T>(T model) where T : class;
 
-	public void Update<T>(T model) where T : class;
-
-	public void Create<T>(T model) where T : class;
-
 	public Task CreateDatabaseAsync();
 
-	public Task<List<T>> GetPagedAsync<T>(int skip, int take) where T : class;
+	public Task<PageData<T>> GetPagedAsync<T>(int skip, int take, string? sortQuery = null) where T : class;
 
-	public Task<TEntity?> GetByIdWithIncludesAsync<TEntity>(
-		Expression<Func<TEntity, bool>> predicate,
-		params Expression<Func<TEntity, object>>[] includes)
-		where TEntity : class;
+	public Task<T?> GetByIdWithIncludesAsync<T>(
+		Expression<Func<T, bool>> predicate,
+		params Expression<Func<T, object>>[] includes)
+		where T : class;
 
 	public Task<List<T>?> GetByIdsAsync<T>(IEnumerable<int>? ids) where T : class, IEntity;
 
