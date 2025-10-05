@@ -81,6 +81,7 @@ public class ApplicationUnitOfWork : IApplicationUnitOfWork
 	public async Task<PageData<TEntity>> GetPagedWithIncludesAsync<TEntity>(
 	int skip, 
 	int take,
+	string? sort = null,
 	params Expression<Func<TEntity, object>>[] includes)
 	where TEntity : class
 	{
@@ -91,7 +92,7 @@ public class ApplicationUnitOfWork : IApplicationUnitOfWork
 			query = query.Include(include);
 		}
 
-		return await _paginationService.GetPagedListAsync(query, skip, take);
+		return await _paginationService.GetPagedListAsync(query, skip, take, sort);
 	}
 
 	public async Task<List<T>?> GetByIdsAsync<T>(IEnumerable<int>? ids) where T : class, IEntity

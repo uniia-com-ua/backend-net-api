@@ -41,6 +41,7 @@ public interface IApplicationUnitOfWork
 	public Task<PageData<TEntity>> GetPagedWithIncludesAsync<TEntity>(
 		int skip,
 		int take,
+		string? sort = null,
 		params Expression<Func<TEntity, object>>[] includes)
 		where TEntity : class;
 
