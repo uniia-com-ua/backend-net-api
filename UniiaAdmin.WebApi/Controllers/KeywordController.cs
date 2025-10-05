@@ -46,9 +46,9 @@ namespace UniiaAdmin.WebApi.Controllers
 
 		[HttpGet("page")]
 		[Permission(PermissionResource.Keyword, CrudActions.View)]
-        public async Task<IActionResult> GetPaginatedKeywords([FromQuery] int skip = 0, int take = 10)
+        public async Task<IActionResult> GetPaginatedKeywords([FromQuery] string? sort, int skip = 0, int take = 10)
         {
-            var pagedKeywords = await _applicationUnitOfWork.GetPagedAsync<Keyword>(skip, take);
+            var pagedKeywords = await _applicationUnitOfWork.GetPagedAsync<Keyword>(skip, take, sort);
 
 			return Ok(pagedKeywords);
         }

@@ -1,12 +1,13 @@
 ﻿namespace UniiaAdmin.WebApi.Interfaces;
 
 using Microsoft.AspNetCore.Identity;
+using UniiaAdmin.Data.Dtos;
 
 public interface IRolePaginationService
 {
-	public Task<List<IdentityRole>?> GetPagedRolesAsync(int skip, int take);
+	public Task<PageData<IdentityRole>?> GetPagedRolesAsync(int skip, int take, string? sort = null);
 
-	public Task<List<string>?> GetPagedClaimsAsync(int skip, int take);
+	public Task<PageData<string>?> GetPagedClaimsAsync(int skip, int take, string? sort = null);
 
-	public Task<List<string>?> GetPagedClaimsAsync(string id, int skip, int take);
+	public Task<PageData<string>?> GetPagedClaimsAsync(string id, int skip, int take, string? sort = null);
 }

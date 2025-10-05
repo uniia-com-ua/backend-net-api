@@ -11,6 +11,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using UniiaAdmin.Data.Common;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Controllers;
 using UniiaAdmin.WebApi.Interfaces;
@@ -145,24 +146,25 @@ public class AuthorControllerTests
 	public async Task GetPagedAuthors_Returns200WithList()
 	{
 		// Arrange
-		var authors = new List<Author>
+		var authors = new PageData<Author>
 		{
-			CreateTestAuthor(),
+			Items = new() { CreateTestAuthor() },
+			TotalCount = 1
 		};
 
 		_factory.Mocks.Mock<IApplicationUnitOfWork>()
-			.Setup(r => r.GetPagedAsync<Author>(0, 10))
+			.Setup(r => r.GetPagedAsync<Author>(0, 10, null))
 			.ReturnsAsync(authors);
 		var client = _factory.CreateClient();
 
 		// Act
 		var response = await client.GetAsync("/api/v1/authors/page");
-		var returned = await DeserializeResponse<List<Author>>(response);
+		var returned = await DeserializeResponse<PageData<Author>>(response);
 
 		// Assert
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 		Assert.NotNull(returned);
-		Assert.Single(returned);
+		Assert.Single(returned.Items);
 	}
 
 	[Fact]

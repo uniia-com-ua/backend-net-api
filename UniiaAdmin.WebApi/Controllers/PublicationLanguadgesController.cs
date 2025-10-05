@@ -45,9 +45,9 @@ namespace UniiaAdmin.WebApi.Controllers
 
         [HttpGet("page")]
 		[Permission(PermissionResource.PublicationLanguadge, CrudActions.View)]
-		public async Task<IActionResult> GetPaginated([FromQuery] int skip = 0, int take = 10)
+		public async Task<IActionResult> GetPaginated([FromQuery] string? sort = null, int skip = 0, int take = 10)
         {
-			var languages = await _applicationUnitOfWork.GetPagedAsync<PublicationLanguage>(skip, take);
+			var languages = await _applicationUnitOfWork.GetPagedAsync<PublicationLanguage>(skip, take, sort);
 
 			return Ok(languages);
         }

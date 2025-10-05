@@ -88,9 +88,9 @@ namespace UniiaAdmin.WebApi.Controllers
 
         [HttpGet("page")]
 		[Permission(PermissionResource.University, CrudActions.View)]
-		public async Task<IActionResult> GetPagedUniversities(int skip = 0, int take = 10)
+		public async Task<IActionResult> GetPagedUniversities([FromQuery] string? sort = null, int skip = 0, int take = 10)
         {
-            var universitiesList = await _applicationUnitOfWork.GetPagedAsync<University>(skip, take);
+            var universitiesList = await _applicationUnitOfWork.GetPagedAsync<University>(skip, take, sort);
 
             return Ok(universitiesList);
         }

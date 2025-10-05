@@ -82,7 +82,7 @@ namespace UniiaAdmin.WebApi.Controllers
 		[Permission(PermissionResource.AdminUsers, CrudActions.View)]
 		public async Task<IActionResult> GetUserById(string id)
         {
-            AdminUserDto user = await _adminUnitOfWork.GetAsync(id);
+            AdminUserDto? user = await _adminUnitOfWork.GetAsync(id);
 
             if (user == null)
                 return NotFound();

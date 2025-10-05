@@ -8,13 +8,10 @@ namespace UniiaAdmin.Data.Models
         [Key]
         public string? UserId { get; set; }
 
-        [Display(Name = "Університетський Email")]
         public string? UniversityEmail { get; set; }
 
-        [Display(Name = "Факультет")]
         public int FacultyId { get; set; }
 
-        [Display(Name = "Факультет")]
         public Faculty? Faculty { get; set; }
 
         [ForeignKey("UserId")]

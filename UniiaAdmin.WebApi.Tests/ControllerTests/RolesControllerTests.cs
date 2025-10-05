@@ -11,6 +11,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
 using UniiaAdmin.Data.Constants;
+using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.WebApi.Controllers;
 using UniiaAdmin.WebApi.Interfaces;
 using UniiaAdmin.WebApi.Resources;
@@ -199,14 +200,14 @@ public class RolesControllerTests
 	{
 		var client = _factory.CreateClient();
 		var paginationMock = _factory.Mocks.Mock<IRolePaginationService>();
-		paginationMock.Setup(p => p.GetPagedRolesAsync(0, 10))
-					  .ReturnsAsync(new List<IdentityRole> { new IdentityRole("role1") });
+		paginationMock.Setup(p => p.GetPagedRolesAsync(0, 10, null))
+					  .ReturnsAsync(new PageData<IdentityRole> { Items = new() { new IdentityRole("role1") }, TotalCount = 1 });
 
 		var response = await client.GetAsync("/api/v1/roles/page");
-		var roles = await DeserializeResponse<List<IdentityRole>>(response);
+		var roles = await DeserializeResponse<PageData<IdentityRole>>(response);
 
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-		Assert.Single(roles!);
+		Assert.Single(roles!.Items);
 	}
 
 	[Fact]
@@ -228,14 +229,14 @@ public class RolesControllerTests
 		var paginationMock = _factory.Mocks.Mock<IRolePaginationService>();
 		var role = new IdentityRole("role") { Id = "1" };
 		roleRepo.Setup(r => r.FindByNameAsync("role")).ReturnsAsync(role);
-		paginationMock.Setup(p => p.GetPagedClaimsAsync("1", 0, 10))
-					  .ReturnsAsync(new List<string?> { "claim" }!);
+		paginationMock.Setup(p => p.GetPagedClaimsAsync("1", 0, 10, null))
+					  .ReturnsAsync(new PageData<string> { Items = new () { "claim" }, TotalCount = 1});
 
 		var response = await client.GetAsync("/api/v1/roles/role/claims");
-		var claims = await DeserializeResponse<List<string?>>(response);
+		var claims = await DeserializeResponse<PageData<string?>>(response);
 
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-		Assert.Single(claims!);
+		Assert.Single(claims!.Items);
 	}
 
 	[Fact]
@@ -244,14 +245,14 @@ public class RolesControllerTests
 		var client = _factory.CreateClient();
 		var paginationMock = _factory.Mocks.Mock<IRolePaginationService>();
 		
-		paginationMock.Setup(p => p.GetPagedClaimsAsync(0, 10))
-					  .ReturnsAsync(new List<string?> { "claim" }!);
+		paginationMock.Setup(p => p.GetPagedClaimsAsync(0, 10, null))
+					  .ReturnsAsync(new PageData<string> { Items = new() { "claim" }, TotalCount = 1 });
 
 		var response = await client.GetAsync("/api/v1/roles/claims/page");
-		var claims = await DeserializeResponse<List<string?>>(response);
+		var claims = await DeserializeResponse<PageData<string?>>(response);
 
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-		Assert.Single(claims!);
+		Assert.Single(claims!.Items);
 	}
 
 

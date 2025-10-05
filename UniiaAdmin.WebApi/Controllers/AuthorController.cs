@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Localization;
 using System.Net.Mime;
 using UniiaAdmin.Data.Constants;
+using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Attributes;
 using UniiaAdmin.WebApi.Interfaces;
@@ -67,9 +68,9 @@ namespace UniiaAdmin.WebApi.Controllers
 
 		[Permission(PermissionResource.Author, CrudActions.View)]
 		[HttpGet("page")]
-        public async Task<IActionResult> GetPagedAuthors([FromQuery] int skip = 0, int take = 10)
+        public async Task<IActionResult> GetPagedAuthors([FromQuery] string? sort, int skip = 0, int take = 10)
         {
-			var pagedAuthors = await _applicationUnitOfWork.GetPagedAsync<Author>(skip, take);
+			var pagedAuthors = await _applicationUnitOfWork.GetPagedAsync<Author>(skip, take, sort);
 
 			return Ok(pagedAuthors);
         }

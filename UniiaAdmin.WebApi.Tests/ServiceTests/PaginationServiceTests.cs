@@ -40,7 +40,7 @@ public class PaginationServiceTests
 		var result = await _service.GetPagedListAsync(query, skip, take);
 
 		// Assert
-		Assert.Empty(result);
+		Assert.Empty(result.Items);
 	}
 
 	[Theory]
@@ -55,7 +55,7 @@ public class PaginationServiceTests
 		var resultZero = await _service.GetPagedListAsync<int>(query, skip, take);
 
 		// Assert
-		Assert.Empty(resultZero);
+		Assert.Empty(resultZero.Items);
 	}
 
 	[Fact]
@@ -70,8 +70,8 @@ public class PaginationServiceTests
 		var result = await _service.GetPagedListAsync(query, skip, take);
 
 		// Assert
-		Assert.Equal(5, result.Count);
-		Assert.Equal(new List<int> { 1, 2, 3, 4, 5 }, result);
+		Assert.Equal(5, result.Items.Count);
+		Assert.Equal(new List<int> { 1, 2, 3, 4, 5 }, result.Items);
 	}
 
 	[Fact]
@@ -86,8 +86,8 @@ public class PaginationServiceTests
 		var result = await _service.GetPagedListAsync(query, skip, take);
 
 		// Assert
-		Assert.Equal(3, result.Count);
-		Assert.Equal(new List<int> { 3, 4, 5 }, result);
+		Assert.Equal(3, result.Items.Count);
+		Assert.Equal(new List<int> { 3, 4, 5 }, result.Items);
 	}
 
 	[Fact]
@@ -102,7 +102,7 @@ public class PaginationServiceTests
 		var result = await _service.GetPagedListAsync(query, skip, take);
 
 		// Assert
-		Assert.Equal(3, result.Count);
-		Assert.Equal(new List<int> { 1, 2, 3 }, result);
+		Assert.Equal(3, result.Items.Count);
+		Assert.Equal(new List<int> { 1, 2, 3 }, result.Items);
 	}
 }

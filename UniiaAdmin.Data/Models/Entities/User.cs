@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations.Schema;
 using UniiaAdmin.Data.Enums;
+using UniiaAdmin.Data.Interfaces.FileInterfaces;
 
 namespace UniiaAdmin.Data.Models
 {
-    public class User : IdentityUser
-    {
+    public class User : IdentityUser, IEmailEntity
+	{
 		[NotMapped]
 		public override string? UserName { get; set; } = null!;
 

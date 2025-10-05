@@ -49,10 +49,15 @@ namespace UniiaAdmin.WebApi.Controllers
 		[HttpGet("page")]
         public async Task<IActionResult> GetPaged([FromQuery] int skip = 0, int take = 10)
         {
-			var pagedSpecialties = (await _applicationUnitOfWork.GetPagedWithIncludesAsync<Specialty>(skip, take, x => x.Subjects!))
-				.Select(x => _mapper.Map<SpecialityDto>(x));
+			var pagedSpecialties = await _applicationUnitOfWork.GetPagedWithIncludesAsync<Specialty>(skip, take, x => x.Subjects!);
 
-			return Ok(pagedSpecialties);
+			var pagedSpecialtiesDto = new PageData<SpecialityDto>()
+			{
+				Items = pagedSpecialties.Items.Select(x => _mapper.Map<SpecialityDto>(x)).ToList(),
+				TotalCount = pagedSpecialties.TotalCount
+			};
+
+			return Ok(pagedSpecialtiesDto);
         }
 
 		[Permission(PermissionResource.Speciality, CrudActions.Create)]

@@ -5,7 +5,9 @@ using Moq;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Xml.Linq;
 using UniiaAdmin.Data.Data;
+using UniiaAdmin.Data.Dtos;
 using UniiaAdmin.Data.Models;
 using UniiaAdmin.WebApi.Controllers;
 using UniiaAdmin.WebApi.Interfaces;
@@ -70,22 +72,19 @@ public class PublicationTypeControllerTests
 	[Fact]
 	public async Task GetPagedPublicationTypes_Returns200WithList()
 	{
-		var types = new List<PublicationType>
-		{
-			new PublicationType { Id = 1, Name = "Book" }
-		};
+		var types = new PageData<PublicationType> { Items = new() { new (){ Id = 1, Name = "Book" } }, TotalCount = 1 };
 
 		_factory.Mocks.Mock<IApplicationUnitOfWork>()
-			.Setup(r => r.GetPagedAsync<PublicationType>(0, 10))
+			.Setup(r => r.GetPagedAsync<PublicationType>(0, 10, null))
 			.ReturnsAsync(types);
 
 		var client = _factory.CreateClient();
 
 		var response = await client.GetAsync("/api/v1/publication-types/page");
-		var returned = await DeserializeResponse<List<PublicationType>>(response);
+		var returned = await DeserializeResponse<PageData<PublicationType>>(response);
 
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-		Assert.Single(returned!);
+		Assert.Single(returned!.Items);
 	}
 
 	[Fact]
